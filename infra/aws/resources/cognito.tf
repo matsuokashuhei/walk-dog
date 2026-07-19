@@ -57,3 +57,30 @@ resource "aws_cognito_user_pool" "user" {
     Project     = var.project
   }
 }
+
+resource "aws_cognito_user_pool_client" "api" {
+  for_each = toset(var.envs)
+  name     = join("-", [var.project, each.key, "app"])
+  user_pool_id = aws_cognito_user_pool.user[each.key].id
+
+  generate_secret = false
+
+  explicit_auth_flows = [
+    "ALLOW_USER_AUTH",
+  ]
+
+  refresh_token_rotation {
+    feature                    = "ENABLED"
+    retry_grace_period_seconds = 10
+  }
+
+  access_token_validity  = 1
+  id_token_validity      = 1
+  refresh_token_validity = 3650
+
+  token_validity_units {
+    access_token  = "days"
+    id_token      = "days"
+    refresh_token = "days"
+  }
+}

@@ -7,3 +7,7 @@
 
 # コード
 - Do not write overly defensive code. Always prefer simplicity over pathological complexity
+
+# 開発計画
+- `docs/development/staged-development.md` は、walk / dog のリリース順序、承認済みの基盤判断、各リリースの提供機能、検証条件を定義する計画書である。
+- 実装は計画書のR0からR3の順序で進め、各リリースの開始時に記載された判断を確定する。

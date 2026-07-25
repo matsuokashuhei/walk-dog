@@ -15,7 +15,6 @@ docs/
 
 `specs/` は、プロダクトが提供する画面、API、データ、用語、利用者の操作を定義する。
 
-- [ドメインモデル](specs/domain-model.md)
 - [外部仕様書](specs/external-specification.html)
 - [モバイルジャーニーとワイヤーフロー](specs/mobile-journey-wireflow.html)
 

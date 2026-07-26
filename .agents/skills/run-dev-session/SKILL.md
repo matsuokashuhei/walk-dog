@@ -9,19 +9,22 @@ Run this skill for every development session. Keep one session focused on one st
 
 ## Start
 
-1. Ask the user: `このセッションの目的は何ですか？` Ask this question before any tool execution, baseline inspection, branch creation, or log creation.
-2. Derive a concise purpose and lowercase hyphenated English slug from the user's answer. Present the purpose and wait for the user's approval.
-3. Inspect `git status --short`. Record this baseline before changing files.
-4. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
-5. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
-6. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
-7. Append the first user request and every visible user or assistant message in chronological order.
+### Purpose Discovery
 
-The repository `.codex/hooks.json` `SessionStart` hook injects the required question for new sessions. It applies to `startup`; resumed sessions continue with their confirmed purpose.
+An undecided purpose begins a discovery conversation. Explore the current repository state and `docs/development/staged-development.md` read-only, then present candidate purposes and their release context. The user selects or revises a purpose. A confirmed purpose begins the execution session.
+
+### Execution Session
+
+1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
+2. Inspect `git status --short`. Record this baseline before changing files.
+3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
+4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
+5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
+6. Append the first user request and every visible user or assistant message in chronological order.
 
 ## Purpose Boundary
 
-Before acting, connect the action to the stated purpose and a session artifact. When a request materially changes the purpose, ask for an explicit purpose update before acting. Keep the updated purpose and reason in the transcript.
+Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
 
 ## Development Plan Sync
 

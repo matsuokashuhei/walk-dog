@@ -9,12 +9,15 @@ Run this skill for every development session. Keep one session focused on one st
 
 ## Start
 
-1. Derive a concise purpose and lowercase hyphenated English slug from the first user request. Ask one question only when the purpose is ambiguous.
-2. Inspect `git status --short`. Record this baseline before changing files.
-3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
-4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
-5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
-6. Append the first user request and every visible user or assistant message in chronological order.
+1. Ask the user: `このセッションの目的は何ですか？` Ask this question before any tool execution, baseline inspection, branch creation, or log creation.
+2. Derive a concise purpose and lowercase hyphenated English slug from the user's answer. Present the purpose and wait for the user's approval.
+3. Inspect `git status --short`. Record this baseline before changing files.
+4. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
+5. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
+6. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
+7. Append the first user request and every visible user or assistant message in chronological order.
+
+The repository `.codex/hooks.json` `SessionStart` hook injects the required question for new sessions. It applies to `startup`; resumed sessions continue with their confirmed purpose.
 
 ## Purpose Boundary
 

@@ -1,6 +1,19 @@
 {
-  "description": "Enforce the documentation directory structure.",
+  "description": "Guide development-session setup and enforce the documentation directory structure.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^startup$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/ask_session_purpose.py\"",
+            "timeout": 5,
+            "statusMessage": "Confirming the session purpose"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "^(Bash|apply_patch)$",

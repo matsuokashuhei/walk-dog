@@ -1,0 +1,4 @@
+interface:
+  display_name: "Save Session Log"
+  short_description: "Record opted-in development sessions"
+  default_prompt: "Use $save-session-log to capture this development session."

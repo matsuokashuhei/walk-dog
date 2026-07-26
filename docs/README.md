@@ -26,4 +26,4 @@ docs/
 
 ### AIセッションログ
 
-`logs/` は、AIが行う開発の要約ログを保存する。ファイル名は `YYYY-MM-DD-<topic>.md` とし、各ログには目的、決定、変更、次の作業を記録する。
+`logs/` は、保存を希望したAI開発セッションのやり取りを保存する。各セッションは `YYYYmmddHHMMSS-<title>/transcript.md` に、目的と発話順の記録を持つ。

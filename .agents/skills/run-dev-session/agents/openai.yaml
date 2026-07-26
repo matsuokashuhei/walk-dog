@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Development Session"
+  short_description: "Run focused development sessions through open PR"
+  default_prompt: "Use $run-dev-session to run this development session."

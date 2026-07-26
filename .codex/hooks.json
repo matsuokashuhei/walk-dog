@@ -13,6 +13,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|exec_command)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/open_pr_after_create.py\"",
+            "timeout": 5,
+            "statusMessage": "Opening created pull request"
+          }
+        ]
+      }
     ]
   }
 }

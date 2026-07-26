@@ -17,10 +17,15 @@
 - OwnerとDogのAvatarはモバイルからAPIへ送信し、APIがS3へ保存する。
 - SentryとVPSコンテナの構造化ログで、モバイル、API、ワーカーの状態遷移を観測する。
 - 利用規約とプライバシーポリシーは既存の公開文書を利用する。
+- R0のAPI基盤はHonoで実装する。
+
+## 進捗状況
+
+- R0は進行中で、最初の作業単位としてAPI基盤を進める。
 
 ## R0: 開発基盤
 
-- OpenAPI、Node.js API、PostgreSQL migration、Docker開発環境、ECR公開ワークフローを整備する。
+- OpenAPI、Honoを使うNode.js API、PostgreSQL migration、Docker開発環境、ECR公開ワークフローを整備する。
 - Cognitoトークン検証、S3、SQS、DynamoDBの環境別接続設定を定義する。
 - Sentry、相関ID付き構造化ログ、APIとワーカーのヘルスチェックを導入する。
 - モバイルに認証状態、APIクライアント、永続送信キュー、iOS位置情報権限を組み込む。

@@ -674,6 +674,14 @@ ok
 
 ### Assistant
 
+レビュー済みの Hono API R0 設計書とセッションログを、`agent/hono-api-r0-design` branch から draft PR として作成します。
+
+### Assistant
+
+Draft PR を作成しました。
+
+### Assistant
+
 `GET /v1/session`で確認できるのは、Authorization headerの受け取り、検証失敗の共通HTTP 401応答への変換、検証済み`sub`のroute handlerへの引き渡しです。ただし、この三点だけのために公開endpointを増やす価値は薄いです。R0の`GET /v1/session`は追加せず、R1の最初の認証済み業務endpointで統合処理をE2E確認します。
 
 ### User

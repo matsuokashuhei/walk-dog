@@ -29,6 +29,24 @@ const healthRoute = createRoute({
 export const createApp = (registerRoutes?: (app: App) => void): App => {
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
+  app.use('*', async (context, next) => {
+    const requestId = context.req.header('X-Request-Id') ?? crypto.randomUUID()
+    context.set('requestId', requestId)
+    await next()
+    context.header('X-Request-Id', requestId)
+  })
+  app.notFound((context) => context.json({
+    code: 'NOT_FOUND',
+    message: 'The requested resource was not found.',
+    requestId: context.get('requestId'),
+    retryable: false,
+  }, 404))
+  app.onError((_error, context) => context.json({
+    code: 'INTERNAL_ERROR',
+    message: 'An unexpected error occurred.',
+    requestId: context.get('requestId'),
+    retryable: false,
+  }, 500))
   app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
   registerRoutes?.(app)
   return app

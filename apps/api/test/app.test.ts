@@ -9,6 +9,27 @@ test('GET /health returns the API health state', async () => {
   assert.deepEqual(await response.json(), { status: 'ok' })
 })
 
+test('GET /openapi.json describes the health endpoint and error schema', async () => {
+  const response = await createApp().request('/openapi.json')
+  const document = await response.json() as {
+    openapi: string
+    paths: Record<string, {
+      get?: {
+        responses?: Record<string, {
+          headers?: Record<string, unknown>
+        }>
+      }
+    }>
+    components: { schemas: Record<string, unknown> }
+  }
+
+  assert.equal(response.status, 200)
+  assert.equal(document.openapi, '3.1.0')
+  assert.ok('/health' in document.paths)
+  assert.ok('Error' in document.components.schemas)
+  assert.ok('X-Request-Id' in (document.paths['/health']?.get?.responses?.['200'].headers ?? {}))
+})
+
 test('uses a received request ID for the health response', async () => {
   const response = await createApp().request('/health', {
     headers: { 'X-Request-Id': 'request-123' },

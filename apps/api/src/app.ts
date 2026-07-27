@@ -18,6 +18,12 @@ const healthRoute = createRoute({
     200: {
       content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } },
       description: 'API process health state',
+      headers: {
+        'X-Request-Id': {
+          description: 'Request identifier for this response',
+          schema: { type: 'string' },
+        },
+      },
     },
     500: {
       content: { 'application/json': { schema: errorSchema } },
@@ -48,6 +54,10 @@ export const createApp = (registerRoutes?: (app: App) => void): App => {
     retryable: false,
   }, 500))
   app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
+  app.doc('/openapi.json', {
+    openapi: '3.1.0',
+    info: { title: 'walk / dog API', version: '0.1.0' },
+  })
   registerRoutes?.(app)
   return app
 }

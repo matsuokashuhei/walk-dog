@@ -26,6 +26,7 @@
 ## R0: 開発基盤
 
 - OpenAPI、Honoを使うNode.js API、PostgreSQL migration、Docker開発環境、ECR公開ワークフローを整備する。
+- PostgreSQLの業務データは`owners`から開始し、Cognito subjectとの一意な対応を提供する。
 - Cognitoトークン検証、S3、SQS、DynamoDBの環境別接続設定を定義する。
 - Sentry、相関ID付き構造化ログ、APIとワーカーのヘルスチェックを導入する。
 - モバイルに認証状態、APIクライアント、永続送信キュー、iOS位置情報権限を組み込む。
@@ -33,6 +34,7 @@
 ## R1: 散歩記録の縦切り
 
 - Sign Up、Sign In、OTP確認、Owner表示名登録、Sign Outを実装する。
+- Dog、Goal Revision、Walk、Participant、Eventのテーブルと業務制約を追加する。
 - Dog一覧、Dog登録、Dog選択を実装し、Dog登録時にDaily 30分のGoal Revisionを作成する。
 - Ready、Starting、Recording、Completed、Failedを、APIのActive Walkと同期して表示する。
 - 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。

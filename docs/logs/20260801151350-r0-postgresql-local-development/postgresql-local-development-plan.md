@@ -6,7 +6,7 @@
 
 ## Global Constraints
 
-- `DATABASE_URL` is required.
+- `DATABASE_URL` is required and uses the `postgresql://` URL scheme.
 - `DATABASE_POOL_MAX` is a positive integer and defaults to `10`.
 - The API owns one PostgreSQL pool and closes it during shutdown.
 - PostgreSQL becomes healthy before the API starts.

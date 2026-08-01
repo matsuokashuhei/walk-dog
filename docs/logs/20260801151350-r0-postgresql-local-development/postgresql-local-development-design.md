@@ -6,7 +6,7 @@ R0は、Hono APIがローカルPostgreSQLへ接続できる開発基盤と、Pos
 
 ## Components and Data Flow
 
-- `apps/api/src/config.ts`は`DATABASE_URL`と`DATABASE_POOL_MAX`を検証する。
+- `apps/api/src/config.ts`は`DATABASE_URL`をPostgreSQL URLとして、`DATABASE_POOL_MAX`を検証する。
 - `apps/api/src/db/client.ts`はプロセスごとに1つの`pg.Pool`を作成し、Drizzle clientへ渡す。プロセス終了時はPoolを閉じる。
 - `apps/api/drizzle.config.ts`はPostgreSQL dialect、migration出力先、`DATABASE_URL`を定義する。
 - `apps/api/package.json`の`migrate` scriptは、schema追加後にDrizzle Kitの`migrate` commandでSQL migrationを適用する。

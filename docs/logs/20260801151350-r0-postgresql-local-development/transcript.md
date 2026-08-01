@@ -179,3 +179,19 @@ Ownerに関するすべての作業をR0のスコープ外として取り消す�
 ### Assistant
 
 PostgreSQL接続設定、Drizzle設定、Docker PostgreSQL、APIのPool管理は基盤として残し、Owner schema、生成SQL、Ownerテスト、Owner固有の設計記録を削除する判断を確定した。Owner migrationがないためComposeのone-shot migration serviceは削除し、PostgreSQLがhealthyになった後にAPIを起動する構成へ整理した。
+
+### User
+
+`DATABASE_URL`の空文字検証は`min(1)`より`nonempty()`の方が意図を表すという指摘を受けた。
+
+### Assistant
+
+`DATABASE_URL`の検証をZodの`.nonempty()`へ変更し、未設定に加えて空文字列も拒否するテストを追加した。
+
+### User
+
+`DATABASE_URL`はこのプロジェクトでPostgreSQL URLとして定義しているため、`z.url()`を使うよう指示した。
+
+### Assistant
+
+`DATABASE_URL`を`z.url()`で検証し、`postgresql://`スキームに限定した。空文字列、形式不正な値、PostgreSQL以外のURLを拒否するテストを追加した。

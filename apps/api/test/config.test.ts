@@ -22,3 +22,15 @@ test('loads an explicit DATABASE_POOL_MAX', () => {
 test('rejects a missing DATABASE_URL', () => {
   assert.throws(() => loadDatabaseConfig({}), /DATABASE_URL is required/)
 })
+
+test('rejects an empty DATABASE_URL', () => {
+  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: '' }), /DATABASE_URL must be a valid URL/)
+})
+
+test('rejects a non-PostgreSQL DATABASE_URL', () => {
+  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: 'https://example.com/database' }), /DATABASE_URL must be a PostgreSQL URL/)
+})
+
+test('rejects an invalid DATABASE_URL', () => {
+  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: 'not-a-url' }), /DATABASE_URL must be a valid URL/)
+})

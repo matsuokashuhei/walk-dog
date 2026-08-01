@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bootstrap Hono Node.js"
+  short_description: "Bootstrap Hono on Node.js."
+  default_prompt: "Use $bootstrapping-hono-nodejs for this Node.js Hono bootstrap change."

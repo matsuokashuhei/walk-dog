@@ -1,4 +1,0 @@
-interface:
-  display_name: "Develop Hono APIs"
-  short_description: "Implement Hono APIs with official Docs."
-  default_prompt: "Use $developing-hono-apis to implement this Hono API change."

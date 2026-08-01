@@ -1,0 +1,4 @@
+interface:
+  display_name: "Query Drizzle Relations"
+  short_description: "Write Drizzle relational queries."
+  default_prompt: "Use $querying-drizzle-relations for this relational query change."

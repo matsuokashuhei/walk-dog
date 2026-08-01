@@ -1,0 +1,4 @@
+interface:
+  display_name: "Connect Drizzle Postgres"
+  short_description: "Wire Drizzle with pg.Pool."
+  default_prompt: "Use $connecting-drizzle-postgres for this database connection change."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Query Drizzle SQL"
+  short_description: "Write SQL-like Drizzle queries."
+  default_prompt: "Use $querying-drizzle-sql for this SQL-like query change."

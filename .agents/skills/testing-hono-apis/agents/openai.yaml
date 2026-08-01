@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Hono APIs"
+  short_description: "Test Hono APIs with app.request."
+  default_prompt: "Use $testing-hono-apis for this Hono API test change."

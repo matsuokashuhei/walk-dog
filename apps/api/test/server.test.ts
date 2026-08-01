@@ -3,14 +3,25 @@ import test from 'node:test'
 import type { Pool } from 'pg'
 import { createShutdownHandler } from '../src/server.js'
 
-test('stops the HTTP server before closing the database pool', async () => {
+test('closes the database pool after the HTTP server has stopped', async () => {
   const calls: string[] = []
+  let completeClose: (() => void) | undefined
   const shutdown = createShutdownHandler(
-    { close: () => calls.push('server') },
+    {
+      close: (callback?: (error?: Error) => void) => {
+        calls.push('server closing')
+        completeClose = () => callback?.()
+      },
+    },
     { end: async () => { calls.push('pool') } } as Pool,
   )
 
-  await shutdown()
+  const shutdownPromise = shutdown()
 
-  assert.deepEqual(calls, ['server', 'pool'])
+  assert.deepEqual(calls, ['server closing'])
+
+  completeClose?.()
+  await shutdownPromise
+
+  assert.deepEqual(calls, ['server closing', 'pool'])
 })

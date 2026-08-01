@@ -8,6 +8,7 @@ RUN npm ci
 COPY tsconfig.json drizzle.config.ts ./
 COPY src ./src
 COPY drizzle ./drizzle
+COPY test ./test
 
 EXPOSE 3000
 

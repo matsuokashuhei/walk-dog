@@ -1,27 +1,30 @@
 # API local development
 
-Create the local environment file from the template:
+Create the local environment file from the `apps` directory:
 
 ```bash
-cp ../.env.example ../.env.local
+cd apps
+cp .env.example .env.local
 ```
 
-Generate a migration after changing the Drizzle schema:
+Generate a migration after changing the Drizzle schema from `apps/api`:
 
 ```bash
+cd apps/api
 npm run db:generate
 ```
 
-Review the generated SQL in `drizzle/`, then apply the migrations:
+Review the generated SQL in `apps/api/drizzle/`. Apply migrations through the Compose network from `apps`:
 
 ```bash
-npm run migrate
+docker compose -f compose.yml up -d postgres --wait
+docker compose -f compose.yml run --rm migrate
 ```
 
-Run the database integration suite with PostgreSQL available from the local environment:
+Run the database integration suite through the same Compose network:
 
 ```bash
-npm run test:integration
+docker compose -f compose.yml run --rm migrate npm run test:integration
 ```
 
 Start PostgreSQL, the one-shot migration service, and the API from the `apps` directory:
@@ -33,4 +36,4 @@ docker compose -f compose.yml logs migrate
 docker compose -f compose.yml down
 ```
 
-The health endpoint returns HTTP 200 with `{ "status": "ok" }` and an `X-Request-Id` response header.
+The health check reports HTTP 200 with `{ "status": "ok" }` and an `X-Request-Id` response header while the API service is running.

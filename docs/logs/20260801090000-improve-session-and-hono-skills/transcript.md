@@ -100,3 +100,11 @@ PR #13 はマージ済みなんだ。だから新しいPRを作ってくれ
 ### Assistant
 
 PR #13を取り込んだ最新の`main`を基準に、このスキル改善用の新しいPRを作成する。
+
+### User
+
+No "Finish Review" showing, but LGTM. you can create a PR
+
+### Assistant
+
+レビュー承認を記録し、新しいPRを作成する。

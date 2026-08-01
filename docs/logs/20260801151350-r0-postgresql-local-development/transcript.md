@@ -171,3 +171,11 @@ R0のスコープではない変更を取り消すようレビュー指摘を受
 ### Assistant
 
 `docs/development/staged-development.md`へ追加されていたR0の`owners`判断とR1のDog等のテーブル判断を削除し、承認済みの段階開発計画を変更しない状態へ戻した。
+
+### User
+
+Ownerに関するすべての作業をR0のスコープ外として取り消すようレビュー指摘を受けた。
+
+### Assistant
+
+PostgreSQL接続設定、Drizzle設定、Docker PostgreSQL、APIのPool管理は基盤として残し、Owner schema、生成SQL、Ownerテスト、Owner固有の設計記録を削除する判断を確定した。Owner migrationがないためComposeのone-shot migration serviceは削除し、PostgreSQLがhealthyになった後にAPIを起動する構成へ整理した。

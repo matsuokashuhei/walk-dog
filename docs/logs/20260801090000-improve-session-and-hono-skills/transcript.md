@@ -64,3 +64,11 @@ Task 1 baseline scenario: the current `run-dev-session` skill places the transcr
 ### Assistant
 
 Task 1 validation: `quick_validate.py .agents/skills/run-dev-session` returned `Skill is valid!`.
+
+### Assistant
+
+Task 2 baseline scenario: the current `developing-hono-apis` skill starts with an official Hono Docs review and requires a route contract, status and error responses, middleware order, runtime entry point, and endpoint verification. It does not provide the `apps/api` scaffolding command, Node.js template, npm dependency selection, development and production scripts, application factory boundary, or first public contract.
+
+### Assistant
+
+Task 2 validation: `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis` returned `Skill is valid!`. The updated scenario starts with the official Hono Docs review, then selects `apps/api`, `npm create hono@latest .`, the Node.js template and npm, `tsx watch`, TypeScript output with `node dist/index.js`, the application factory boundary, and health/OpenAPI/request-ID/error contract tests.

@@ -10,6 +10,7 @@
 - `docs/development/staged-development.md`
 - `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-design.md`
 - `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-plan.md`
+- `docs/logs/20260801151350-r0-postgresql-local-development/completion-checklist.md`
 
 ## Transcript
 
@@ -141,6 +142,10 @@ Drizzleのエージェントスキルを利用するため、最新のmainを取
 ### Assistant
 
 `writing-plans`を使い、接続設定、`owners` schemaと生成SQL、ロック付きmigration runner、Composeと検証の4タスクへ実装計画を分解した。
+
+### Assistant
+
+Docker Desktopを起動し、ComposeのPostgreSQL migration、API health、統合テストを実測した。migrationは終了コード0、`/health`はHTTP 200、統合テストは1件成功したため、完了チェックリストへ結果を記録した。
 
 ### User
 

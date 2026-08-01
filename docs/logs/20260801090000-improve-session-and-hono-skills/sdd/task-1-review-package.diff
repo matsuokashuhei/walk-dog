@@ -1,0 +1,199 @@
+# Review package: b2f5f84..88cdce13
+
+## Commits
+88cdce1 docs: centralize development session artifacts
+
+## Files changed
+ .agents/skills/run-dev-session/SKILL.md            |  8 ++-
+ .../sdd/task-1-report.md                           | 60 ++++++++++++++++++++
+ .../transcript.md                                  | 66 ++++++++++++++++++++++
+ 3 files changed, 133 insertions(+), 1 deletion(-)
+
+## Diff
+diff --git a/.agents/skills/run-dev-session/SKILL.md b/.agents/skills/run-dev-session/SKILL.md
+index 4536b73..077954e 100644
+--- a/.agents/skills/run-dev-session/SKILL.md
++++ b/.agents/skills/run-dev-session/SKILL.md
+@@ -15,20 +15,26 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
+ 
+ ### Execution Session
+ 
+ 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
+ 2. Inspect `git status --short`. Record this baseline before changing files.
+ 3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
+ 4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
+ 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
+ 6. Append the first user request and every visible user or assistant message in chronological order.
+ 
++## Session Artifacts
++
++`docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
++
++Add each session record to the transcript artifact list when it is created or changed. The artifact list identifies the records that session publication stages with the transcript.
++
+ ## Purpose Boundary
+ 
+ Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
+ 
+ ## Development Plan Sync
+ 
+ Use `docs/development/staged-development.md` as the release plan of record. When a user confirms a decision that changes release order, approved foundation choices, provided capabilities, public interfaces, verification conditions, or release-start decisions, classify it into the matching section and update the plan in the same session.
+ 
+ If a confirmed decision is implementation-local, superseded, or outside the staged plan, record that classification and reason in the transcript. Add `docs/development/staged-development.md` to the artifact list whenever it changes.
+ 
+@@ -50,16 +56,16 @@ Use this format only when a user decision is needed:
+ Place a separator after the proposal. Then ask one concise question that states the decision's effect in one sentence, such as "When X happens, Y returns Z. Is this acceptable?" Do not ask whether to confirm an item number. Answer factual clarifications directly.
+ 
+ ## Artifacts and Review
+ 
+ Maintain the artifact list in the transcript as files are created or changed. Do not modify a path that was already changed in the baseline; record the conflict and ask for direction.
+ 
+ Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain.
+ 
+ ## Publish
+ 
+-1. Stage only files in the session artifact list and `transcript.md`.
++1. Stage the records in the session artifact list and `transcript.md`.
+ 2. Commit the session artifacts and log on the dedicated branch.
+ 3. Push the branch and create an open PR against `main`.
+ 4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.
+ 
+ If branch creation, review, or publishing conflicts with baseline work, record the paths, reason, and restart condition in the transcript, then stop.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
+new file mode 100644
+index 0000000..704c9df
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
+@@ -0,0 +1,60 @@
++# Task 1 Report: Session artifact guidance
++
++## Scope
++
++Updated `run-dev-session` so one session log directory contains the transcript and every session record.
++
++## Baseline scenario
++
++Scenario:
++
++> Create a development session that uses an implementation-plan workflow. Where do the plan, task briefs, review reports, and completion record belong?
++
++Answer from the current skill before the change:
++
++> この抜粋では、`transcript.md` の場所だけが `docs/logs/<timestamp>-<slug>/` と定義されています。計画、タスクブリーフ、レビュー報告、完了記録の保存場所は指定されていません。
++
++Result: the scenario demonstrated the missing shared location.
++
++## Change
++
++- Added `Session Artifacts` to `.agents/skills/run-dev-session/SKILL.md`.
++- Defined `docs/logs/<timestamp>-<slug>/` as the location for the transcript, checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
++- Required the transcript artifact list to include each record when created or changed.
++- Required publication to stage the listed records and transcript.
++
++## Validation
++
++Command:
++
++```sh
++PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/run-dev-session
++```
++
++Result:
++
++```text
++Skill is valid!
++```
++
++## Updated-skill scenario
++
++Scenario:
++
++> Use run-dev-session to create a development session that uses an implementation-plan workflow. State the locations for its plan, task briefs, review reports, and completion record.
++
++Answer:
++
++> `docs/logs/<timestamp>-<slug>/` に、実装計画、タスクブリーフ、レビュー報告、完了を検証する記録を作成し、各記録を `transcript.md` のartifact listに追加します。
++
++Result: every listed record is placed in the session log directory.
++
++## Changed files
++
++- `.agents/skills/run-dev-session/SKILL.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
++
++## Self-review
++
++The new section uses the required shared location, names each required record type, connects artifact-list updates to record creation and changes, and makes the publication staging set explicit. The transcript records the baseline and validator result. Task 2 files were not modified.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
+new file mode 100644
+index 0000000..dff256f
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
+@@ -0,0 +1,66 @@
++# Development Session Log
++
++- Purpose: Improve repository-local session and Hono API development skills from the R0 API foundation session.
++- Created: 2026-08-01 09:00:00 JST
++- Branch: `agent/improve-session-and-hono-skills-20260801090000` from `origin/main`
++- Baseline: `?? apps/compose.yml`, `?? apps/elasticmq/elasticmq.conf`, `?? mise.toml`
++
++## Artifact List
++
++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
++- `.agents/skills/run-dev-session/SKILL.md`
++
++## Transcript
++
++### User
++
++ではどちらも改善してください。
++
++### Assistant
++
++2つの既存スキルを改善する。対象は、セッション記録の配置を統一する `run-dev-session` と、Hono Node.js APIの初期化パターンを加える `developing-hono-apis` である。
++
++### Assistant
++
++目的: セッション記録の配置とHono API初期化パターンを、既存の2スキルへ反映する。  
++slug: `improve-session-and-hono-skills`
++
++### User
++
++はい
++
++### Assistant
++
++目的を確定し、基準状態を記録した。隔離ワークツリーでスキルを改善する。
++
++### Assistant
++
++既存の2スキルを拡張する設計を提示した。`run-dev-session`はセッションログ配下へ補助記録を集約し、`developing-hono-apis`はNode.js API初期化パターンを提供する。
++
++### User
++
++OK
++
++### Assistant
++
++設計を確定し、設計書を作成する。
++
++### User
++
++LGTM
++
++### Assistant
++
++設計レビューを承認済みとし、実装計画を作成する。
++
++### Assistant
++
++Task 1 baseline scenario: the current `run-dev-session` skill places the transcript at `docs/logs/<timestamp>-<slug>/transcript.md`. It requires implementation plans, task briefs, review reports, and completion records to be session artifacts, but it does not define one shared location for those records.
++
++### Assistant
++
++Task 1 validation: `quick_validate.py .agents/skills/run-dev-session` returned `Skill is valid!`.

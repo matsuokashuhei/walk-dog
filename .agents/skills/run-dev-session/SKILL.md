@@ -24,6 +24,19 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.
 8. Continue to design or implementation only when the specification review status is `ready`. An `awaiting-confirmation` or `blocked` review pauses the session until the required decision or source clarification is recorded.
 
+## Task Progress
+
+After the specification review is `ready` and the written implementation plan is approved, use `superpowers:executing-plans` to execute the plan.
+
+1. In executing-plans Step 1.5, register every top-level Task from the plan in the live `update_plan` todos. Count each top-level Task once; steps nested under a Task are part of that Task.
+2. After registering the todos and before starting the first Task, announce the total and next Task in the conversation: `Implementation plan: N tasks. Next: Task 1 — <name>`.
+3. Before working on each Task, mark that todo `in_progress` and announce `Task n/N started — <name>`.
+4. After the Task deliverable, required review, and Task-specific verification are complete, mark the todo `completed` and announce `Task n/N completed (n/N) — <verification summary>`.
+5. When verification fails or a required decision is pending, keep the Task active and announce the current state, reason, and next action. Resume the Task after the condition is resolved.
+6. When an approved plan changes its top-level Task list, update the live todos and announce the new total and the reason before continuing.
+
+The live `update_plan` todos and the conversation announcements are the task-progress record. This workflow does not add a separate task ledger to `progress.md` or a dedicated progress section to `transcript.md`.
+
 ## Session Artifacts
 
 `docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.

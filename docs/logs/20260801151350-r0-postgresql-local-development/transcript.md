@@ -163,3 +163,11 @@ Drizzle Kitの標準migration commandを使うよう指示した。
 ### Assistant
 
 Drizzle公式のPostgreSQL migration、Kit overview、generate、migrate、config fileのドキュメントを確認した。`drizzle-kit migrate`は生成済みSQL migrationを適用する標準commandであり、`dbCredentials.url`が必要であることを確認した。`npm run migrate`を`drizzle-kit migrate`へ変更し、`drizzle.config.ts`へ`DATABASE_URL`を追加した。独自migration runnerと専用テストを削除し、統合テストは適用済みの`owners` schemaと一意制約を検証する構成へ変更した。
+
+### User
+
+R0のスコープではない変更を取り消すようレビュー指摘を受けた。
+
+### Assistant
+
+`docs/development/staged-development.md`へ追加されていたR0の`owners`判断とR1のDog等のテーブル判断を削除し、承認済みの段階開発計画を変更しない状態へ戻した。

@@ -17,12 +17,22 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 
 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
 2. Inspect `git status --short`. Record this baseline before changing files.
-3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
-4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
+3. Resolve the repository workspace root from the Git common directory. Create branch `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main` in `<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>`.
+4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, and an empty artifact list.
 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
 6. Append the first user request and every visible user or assistant message in chronological order.
 7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.
 8. Continue to design or implementation only when the specification review status is `ready`. An `awaiting-confirmation` or `blocked` review pauses the session until the required decision or source clarification is recorded.
+
+### Workspace Boundary
+
+Repository-owned development files and session artifacts are created under the repository workspace.
+
+1. Set `GIT_COMMON_DIR` with `git rev-parse --git-common-dir`, then set `WORKSPACE_ROOT` to the parent directory of `GIT_COMMON_DIR`.
+2. Set `WORKTREE_PATH` to `${WORKSPACE_ROOT}/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>` and create the worktree from `origin/main` at that path.
+3. Confirm that `.worktrees/` is covered by the repository `.gitignore` and that the resolved `WORKTREE_PATH` is under `${WORKSPACE_ROOT}/.worktrees/`.
+4. If the ignore check, directory creation, `git worktree add`, or path check fails, report the path and reason, provide the retry operation, and stop the session.
+5. Keep existing worktrees outside the workspace unchanged. New session files use the workspace-local worktree.
 
 ## Task Progress
 

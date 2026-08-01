@@ -1,0 +1,4 @@
+interface:
+  display_name: "Define Zod Schemas"
+  short_description: "Define Zod 4 schema shapes and metadata."
+  default_prompt: "Use $defining-zod-schemas for this schema definition change."

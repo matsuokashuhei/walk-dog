@@ -1,0 +1,4 @@
+interface:
+  display_name: "Convert Zod JSON Schema"
+  short_description: "Convert Zod 4 schemas to and from JSON Schema."
+  default_prompt: "Use $converting-zod-json-schema for this Zod JSON Schema conversion change."

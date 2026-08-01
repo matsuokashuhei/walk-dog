@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handle Zod Errors"
+  short_description: "Customize and format Zod 4 validation errors."
+  default_prompt: "Use $handling-zod-errors for this Zod error message or formatting change."

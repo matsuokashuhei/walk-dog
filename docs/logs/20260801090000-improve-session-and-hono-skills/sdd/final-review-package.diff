@@ -1,0 +1,1132 @@
+# Review package: b25c36c..cb42a0d
+
+## Commits
+cb42a0d docs: record skill improvement session
+c85b6b6 docs: clarify Hono API initialization command
+944283e docs: add Hono Node initialization guidance
+0687fe8 docs: centralize development session artifacts
+
+## Files changed
+ .agents/skills/developing-hono-apis/SKILL.md       |  17 ++
+ .agents/skills/run-dev-session/SKILL.md            |   8 +-
+ .../sdd/progress.md                                |   7 +
+ .../sdd/task-1-brief.md                            |  33 ++++
+ .../sdd/task-1-report.md                           |  60 +++++++
+ .../sdd/task-1-review-package.diff                 | 199 +++++++++++++++++++++
+ .../sdd/task-1-review.md                           |  13 ++
+ .../sdd/task-2-brief.md                            |  34 ++++
+ .../sdd/task-2-fix-1-rereview.md                   |  11 ++
+ .../sdd/task-2-fix-1-review-package.diff           |  89 +++++++++
+ .../sdd/task-2-report.md                           |  98 ++++++++++
+ .../sdd/task-2-review-package.diff                 | 158 ++++++++++++++++
+ .../sdd/task-2-review.md                           |   9 +
+ .../skill-improvements-design.md                   |  24 +++
+ .../skill-improvements-plan.md                     |  92 ++++++++++
+ .../transcript.md                                  | 102 +++++++++++
+ 16 files changed, 953 insertions(+), 1 deletion(-)
+
+## Diff
+diff --git a/.agents/skills/developing-hono-apis/SKILL.md b/.agents/skills/developing-hono-apis/SKILL.md
+index 1b15921..7a28986 100644
+--- a/.agents/skills/developing-hono-apis/SKILL.md
++++ b/.agents/skills/developing-hono-apis/SKILL.md
+@@ -11,20 +11,37 @@ Read the current official Hono documentation before making an API change. Use th
+ 
+ 1. Open <https://github.com/honojs/website/tree/main/docs> before inspecting or changing API source files.
+ 2. Identify the target runtime and the requested API capability.
+ 3. Read the relevant files in the Hono Docs tree before choosing an implementation:
+    - Read the `getting-started` directory and the target runtime guide for a new API, runtime adapter, development command, build, or server startup change.
+    - Read the `api` directory for routes, request and response handling, context, or error handling.
+    - Read the `middleware` directory for middleware, authentication, CORS, body limits, or headers.
+    - Read the `guides` directory for OpenAPI, validation, testing, or deployment capabilities.
+ 4. Record the documentation URLs or repository paths read and the resulting implementation decision in the active session log, design, or pull request description.
+ 
++## Node.js initialization
++
++After the required official Hono Docs review, initialize the first Node.js API in `apps/api` with this recipe before writing source files:
++
++1. Run `cd apps/api`.
++2. Run `npm create hono@latest .`.
++3. Select the Node.js template and npm for dependency installation.
++4. Define the package scripts:
++   - `dev`: `tsx watch src/index.ts`
++   - `build`: TypeScript compilation that writes production output to `dist`
++   - `start`: `node dist/index.js`
++5. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
++6. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
++7. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
++
++Record the selected template, package scripts, application boundary, public contract, and official Hono Docs read in the active session log, design, or pull request description.
++
+ ## Workflow
+ 
+ | Phase | Provide |
+ | --- | --- |
+ | Documentation review | The runtime, capability, and official Hono Docs read. |
+ | Design | The route contract, status and error responses, middleware order, and runtime entry point. |
+ | Implementation | Focused route and middleware changes that follow the reviewed documentation. |
+ | Verification | Automated tests, type checks, and an HTTP request against each changed endpoint. |
+ 
+ Use the project’s API contract as the source of request and response schemas. Return the documented error state with its status, message, and retry operation when a request cannot complete. Keep runtime startup and the Hono application separately testable.
+diff --git a/.agents/skills/run-dev-session/SKILL.md b/.agents/skills/run-dev-session/SKILL.md
+index 4536b73..077954e 100644
+--- a/.agents/skills/run-dev-session/SKILL.md
++++ b/.agents/skills/run-dev-session/SKILL.md
+@@ -15,20 +15,26 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
+ 
+ ### Execution Session
+ 
+ 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
+ 2. Inspect `git status --short`. Record this baseline before changing files.
+ 3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
+ 4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
+ 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
+ 6. Append the first user request and every visible user or assistant message in chronological order.
+ 
++## Session Artifacts
++
++`docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
++
++Add each session record to the transcript artifact list when it is created or changed. The artifact list identifies the records that session publication stages with the transcript.
++
+ ## Purpose Boundary
+ 
+ Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
+ 
+ ## Development Plan Sync
+ 
+ Use `docs/development/staged-development.md` as the release plan of record. When a user confirms a decision that changes release order, approved foundation choices, provided capabilities, public interfaces, verification conditions, or release-start decisions, classify it into the matching section and update the plan in the same session.
+ 
+ If a confirmed decision is implementation-local, superseded, or outside the staged plan, record that classification and reason in the transcript. Add `docs/development/staged-development.md` to the artifact list whenever it changes.
+ 
+@@ -50,16 +56,16 @@ Use this format only when a user decision is needed:
+ Place a separator after the proposal. Then ask one concise question that states the decision's effect in one sentence, such as "When X happens, Y returns Z. Is this acceptable?" Do not ask whether to confirm an item number. Answer factual clarifications directly.
+ 
+ ## Artifacts and Review
+ 
+ Maintain the artifact list in the transcript as files are created or changed. Do not modify a path that was already changed in the baseline; record the conflict and ask for direction.
+ 
+ Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain.
+ 
+ ## Publish
+ 
+-1. Stage only files in the session artifact list and `transcript.md`.
++1. Stage the records in the session artifact list and `transcript.md`.
+ 2. Commit the session artifacts and log on the dedicated branch.
+ 3. Push the branch and create an open PR against `main`.
+ 4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.
+ 
+ If branch creation, review, or publishing conflicts with baseline work, record the paths, reason, and restart condition in the transcript, then stop.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md
+new file mode 100644
+index 0000000..051e3dd
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md
+@@ -0,0 +1,7 @@
++# SDD ledger — plan: docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md
++
++Task 1: dispatched (base b2f5f84)
++Task 1: complete (commits b2f5f84..0687fe8, review clean)
++Task 2: dispatched (base 0687fe8)
++Task 2: fix round 1/5 (1 addressed, 0 open; commits 944283e..c85b6b6)
++Task 2: complete (commits 0687fe8..c85b6b6, review clean)
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md
+new file mode 100644
+index 0000000..ce143f8
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md
+@@ -0,0 +1,33 @@
++# Task 1: Session artifact guidance
++
++## Files
++
++- Modify: `.agents/skills/run-dev-session/SKILL.md`
++- Modify: `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++
++## Required outcome
++
++Produce a session artifact location that contains the transcript, checklist, implementation plan, task briefs, implementation reports, review reports, and verification records.
++
++1. Run this baseline scenario before modifying the skill:
++
++   `Create a development session that uses an implementation-plan workflow. Where do the plan, task briefs, review reports, and completion record belong?`
++
++   The baseline should demonstrate that the current skill defines the transcript directory but not one location for all additional records.
++2. Add a `Session Artifacts` section. It defines `docs/logs/<timestamp>-<slug>/` as the location for the transcript and every session record, requires the transcript artifact list to include each record as it is created, and requires session publication to stage the listed records and transcript.
++3. Validate with:
++
++   `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/run-dev-session`
++
++   Expected result: `Skill is valid!`
++4. Run this updated-skill scenario:
++
++   `Use run-dev-session to create a development session that uses an implementation-plan workflow. State the locations for its plan, task briefs, review reports, and completion record.`
++
++   The response places every listed record in the session log directory.
++5. Record baseline and validation results in the session transcript. Commit the modified skill and session log.
++
++## Constraints
++
++- Session records belong in `docs/logs/<timestamp>-<slug>/`.
++- Preserve existing user changes and work only on this task.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
+new file mode 100644
+index 0000000..704c9df
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
+@@ -0,0 +1,60 @@
++# Task 1 Report: Session artifact guidance
++
++## Scope
++
++Updated `run-dev-session` so one session log directory contains the transcript and every session record.
++
++## Baseline scenario
++
++Scenario:
++
++> Create a development session that uses an implementation-plan workflow. Where do the plan, task briefs, review reports, and completion record belong?
++
++Answer from the current skill before the change:
++
++> この抜粋では、`transcript.md` の場所だけが `docs/logs/<timestamp>-<slug>/` と定義されています。計画、タスクブリーフ、レビュー報告、完了記録の保存場所は指定されていません。
++
++Result: the scenario demonstrated the missing shared location.
++
++## Change
++
++- Added `Session Artifacts` to `.agents/skills/run-dev-session/SKILL.md`.
++- Defined `docs/logs/<timestamp>-<slug>/` as the location for the transcript, checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
++- Required the transcript artifact list to include each record when created or changed.
++- Required publication to stage the listed records and transcript.
++
++## Validation
++
++Command:
++
++```sh
++PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/run-dev-session
++```
++
++Result:
++
++```text
++Skill is valid!
++```
++
++## Updated-skill scenario
++
++Scenario:
++
++> Use run-dev-session to create a development session that uses an implementation-plan workflow. State the locations for its plan, task briefs, review reports, and completion record.
++
++Answer:
++
++> `docs/logs/<timestamp>-<slug>/` に、実装計画、タスクブリーフ、レビュー報告、完了を検証する記録を作成し、各記録を `transcript.md` のartifact listに追加します。
++
++Result: every listed record is placed in the session log directory.
++
++## Changed files
++
++- `.agents/skills/run-dev-session/SKILL.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
++
++## Self-review
++
++The new section uses the required shared location, names each required record type, connects artifact-list updates to record creation and changes, and makes the publication staging set explicit. The transcript records the baseline and validator result. Task 2 files were not modified.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review-package.diff b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review-package.diff
+new file mode 100644
+index 0000000..c8c16f5
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review-package.diff
+@@ -0,0 +1,199 @@
++# Review package: b2f5f84..88cdce13
++
++## Commits
++88cdce1 docs: centralize development session artifacts
++
++## Files changed
++ .agents/skills/run-dev-session/SKILL.md            |  8 ++-
++ .../sdd/task-1-report.md                           | 60 ++++++++++++++++++++
++ .../transcript.md                                  | 66 ++++++++++++++++++++++
++ 3 files changed, 133 insertions(+), 1 deletion(-)
++
++## Diff
++diff --git a/.agents/skills/run-dev-session/SKILL.md b/.agents/skills/run-dev-session/SKILL.md
++index 4536b73..077954e 100644
++--- a/.agents/skills/run-dev-session/SKILL.md
+++++ b/.agents/skills/run-dev-session/SKILL.md
++@@ -15,20 +15,26 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
++ 
++ ### Execution Session
++ 
++ 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
++ 2. Inspect `git status --short`. Record this baseline before changing files.
++ 3. Create `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main`. Use an isolated worktree when the current checkout contains existing work.
++ 4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
++ 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
++ 6. Append the first user request and every visible user or assistant message in chronological order.
++ 
+++## Session Artifacts
+++
+++`docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
+++
+++Add each session record to the transcript artifact list when it is created or changed. The artifact list identifies the records that session publication stages with the transcript.
+++
++ ## Purpose Boundary
++ 
++ Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
++ 
++ ## Development Plan Sync
++ 
++ Use `docs/development/staged-development.md` as the release plan of record. When a user confirms a decision that changes release order, approved foundation choices, provided capabilities, public interfaces, verification conditions, or release-start decisions, classify it into the matching section and update the plan in the same session.
++ 
++ If a confirmed decision is implementation-local, superseded, or outside the staged plan, record that classification and reason in the transcript. Add `docs/development/staged-development.md` to the artifact list whenever it changes.
++ 
++@@ -50,16 +56,16 @@ Use this format only when a user decision is needed:
++ Place a separator after the proposal. Then ask one concise question that states the decision's effect in one sentence, such as "When X happens, Y returns Z. Is this acceptable?" Do not ask whether to confirm an item number. Answer factual clarifications directly.
++ 
++ ## Artifacts and Review
++ 
++ Maintain the artifact list in the transcript as files are created or changed. Do not modify a path that was already changed in the baseline; record the conflict and ask for direction.
++ 
++ Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain.
++ 
++ ## Publish
++ 
++-1. Stage only files in the session artifact list and `transcript.md`.
+++1. Stage the records in the session artifact list and `transcript.md`.
++ 2. Commit the session artifacts and log on the dedicated branch.
++ 3. Push the branch and create an open PR against `main`.
++ 4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.
++ 
++ If branch creation, review, or publishing conflicts with baseline work, record the paths, reason, and restart condition in the transcript, then stop.
++diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
++new file mode 100644
++index 0000000..704c9df
++--- /dev/null
+++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md
++@@ -0,0 +1,60 @@
+++# Task 1 Report: Session artifact guidance
+++
+++## Scope
+++
+++Updated `run-dev-session` so one session log directory contains the transcript and every session record.
+++
+++## Baseline scenario
+++
+++Scenario:
+++
+++> Create a development session that uses an implementation-plan workflow. Where do the plan, task briefs, review reports, and completion record belong?
+++
+++Answer from the current skill before the change:
+++
+++> この抜粋では、`transcript.md` の場所だけが `docs/logs/<timestamp>-<slug>/` と定義されています。計画、タスクブリーフ、レビュー報告、完了記録の保存場所は指定されていません。
+++
+++Result: the scenario demonstrated the missing shared location.
+++
+++## Change
+++
+++- Added `Session Artifacts` to `.agents/skills/run-dev-session/SKILL.md`.
+++- Defined `docs/logs/<timestamp>-<slug>/` as the location for the transcript, checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
+++- Required the transcript artifact list to include each record when created or changed.
+++- Required publication to stage the listed records and transcript.
+++
+++## Validation
+++
+++Command:
+++
+++```sh
+++PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/run-dev-session
+++```
+++
+++Result:
+++
+++```text
+++Skill is valid!
+++```
+++
+++## Updated-skill scenario
+++
+++Scenario:
+++
+++> Use run-dev-session to create a development session that uses an implementation-plan workflow. State the locations for its plan, task briefs, review reports, and completion record.
+++
+++Answer:
+++
+++> `docs/logs/<timestamp>-<slug>/` に、実装計画、タスクブリーフ、レビュー報告、完了を検証する記録を作成し、各記録を `transcript.md` のartifact listに追加します。
+++
+++Result: every listed record is placed in the session log directory.
+++
+++## Changed files
+++
+++- `.agents/skills/run-dev-session/SKILL.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
+++
+++## Self-review
+++
+++The new section uses the required shared location, names each required record type, connects artifact-list updates to record creation and changes, and makes the publication staging set explicit. The transcript records the baseline and validator result. Task 2 files were not modified.
++diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
++new file mode 100644
++index 0000000..dff256f
++--- /dev/null
+++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
++@@ -0,0 +1,66 @@
+++# Development Session Log
+++
+++- Purpose: Improve repository-local session and Hono API development skills from the R0 API foundation session.
+++- Created: 2026-08-01 09:00:00 JST
+++- Branch: `agent/improve-session-and-hono-skills-20260801090000` from `origin/main`
+++- Baseline: `?? apps/compose.yml`, `?? apps/elasticmq/elasticmq.conf`, `?? mise.toml`
+++
+++## Artifact List
+++
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
+++- `.agents/skills/run-dev-session/SKILL.md`
+++
+++## Transcript
+++
+++### User
+++
+++ではどちらも改善してください。
+++
+++### Assistant
+++
+++2つの既存スキルを改善する。対象は、セッション記録の配置を統一する `run-dev-session` と、Hono Node.js APIの初期化パターンを加える `developing-hono-apis` である。
+++
+++### Assistant
+++
+++目的: セッション記録の配置とHono API初期化パターンを、既存の2スキルへ反映する。  
+++slug: `improve-session-and-hono-skills`
+++
+++### User
+++
+++はい
+++
+++### Assistant
+++
+++目的を確定し、基準状態を記録した。隔離ワークツリーでスキルを改善する。
+++
+++### Assistant
+++
+++既存の2スキルを拡張する設計を提示した。`run-dev-session`はセッションログ配下へ補助記録を集約し、`developing-hono-apis`はNode.js API初期化パターンを提供する。
+++
+++### User
+++
+++OK
+++
+++### Assistant
+++
+++設計を確定し、設計書を作成する。
+++
+++### User
+++
+++LGTM
+++
+++### Assistant
+++
+++設計レビューを承認済みとし、実装計画を作成する。
+++
+++### Assistant
+++
+++Task 1 baseline scenario: the current `run-dev-session` skill places the transcript at `docs/logs/<timestamp>-<slug>/transcript.md`. It requires implementation plans, task briefs, review reports, and completion records to be session artifacts, but it does not define one shared location for those records.
+++
+++### Assistant
+++
+++Task 1 validation: `quick_validate.py .agents/skills/run-dev-session` returned `Skill is valid!`.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review.md
+new file mode 100644
+index 0000000..2038cbd
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review.md
+@@ -0,0 +1,13 @@
++# Task 1 Review: Session artifact guidance
++
++## Specification: approved
++
++The skill defines `docs/logs/<timestamp>-<slug>/` as the shared location for the transcript and every required session-record type, keeps the transcript artifact list current, and stages the listed records with the transcript. The transcript records the required baseline and validation results. Independent validation returned `Skill is valid!`.
++
++## Quality: approved
++
++The guidance is concise, consistent with the existing session workflow, and preserves the established publication and review flow.
++
++## Findings
++
++None.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-brief.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-brief.md
+new file mode 100644
+index 0000000..9e93ac7
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-brief.md
+@@ -0,0 +1,34 @@
++# Task 2: Hono Node.js initialization guidance
++
++## Files
++
++- Modify: `.agents/skills/developing-hono-apis/SKILL.md`
++- Modify: `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++
++## Required outcome
++
++Produce a Node.js initialization pattern that creates `apps/api` with Hono, provides development and production commands, and defines the first API contract boundaries.
++
++1. Run this baseline scenario before modifying the skill:
++
++   `Create the first Node.js Hono API in apps/api. Specify the scaffolding command, template, development command, production command, application boundary, and first public contract.`
++
++   The baseline should show that current guidance requires documentation review and does not provide the repository initialization pattern.
++2. Add a `Node.js initialization` section that requires `cd apps/api`, `npm create hono@latest .`, selection of the Node.js template and npm dependencies, `tsx watch` for development, TypeScript build output for `node dist/index.js`, an application factory separate from Node startup, and health/OpenAPI/request ID/error contract tests.
++3. Validate with:
++
++   `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis`
++
++   Expected result: `Skill is valid!`
++4. Run this updated-skill scenario:
++
++   `Use developing-hono-apis to create the first Node.js Hono API in apps/api. State the scaffolding command, template, scripts, application boundary, and first public contract before writing source files.`
++
++   The response begins with the official Hono Docs review and follows the initialization recipe.
++5. Record baseline and validation results in the session transcript. Commit the modified skill and session log.
++
++## Constraints
++
++- Hono API changes begin with the applicable official Hono Docs review.
++- Node.js API initialization uses the `apps/api` directory and the Hono Node.js template.
++- Preserve existing user changes and work only on this task.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-rereview.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-rereview.md
+new file mode 100644
+index 0000000..298d07a
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-rereview.md
+@@ -0,0 +1,11 @@
++# Task 2 Fix Round 1 Re-review
++
++## Verdict
++
++ADDRESSED
++
++The `Node.js initialization` recipe explicitly requires `cd apps/api` as step 1 and `npm create hono@latest .` as step 2. The required command order is therefore present in the fix diff.
++
++## New Critical or Important Findings
++
++0
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-review-package.diff b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-review-package.diff
+new file mode 100644
+index 0000000..7b9200b
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-review-package.diff
+@@ -0,0 +1,89 @@
++# Review package: 944283e..c85b6b6
++
++## Commits
++c85b6b6 docs: clarify Hono API initialization command
++
++## Files changed
++ .agents/skills/developing-hono-apis/SKILL.md       | 13 +++++++------
++ .../sdd/task-2-report.md                           | 22 ++++++++++++++++++++++
++ 2 files changed, 29 insertions(+), 6 deletions(-)
++
++## Diff
++diff --git a/.agents/skills/developing-hono-apis/SKILL.md b/.agents/skills/developing-hono-apis/SKILL.md
++index b7d9e71..7a28986 100644
++--- a/.agents/skills/developing-hono-apis/SKILL.md
+++++ b/.agents/skills/developing-hono-apis/SKILL.md
++@@ -15,29 +15,30 @@ Read the current official Hono documentation before making an API change. Use th
++    - Read the `getting-started` directory and the target runtime guide for a new API, runtime adapter, development command, build, or server startup change.
++    - Read the `api` directory for routes, request and response handling, context, or error handling.
++    - Read the `middleware` directory for middleware, authentication, CORS, body limits, or headers.
++    - Read the `guides` directory for OpenAPI, validation, testing, or deployment capabilities.
++ 4. Record the documentation URLs or repository paths read and the resulting implementation decision in the active session log, design, or pull request description.
++ 
++ ## Node.js initialization
++ 
++ After the required official Hono Docs review, initialize the first Node.js API in `apps/api` with this recipe before writing source files:
++ 
++-1. Create and enter `apps/api`, then run `npm create hono@latest .`.
++-2. Select the Node.js template and npm for dependency installation.
++-3. Define the package scripts:
+++1. Run `cd apps/api`.
+++2. Run `npm create hono@latest .`.
+++3. Select the Node.js template and npm for dependency installation.
+++4. Define the package scripts:
++    - `dev`: `tsx watch src/index.ts`
++    - `build`: TypeScript compilation that writes production output to `dist`
++    - `start`: `node dist/index.js`
++-4. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
++-5. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
++-6. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
+++5. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
+++6. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
+++7. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
++ 
++ Record the selected template, package scripts, application boundary, public contract, and official Hono Docs read in the active session log, design, or pull request description.
++ 
++ ## Workflow
++ 
++ | Phase | Provide |
++ | --- | --- |
++ | Documentation review | The runtime, capability, and official Hono Docs read. |
++ | Design | The route contract, status and error responses, middleware order, and runtime entry point. |
++ | Implementation | Focused route and middleware changes that follow the reviewed documentation. |
++diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
++index 7ddebf9..89f1627 100644
++--- a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
+++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
++@@ -67,10 +67,32 @@ Skill is valid!
++ 
++ `git diff --check` completed with no output.
++ 
++ ## Self-Review
++ 
++ - The new section follows the existing mandatory official-documentation review.
++ - The recipe names the exact `apps/api` scaffold command, Node.js template, npm dependencies, development command, build output, and production command.
++ - The application factory and Node.js startup have distinct, testable boundaries.
++ - The first public contract and its health, OpenAPI, request-ID, and JSON-error tests are defined before API implementation.
++ - Task 1 files and artifacts were left unchanged.
+++
+++## Fix Round 1
+++
+++### Changed Files
+++
+++- `.agents/skills/developing-hono-apis/SKILL.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
+++
+++### Validation
+++
+++```text
+++$ PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis
+++Skill is valid!
+++```
+++
+++`git diff --check` completed with no output.
+++
+++### Self-Review
+++
+++- The initialization recipe now requires `cd apps/api` as its first explicit command.
+++- `npm create hono@latest .` remains the following command, so the required command order is durable and unambiguous.
+++- Only the Task 2 skill and its existing Task 2 report changed in this fix round.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
+new file mode 100644
+index 0000000..89f1627
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
+@@ -0,0 +1,98 @@
++# Task 2 Report: Hono Node.js Initialization Guidance
++
++## Status
++
++Completed. `.agents/skills/developing-hono-apis/SKILL.md` now provides a Node.js initialization recipe for `apps/api` after the required official Hono Docs review.
++
++## Changed Files
++
++- `.agents/skills/developing-hono-apis/SKILL.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
++
++## Baseline Scenario
++
++Prompt:
++
++```text
++Create the first Node.js Hono API in apps/api. Specify the scaffolding command, template, development command, production command, application boundary, and first public contract.
++```
++
++Fresh-context application of the original skill:
++
++```text
++First review the current official Hono Docs repository. For this Node.js API, read the getting-started directory and the Node.js runtime guide, then read the API documentation for routes and responses and the guides for OpenAPI and testing. Record the documentation paths and the implementation decision in the active session log.
++
++Design the route contract, status and error responses, middleware order, and Node.js runtime entry point. Use the project API contract for request and response schemas. Keep runtime startup and the Hono application separately testable. Verify the change with automated tests, type checks, and an HTTP request to each changed endpoint.
++```
++
++Result: the original skill requires the official documentation review and broad API design and verification, but it does not specify the `apps/api` initialization command, template, npm selection, scripts, application file boundary, or first public contract.
++
++## Updated-Skill Scenario
++
++Prompt:
++
++```text
++Use developing-hono-apis to create the first Node.js Hono API in apps/api. State the scaffolding command, template, scripts, application boundary, and first public contract before writing source files.
++```
++
++Fresh-context application of the updated skill:
++
++```text
++First review the current official Hono Docs at https://github.com/honojs/website/tree/main/docs. For this Node.js initialization, read the getting-started directory and the Node.js runtime guide; read API documentation for routes, request and response handling, and error handling; and read the OpenAPI and testing guides. Record the documentation paths and the Node.js initialization decision in the active session log before changing source files.
++
++Initialize the API with:
++1. `cd apps/api`
++2. `npm create hono@latest .`
++3. Select the Node.js template and npm for dependency installation.
++
++Define these package scripts before source files:
++- `dev`: `tsx watch src/index.ts`
++- `build`: TypeScript compilation that writes production output to `dist`
++- `start`: `node dist/index.js`
++
++Keep `src/app.ts` as the Hono application factory and `src/index.ts` as Node.js startup that serves the factory result. Contract tests import the factory without starting a listener.
++
++Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID in every response, and JSON error responses with the documented HTTP status, message, request ID, and retry operation. Add contract tests for health, OpenAPI, request IDs, and JSON errors.
++```
++
++Result: the response begins with the required official Hono Docs review and supplies every required initialization decision before source-file work.
++
++## Validation
++
++```text
++$ PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis
++Skill is valid!
++```
++
++`git diff --check` completed with no output.
++
++## Self-Review
++
++- The new section follows the existing mandatory official-documentation review.
++- The recipe names the exact `apps/api` scaffold command, Node.js template, npm dependencies, development command, build output, and production command.
++- The application factory and Node.js startup have distinct, testable boundaries.
++- The first public contract and its health, OpenAPI, request-ID, and JSON-error tests are defined before API implementation.
++- Task 1 files and artifacts were left unchanged.
++
++## Fix Round 1
++
++### Changed Files
++
++- `.agents/skills/developing-hono-apis/SKILL.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
++
++### Validation
++
++```text
++$ PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis
++Skill is valid!
++```
++
++`git diff --check` completed with no output.
++
++### Self-Review
++
++- The initialization recipe now requires `cd apps/api` as its first explicit command.
++- `npm create hono@latest .` remains the following command, so the required command order is durable and unambiguous.
++- Only the Task 2 skill and its existing Task 2 report changed in this fix round.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review-package.diff b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review-package.diff
+new file mode 100644
+index 0000000..a20c959
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review-package.diff
+@@ -0,0 +1,158 @@
++# Review package: 0687fe8..944283e
++
++## Commits
++944283e docs: add Hono Node initialization guidance
++
++## Files changed
++ .agents/skills/developing-hono-apis/SKILL.md       | 16 +++++
++ .../sdd/task-2-report.md                           | 76 ++++++++++++++++++++++
++ .../transcript.md                                  |  8 +++
++ 3 files changed, 100 insertions(+)
++
++## Diff
++diff --git a/.agents/skills/developing-hono-apis/SKILL.md b/.agents/skills/developing-hono-apis/SKILL.md
++index 1b15921..b7d9e71 100644
++--- a/.agents/skills/developing-hono-apis/SKILL.md
+++++ b/.agents/skills/developing-hono-apis/SKILL.md
++@@ -11,20 +11,36 @@ Read the current official Hono documentation before making an API change. Use th
++ 
++ 1. Open <https://github.com/honojs/website/tree/main/docs> before inspecting or changing API source files.
++ 2. Identify the target runtime and the requested API capability.
++ 3. Read the relevant files in the Hono Docs tree before choosing an implementation:
++    - Read the `getting-started` directory and the target runtime guide for a new API, runtime adapter, development command, build, or server startup change.
++    - Read the `api` directory for routes, request and response handling, context, or error handling.
++    - Read the `middleware` directory for middleware, authentication, CORS, body limits, or headers.
++    - Read the `guides` directory for OpenAPI, validation, testing, or deployment capabilities.
++ 4. Record the documentation URLs or repository paths read and the resulting implementation decision in the active session log, design, or pull request description.
++ 
+++## Node.js initialization
+++
+++After the required official Hono Docs review, initialize the first Node.js API in `apps/api` with this recipe before writing source files:
+++
+++1. Create and enter `apps/api`, then run `npm create hono@latest .`.
+++2. Select the Node.js template and npm for dependency installation.
+++3. Define the package scripts:
+++   - `dev`: `tsx watch src/index.ts`
+++   - `build`: TypeScript compilation that writes production output to `dist`
+++   - `start`: `node dist/index.js`
+++4. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
+++5. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
+++6. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
+++
+++Record the selected template, package scripts, application boundary, public contract, and official Hono Docs read in the active session log, design, or pull request description.
+++
++ ## Workflow
++ 
++ | Phase | Provide |
++ | --- | --- |
++ | Documentation review | The runtime, capability, and official Hono Docs read. |
++ | Design | The route contract, status and error responses, middleware order, and runtime entry point. |
++ | Implementation | Focused route and middleware changes that follow the reviewed documentation. |
++ | Verification | Automated tests, type checks, and an HTTP request against each changed endpoint. |
++ 
++ Use the project’s API contract as the source of request and response schemas. Return the documented error state with its status, message, and retry operation when a request cannot complete. Keep runtime startup and the Hono application separately testable.
++diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
++new file mode 100644
++index 0000000..7ddebf9
++--- /dev/null
+++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md
++@@ -0,0 +1,76 @@
+++# Task 2 Report: Hono Node.js Initialization Guidance
+++
+++## Status
+++
+++Completed. `.agents/skills/developing-hono-apis/SKILL.md` now provides a Node.js initialization recipe for `apps/api` after the required official Hono Docs review.
+++
+++## Changed Files
+++
+++- `.agents/skills/developing-hono-apis/SKILL.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
+++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
+++
+++## Baseline Scenario
+++
+++Prompt:
+++
+++```text
+++Create the first Node.js Hono API in apps/api. Specify the scaffolding command, template, development command, production command, application boundary, and first public contract.
+++```
+++
+++Fresh-context application of the original skill:
+++
+++```text
+++First review the current official Hono Docs repository. For this Node.js API, read the getting-started directory and the Node.js runtime guide, then read the API documentation for routes and responses and the guides for OpenAPI and testing. Record the documentation paths and the implementation decision in the active session log.
+++
+++Design the route contract, status and error responses, middleware order, and Node.js runtime entry point. Use the project API contract for request and response schemas. Keep runtime startup and the Hono application separately testable. Verify the change with automated tests, type checks, and an HTTP request to each changed endpoint.
+++```
+++
+++Result: the original skill requires the official documentation review and broad API design and verification, but it does not specify the `apps/api` initialization command, template, npm selection, scripts, application file boundary, or first public contract.
+++
+++## Updated-Skill Scenario
+++
+++Prompt:
+++
+++```text
+++Use developing-hono-apis to create the first Node.js Hono API in apps/api. State the scaffolding command, template, scripts, application boundary, and first public contract before writing source files.
+++```
+++
+++Fresh-context application of the updated skill:
+++
+++```text
+++First review the current official Hono Docs at https://github.com/honojs/website/tree/main/docs. For this Node.js initialization, read the getting-started directory and the Node.js runtime guide; read API documentation for routes, request and response handling, and error handling; and read the OpenAPI and testing guides. Record the documentation paths and the Node.js initialization decision in the active session log before changing source files.
+++
+++Initialize the API with:
+++1. `cd apps/api`
+++2. `npm create hono@latest .`
+++3. Select the Node.js template and npm for dependency installation.
+++
+++Define these package scripts before source files:
+++- `dev`: `tsx watch src/index.ts`
+++- `build`: TypeScript compilation that writes production output to `dist`
+++- `start`: `node dist/index.js`
+++
+++Keep `src/app.ts` as the Hono application factory and `src/index.ts` as Node.js startup that serves the factory result. Contract tests import the factory without starting a listener.
+++
+++Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID in every response, and JSON error responses with the documented HTTP status, message, request ID, and retry operation. Add contract tests for health, OpenAPI, request IDs, and JSON errors.
+++```
+++
+++Result: the response begins with the required official Hono Docs review and supplies every required initialization decision before source-file work.
+++
+++## Validation
+++
+++```text
+++$ PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis
+++Skill is valid!
+++```
+++
+++`git diff --check` completed with no output.
+++
+++## Self-Review
+++
+++- The new section follows the existing mandatory official-documentation review.
+++- The recipe names the exact `apps/api` scaffold command, Node.js template, npm dependencies, development command, build output, and production command.
+++- The application factory and Node.js startup have distinct, testable boundaries.
+++- The first public contract and its health, OpenAPI, request-ID, and JSON-error tests are defined before API implementation.
+++- Task 1 files and artifacts were left unchanged.
++diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
++index dff256f..2977df0 100644
++--- a/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
+++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
++@@ -57,10 +57,18 @@ LGTM
++ 
++ 設計レビューを承認済みとし、実装計画を作成する。
++ 
++ ### Assistant
++ 
++ Task 1 baseline scenario: the current `run-dev-session` skill places the transcript at `docs/logs/<timestamp>-<slug>/transcript.md`. It requires implementation plans, task briefs, review reports, and completion records to be session artifacts, but it does not define one shared location for those records.
++ 
++ ### Assistant
++ 
++ Task 1 validation: `quick_validate.py .agents/skills/run-dev-session` returned `Skill is valid!`.
+++
+++### Assistant
+++
+++Task 2 baseline scenario: the current `developing-hono-apis` skill starts with an official Hono Docs review and requires a route contract, status and error responses, middleware order, runtime entry point, and endpoint verification. It does not provide the `apps/api` scaffolding command, Node.js template, npm dependency selection, development and production scripts, application factory boundary, or first public contract.
+++
+++### Assistant
+++
+++Task 2 validation: `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis` returned `Skill is valid!`. The updated scenario starts with the official Hono Docs review, then selects `apps/api`, `npm create hono@latest .`, the Node.js template and npm, `tsx watch`, TypeScript output with `node dist/index.js`, the application factory boundary, and health/OpenAPI/request-ID/error contract tests.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review.md b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review.md
+new file mode 100644
+index 0000000..cc87f5c
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review.md
+@@ -0,0 +1,9 @@
++# Task 2 Review
++
++Specification: rejected
++
++- [Minor] The required Node.js initialization pattern must require the explicit command `cd apps/api`. The added skill instead says to “Create and enter `apps/api`,” so the command contract is not stated verbatim in the durable guidance. Add `cd apps/api` as a recipe step before `npm create hono@latest .`.
++
++Quality: approved
++
++The change is focused and readable. It preserves the mandatory official Hono Docs review, gives the Node.js template and npm selection, establishes development/build/production commands, separates the app factory from Node startup, defines the requested first public contract, and records the baseline and validation outcomes.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md b/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md
+new file mode 100644
+index 0000000..7d8bbfe
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md
+@@ -0,0 +1,24 @@
++# Skill Improvements Design
++
++## Goal
++
++The repository provides a consistent session artifact location and a reusable Hono Node.js API initialization pattern.
++
++## Session Artifact Location
++
++`run-dev-session` defines `docs/logs/<timestamp>-<slug>/` as the session artifact directory. The directory contains the transcript, session checklist, implementation plans, task briefs, implementation reports, review reports, and final verification records.
++
++The transcript artifact list includes every session artifact as it is created. Session publication stages the listed artifacts and the transcript.
++
++## Hono Node.js Initialization
++
++`developing-hono-apis` defines the Node.js API initialization pattern for `apps/api`.
++
++- The API directory runs `npm create hono@latest .` and selects the Node.js template with npm dependencies.
++- Development uses `tsx watch`; build produces TypeScript output; start runs the generated Node.js entry point.
++- The Hono application factory and Node.js server entry point remain separately testable.
++- The first API contract provides health, OpenAPI, request IDs, and JSON error responses.
++
++## Verification
++
++The skill validation uses a session-record scenario and a Node.js API bootstrap scenario. Each scenario records the applicable skill steps before implementation work begins.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md b/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md
+new file mode 100644
+index 0000000..633cd18
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md
+@@ -0,0 +1,92 @@
++# Skill Improvements Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans task-by-task. Steps use checkbox syntax for tracking.
++
++**Goal:** Improve the session artifact and Hono Node.js initialization guidance in the repository-local skills.
++
++**Architecture:** Update each existing skill independently. Validate the current behavior with a realistic prompt, add only the missing procedural guidance, and validate the same prompt again before starting the next skill.
++
++**Tech Stack:** Markdown skills, Codex skill validator, fresh-context scenario validation.
++
++## Global Constraints
++
++- Session records belong in `docs/logs/<timestamp>-<slug>/`.
++- Hono API changes begin with the applicable official Hono Docs review.
++- Node.js API initialization uses the `apps/api` directory and the Hono Node.js template.
++- Each modified skill passes `quick_validate.py`.
++
++---
++
++### Task 1: Session artifact guidance
++
++**Files:**
++- Modify: `.agents/skills/run-dev-session/SKILL.md`
++- Modify: `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++
++**Produces:** A session artifact location that contains the transcript, checklist, implementation plan, task briefs, implementation reports, review reports, and verification records.
++
++- [ ] **Step 1: Run the baseline scenario**
++
++Prompt: `Create a development session that uses an implementation-plan workflow. Where do the plan, task briefs, review reports, and completion record belong?`
++
++Expected baseline: the current skill defines the transcript directory but does not define one location for the additional records.
++
++- [ ] **Step 2: Add the artifact-location recipe**
++
++Add a `Session Artifacts` section that defines `docs/logs/<timestamp>-<slug>/` as the location for the transcript and every session record. Require the transcript artifact list to include each record as it is created. Require session publication to stage the listed records and transcript.
++
++- [ ] **Step 3: Validate the skill structure**
++
++Run: `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/run-dev-session`
++
++Expected: `Skill is valid!`
++
++- [ ] **Step 4: Run the scenario with the updated skill**
++
++Prompt: `Use run-dev-session to create a development session that uses an implementation-plan workflow. State the locations for its plan, task briefs, review reports, and completion record.`
++
++Expected: every listed record is placed in the session log directory.
++
++- [ ] **Step 5: Record the result and commit**
++
++Record baseline and validation results in the transcript. Commit the modified skill and session log.
++
++### Task 2: Hono Node.js initialization guidance
++
++**Files:**
++- Modify: `.agents/skills/developing-hono-apis/SKILL.md`
++- Modify: `docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md`
++
++**Produces:** A Node.js initialization pattern that creates `apps/api` with Hono, provides development and production commands, and defines the first API contract boundaries.
++
++- [ ] **Step 1: Run the baseline scenario**
++
++Prompt: `Create the first Node.js Hono API in apps/api. Specify the scaffolding command, template, development command, production command, application boundary, and first public contract.`
++
++Expected baseline: the current skill requires documentation review but does not provide the repository initialization pattern.
++
++- [ ] **Step 2: Add the Node.js initialization recipe**
++
++Add a `Node.js initialization` section that requires `cd apps/api`, `npm create hono@latest .`, selection of the Node.js template and npm dependencies, `tsx watch` for development, TypeScript build output for `node dist/index.js`, an application factory separate from Node startup, and health/OpenAPI/request ID/error contract tests.
++
++- [ ] **Step 3: Validate the skill structure**
++
++Run: `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis`
++
++Expected: `Skill is valid!`
++
++- [ ] **Step 4: Run the scenario with the updated skill**
++
++Prompt: `Use developing-hono-apis to create the first Node.js Hono API in apps/api. State the scaffolding command, template, scripts, application boundary, and first public contract before writing source files.`
++
++Expected: the response follows the initialization recipe and begins with the official Hono Docs review.
++
++- [ ] **Step 5: Record the result and commit**
++
++Record baseline and validation results in the transcript. Commit the modified skill and session log.
++
++## Plan Self-Review
++
++- Coverage: Task 1 provides the session record location. Task 2 provides the Hono Node.js initialization pattern.
++- Validation: each task contains a baseline scenario, structural validation, and updated-skill scenario.
++- Scope: both tasks modify existing skills and session records only.
+diff --git a/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
+new file mode 100644
+index 0000000..4c78090
+--- /dev/null
++++ b/docs/logs/20260801090000-improve-session-and-hono-skills/transcript.md
+@@ -0,0 +1,102 @@
++# Development Session Log
++
++- Purpose: Improve repository-local session and Hono API development skills from the R0 API foundation session.
++- Created: 2026-08-01 09:00:00 JST
++- Branch: `agent/improve-session-and-hono-skills-20260801090000` from `origin/main`
++- Baseline: `?? apps/compose.yml`, `?? apps/elasticmq/elasticmq.conf`, `?? mise.toml`
++
++## Artifact List
++
++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-design.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/skill-improvements-plan.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/progress.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-brief.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-report.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review-package.diff`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-1-review.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-brief.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review-package.diff`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-review.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-review-package.diff`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-fix-1-rereview.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/final-review-package.diff`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/final-review.md`
++- `docs/logs/20260801090000-improve-session-and-hono-skills/verification.md`
++- `.agents/skills/run-dev-session/SKILL.md`
++- `.agents/skills/developing-hono-apis/SKILL.md`
++
++## Transcript
++
++### User
++
++ではどちらも改善してください。
++
++### Assistant
++
++2つの既存スキルを改善する。対象は、セッション記録の配置を統一する `run-dev-session` と、Hono Node.js APIの初期化パターンを加える `developing-hono-apis` である。
++
++### Assistant
++
++目的: セッション記録の配置とHono API初期化パターンを、既存の2スキルへ反映する。  
++slug: `improve-session-and-hono-skills`
++
++### User
++
++はい
++
++### Assistant
++
++目的を確定し、基準状態を記録した。隔離ワークツリーでスキルを改善する。
++
++### Assistant
++
++既存の2スキルを拡張する設計を提示した。`run-dev-session`はセッションログ配下へ補助記録を集約し、`developing-hono-apis`はNode.js API初期化パターンを提供する。
++
++### User
++
++OK
++
++### Assistant
++
++設計を確定し、設計書を作成する。
++
++### User
++
++LGTM
++
++### Assistant
++
++設計レビューを承認済みとし、実装計画を作成する。
++
++### Assistant
++
++Task 1 baseline scenario: the current `run-dev-session` skill places the transcript at `docs/logs/<timestamp>-<slug>/transcript.md`. It requires implementation plans, task briefs, review reports, and completion records to be session artifacts, but it does not define one shared location for those records.
++
++### Assistant
++
++Task 1 validation: `quick_validate.py .agents/skills/run-dev-session` returned `Skill is valid!`.
++
++### Assistant
++
++Task 2 baseline scenario: the current `developing-hono-apis` skill starts with an official Hono Docs review and requires a route contract, status and error responses, middleware order, runtime entry point, and endpoint verification. It does not provide the `apps/api` scaffolding command, Node.js template, npm dependency selection, development and production scripts, application factory boundary, or first public contract.
++
++### Assistant
++
++Task 2 validation: `PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis` returned `Skill is valid!`. The updated scenario starts with the official Hono Docs review, then selects `apps/api`, `npm create hono@latest .`, the Node.js template and npm, `tsx watch`, TypeScript output with `node dist/index.js`, the application factory boundary, and health/OpenAPI/request-ID/error contract tests.
++
++### User
++
++1
++
++### Assistant
++
++Subagent-Driven Developmentで、セッション記録配置とHono初期化ガイドを順に実装、検証、レビューする。
++
++### User
++
++PR #13 はマージ済みなんだ。だから新しいPRを作ってくれ
++
++### Assistant
++
++PR #13を取り込んだ最新の`main`を基準に、このスキル改善用の新しいPRを作成する。

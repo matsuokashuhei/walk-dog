@@ -22,6 +22,12 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
 6. Append the first user request and every visible user or assistant message in chronological order.
 
+## Session Artifacts
+
+`docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
+
+Add each session record to the transcript artifact list when it is created or changed. The artifact list identifies the records that session publication stages with the transcript.
+
 ## Purpose Boundary
 
 Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
@@ -57,7 +63,7 @@ Before publishing, review every session artifact with `crit`. Exclude `transcrip
 
 ## Publish
 
-1. Stage only files in the session artifact list and `transcript.md`.
+1. Stage the records in the session artifact list and `transcript.md`.
 2. Commit the session artifacts and log on the dedicated branch.
 3. Push the branch and create an open PR against `main`.
 4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.

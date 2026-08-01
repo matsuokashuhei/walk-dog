@@ -43,37 +43,28 @@ Implement the plan as specified.
 
 ### Assistant
 
-仕様確認を `ready` とし、設計書と実装計画を作成した。Task 1–3 で設定、Pino、Sentry、secure headers、shutdown を実装し、`npm test` 21件と `npm run build` が成功した。completion checklist を記録し、Crit レビューへ進む。
+仕様確認を `ready` とし、設計書と実装計画を作成した。Task 1–3 で設定、Pino、Sentry、secure headers、shutdown を実装し、検証後に Crit レビューへ進んだ。
 
 ### Assistant
 
-Crit レビューはコメントなしで承認された。セッション成果を commit し、PR を作成する。
+Crit レビューはコメントなしで承認された。セッション成果を commit し、PR #19 を作成した。
+
+### User
+
+レビューコメントを確認し、内容を評価し、妥当であれば対応してください。
 
 ### Assistant
 
-PR #19 を作成した: https://github.com/matsuokashuhei/walk-dog/pull/19
-
-## Plan decision sync
-
-| Decision | Classification |
-| --- | --- |
-| R0 API observability with Pino and Sentry | Synced — already in staged-development approved foundations and R0 |
-| API-only scope; worker observability later | Deferred to remaining R0 worker work |
-| Owner identifier logging | Deferred until Cognito |
-| Empty SENTRY_DSN disables Sentry | Implementation-local |
-| Extend `config.ts` instead of `src/config/env.ts` | Implementation-local |
-| No staged-development.md edits in this session | Confirmed — no plan-level change required |
-
-### Assistant
-
-Crit レビューはコメントなしで承認された。セッション成果を commit し、PR を作成する。
+PR #19 の4件（`@sentry/hono`、`--import` による早期 init、request-scoped child logger、Isolation Scope の requestId）を妥当と判断し、対応した。`npm test` 22件と `npm run build` が成功した。
 
 ## Plan sync final comparison
 
 | Transcript decision | Classification |
 | --- | --- |
 | API observability with Pino + Sentry + requestId | Synced — already in staged-development R0 and approved foundations; no plan file edit required. |
+| Switch to `@sentry/hono` + instrument `--import` + isolation scope + structured-logger | Implementation-local refinement of the approved observability approach. |
 | API-only scope; worker deferred | Deferred to remaining R0 worker work. |
 | Owner log fields deferred | Deferred until Cognito authentication. |
-| Empty SENTRY_DSN disables Sentry locally | Implementation-local. |
+| Empty SENTRY_DSN skips Sentry init | Implementation-local. |
 | Extend `config.ts` rather than `src/config/env.ts` | Implementation-local. |
+| No staged-development.md edits | Confirmed — no plan-level change required. |

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { Writable } from 'node:stream'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
-import { createLogger } from '../src/observability/logger.js'
+import { createLogger, type Logger } from '../src/observability/logger.js'
 
 function createCapturingLogger() {
   const lines: Array<Record<string, unknown>> = []
@@ -39,8 +39,26 @@ test('writes a structured HTTP completion log with requestId correlation', async
   assert.ok(typeof lines[0]?.level === 'number' || typeof lines[0]?.level === 'string')
 })
 
-test('captures thrown errors through the Sentry bridge', async () => {
-  const captured: unknown[] = []
+test('exposes a request-scoped child logger on the Hono context', async () => {
+  const { logger, lines } = createCapturingLogger()
+  let requestLogger: Logger | undefined
+
+  await createApp((app) => {
+    app.get('/log-check', (context) => {
+      requestLogger = context.get('logger')
+      context.get('logger').info({ step: 'handler' }, 'handler log')
+      return context.json({ ok: true })
+    })
+  }, { logger }).request('/log-check', {
+    headers: { 'X-Request-Id': 'child-logger-1' },
+  })
+
+  assert.ok(requestLogger)
+  assert.equal(requestLogger.bindings().requestId, 'child-logger-1')
+  assert.ok(lines.some((line) => line.step === 'handler' && line.requestId === 'child-logger-1'))
+})
+
+test('binds requestId on the Sentry isolation path', async () => {
   const requestIds: string[] = []
 
   const response = await createApp((app) => {
@@ -48,13 +66,8 @@ test('captures thrown errors through the Sentry bridge', async () => {
       throw new Error('expected observability error')
     })
   }, {
-    sentry: {
-      setRequestId: (requestId) => {
-        requestIds.push(requestId)
-      },
-      captureException: (error) => {
-        captured.push(error)
-      },
+    setRequestId: (requestId) => {
+      requestIds.push(requestId)
     },
   }).request('/test-error', {
     headers: { 'X-Request-Id': 'sentry-request-1' },
@@ -62,8 +75,6 @@ test('captures thrown errors through the Sentry bridge', async () => {
 
   assert.equal(response.status, 500)
   assert.equal(requestIds.at(-1), 'sentry-request-1')
-  assert.equal(captured.length, 1)
-  assert.ok(captured[0] instanceof Error)
 })
 
 test('responses include secure headers', async () => {

@@ -3,19 +3,18 @@ import { createApp } from './app.js'
 import { loadDatabaseConfig, loadObservabilityConfig } from './config.js'
 import { createDbClient } from './db/client.js'
 import { createLogger } from './observability/logger.js'
-import { createSentryBridge } from './observability/sentry.js'
+import { closeSentry } from './observability/sentry.js'
 import { createShutdownHandler } from './server.js'
 
 const databaseConfig = loadDatabaseConfig(process.env)
 const observabilityConfig = loadObservabilityConfig(process.env)
-const sentry = createSentryBridge(observabilityConfig)
 const logger = createLogger(observabilityConfig)
 const { pool } = createDbClient(databaseConfig)
 const server = serve({
-  fetch: createApp(undefined, { logger, sentry }).fetch,
+  fetch: createApp(undefined, { logger }).fetch,
   port: 3000,
 })
-const shutdown = createShutdownHandler(server, pool, sentry)
+const shutdown = createShutdownHandler(server, pool, { close: closeSentry })
 
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)

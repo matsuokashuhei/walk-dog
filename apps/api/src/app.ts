@@ -1,17 +1,22 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import * as Sentry from '@sentry/hono/node'
+import { sentry } from '@sentry/hono/node'
 import pino from 'pino'
 import { secureHeaders } from 'hono/secure-headers'
 import { type Logger } from './observability/logger.js'
-import { createObservabilityMiddleware } from './observability/request-middleware.js'
-import { createNoopSentryBridge, type SentryBridge } from './observability/sentry.js'
+import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
+import { setRequestIdTag } from './observability/sentry.js'
 
-type Variables = { requestId: string }
+type Variables = {
+  requestId: string
+  logger: Logger
+}
 
 export type App = OpenAPIHono<{ Variables: Variables }>
 
 export type AppDependencies = {
   logger?: Logger
-  sentry?: Pick<SentryBridge, 'setRequestId' | 'captureException'>
+  setRequestId?: (requestId: string) => void
 }
 
 const errorSchema = z.object({
@@ -54,32 +59,33 @@ export const createApp = (
       release: 'test',
     },
   })
-  const sentry = dependencies.sentry ?? createNoopSentryBridge()
+  const bindRequestId = dependencies.setRequestId ?? setRequestIdTag
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
+  if (Sentry.getClient()) {
+    app.use('*', sentry(app))
+  }
   app.use('*', async (context, next) => {
     const requestId = context.req.header('X-Request-Id') ?? crypto.randomUUID()
     context.set('requestId', requestId)
+    bindRequestId(requestId)
     await next()
     context.header('X-Request-Id', requestId)
   })
   app.use('*', secureHeaders())
-  app.use('*', createObservabilityMiddleware(logger, sentry))
+  app.use('*', createRequestLoggerMiddleware(logger))
   app.notFound((context) => context.json({
     code: 'NOT_FOUND',
     message: 'The requested resource was not found.',
     requestId: context.get('requestId'),
     retryable: false,
   }, 404))
-  app.onError((error, context) => {
-    sentry.captureException(error)
-    return context.json({
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred.',
-      requestId: context.get('requestId'),
-      retryable: false,
-    }, 500)
-  })
+  app.onError((_error, context) => context.json({
+    code: 'INTERNAL_ERROR',
+    message: 'An unexpected error occurred.',
+    requestId: context.get('requestId'),
+    retryable: false,
+  }, 500))
   app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
   app.doc('/openapi.json', {
     openapi: '3.1.0',

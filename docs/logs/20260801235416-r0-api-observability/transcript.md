@@ -49,6 +49,21 @@ Implement the plan as specified.
 
 Crit レビューはコメントなしで承認された。セッション成果を commit し、PR を作成する。
 
+## Plan decision sync
+
+| Decision | Classification |
+| --- | --- |
+| R0 API observability with Pino and Sentry | Synced — already in staged-development approved foundations and R0 |
+| API-only scope; worker observability later | Deferred to remaining R0 worker work |
+| Owner identifier logging | Deferred until Cognito |
+| Empty SENTRY_DSN disables Sentry | Implementation-local |
+| Extend `config.ts` instead of `src/config/env.ts` | Implementation-local |
+| No staged-development.md edits in this session | Confirmed — no plan-level change required |
+
+### Assistant
+
+Crit レビューはコメントなしで承認された。セッション成果を commit し、PR を作成する。
+
 ## Plan sync final comparison
 
 | Transcript decision | Classification |

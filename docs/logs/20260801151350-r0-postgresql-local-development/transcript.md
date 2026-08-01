@@ -9,6 +9,7 @@
 
 - `docs/development/staged-development.md`
 - `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-design.md`
+- `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-plan.md`
 
 ## Transcript
 
@@ -136,3 +137,7 @@ Drizzleのエージェントスキルを利用するため、最新のmainを取
 ### Assistant
 
 最新の`origin/main`をrebaseで取り込み、Drizzleの接続、schema、migrationスキルと公式ドキュメントを確認した。Drizzle schemaを正本とし、生成SQLのレビュー後に専用接続で`npm run migrate`を実行する構成へ設計書を更新した。
+
+### Assistant
+
+`writing-plans`を使い、接続設定、`owners` schemaと生成SQL、ロック付きmigration runner、Composeと検証の4タスクへ実装計画を分解した。

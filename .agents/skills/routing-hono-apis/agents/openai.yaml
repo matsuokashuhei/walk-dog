@@ -1,0 +1,4 @@
+interface:
+  display_name: "Route Hono APIs"
+  short_description: "Define Hono routes and handlers."
+  default_prompt: "Use $routing-hono-apis for this Hono routing change."

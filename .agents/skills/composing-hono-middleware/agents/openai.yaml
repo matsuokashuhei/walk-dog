@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compose Hono Middleware"
+  short_description: "Compose Hono middleware stacks."
+  default_prompt: "Use $composing-hono-middleware for this Hono middleware change."

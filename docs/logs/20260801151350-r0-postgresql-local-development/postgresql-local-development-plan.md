@@ -124,9 +124,14 @@ import test from 'node:test'
 import { owners } from '../src/db/schema/index.js'
 
 test('owners schema exposes the R0 persistence fields', () => {
-  assert.deepEqual(Object.keys(owners).filter((key) => !key.startsWith('_')), [
-    'id', 'cognitoSubject', 'createdAt', 'updatedAt',
-  ])
+  assert.ok(owners.id)
+  assert.ok(owners.cognitoSubject)
+  assert.ok(owners.createdAt)
+  assert.ok(owners.updatedAt)
+  assert.equal(owners.id.name, 'id')
+  assert.equal(owners.cognitoSubject.name, 'cognito_subject')
+  assert.equal(owners.createdAt.name, 'created_at')
+  assert.equal(owners.updatedAt.name, 'updated_at')
 })
 ```
 

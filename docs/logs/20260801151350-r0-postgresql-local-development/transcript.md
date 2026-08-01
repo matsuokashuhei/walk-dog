@@ -141,3 +141,11 @@ Drizzleのエージェントスキルを利用するため、最新のmainを取
 ### Assistant
 
 `writing-plans`を使い、接続設定、`owners` schemaと生成SQL、ロック付きmigration runner、Composeと検証の4タスクへ実装計画を分解した。
+
+### User
+
+Drizzleの補助プロパティによりschemaテストが失敗したため、推奨案で続行するよう指示した。
+
+### Assistant
+
+schemaテストを4つのR0永続化列とSQL列名の検証へ調整し、Drizzleの補助プロパティをDB列の判定から除外した。`owners`生成SQLをレビューしてTask 2を完了した。

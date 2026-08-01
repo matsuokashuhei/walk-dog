@@ -74,3 +74,25 @@ Skill is valid!
 - The application factory and Node.js startup have distinct, testable boundaries.
 - The first public contract and its health, OpenAPI, request-ID, and JSON-error tests are defined before API implementation.
 - Task 1 files and artifacts were left unchanged.
+
+## Fix Round 1
+
+### Changed Files
+
+- `.agents/skills/developing-hono-apis/SKILL.md`
+- `docs/logs/20260801090000-improve-session-and-hono-skills/sdd/task-2-report.md`
+
+### Validation
+
+```text
+$ PYTHONPATH=/private/tmp/walk-dog-skill-validation python3 /Users/matsuokashuhei/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/developing-hono-apis
+Skill is valid!
+```
+
+`git diff --check` completed with no output.
+
+### Self-Review
+
+- The initialization recipe now requires `cd apps/api` as its first explicit command.
+- `npm create hono@latest .` remains the following command, so the required command order is durable and unambiguous.
+- Only the Task 2 skill and its existing Task 2 report changed in this fix round.

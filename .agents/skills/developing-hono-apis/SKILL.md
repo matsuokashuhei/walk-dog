@@ -22,15 +22,16 @@ Read the current official Hono documentation before making an API change. Use th
 
 After the required official Hono Docs review, initialize the first Node.js API in `apps/api` with this recipe before writing source files:
 
-1. Create and enter `apps/api`, then run `npm create hono@latest .`.
-2. Select the Node.js template and npm for dependency installation.
-3. Define the package scripts:
+1. Run `cd apps/api`.
+2. Run `npm create hono@latest .`.
+3. Select the Node.js template and npm for dependency installation.
+4. Define the package scripts:
    - `dev`: `tsx watch src/index.ts`
    - `build`: TypeScript compilation that writes production output to `dist`
    - `start`: `node dist/index.js`
-4. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
-5. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
-6. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
+5. Keep `src/app.ts` as an application factory that creates the Hono application. Keep `src/index.ts` as the Node.js startup entry point that serves the factory result. Tests import the factory without starting a Node.js listener.
+6. Define the first public contract before implementation: `GET /health`, `GET /openapi.json`, a request ID returned with each response, and JSON error responses containing the documented status, message, request ID, and retry operation.
+7. Add contract tests for the health response, OpenAPI document, request ID, and JSON error response before extending the API.
 
 Record the selected template, package scripts, application boundary, public contract, and official Hono Docs read in the active session log, design, or pull request description.
 

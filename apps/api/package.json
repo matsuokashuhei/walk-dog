@@ -2,9 +2,9 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --import ./src/instrument.ts src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node --import ./dist/instrument.js dist/index.js",
     "lint": "eslint .",
     "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
     "knip": "knip",
@@ -17,10 +17,14 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
+    "@hono/structured-logger": "^0.1.0",
     "@hono/zod-openapi": "^1.5.1",
+    "@sentry/hono": "^10.69.0",
+    "@sentry/node": "^10.69.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.32",
     "pg": "^8.22.0",
+    "pino": "^10.3.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

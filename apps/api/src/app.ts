@@ -1,8 +1,21 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import * as Sentry from '@sentry/hono/node'
+import { sentry } from '@sentry/hono/node'
+import { secureHeaders } from 'hono/secure-headers'
+import { type Logger } from './observability/logger.js'
+import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
 
-type Variables = { requestId: string }
+type Variables = {
+  requestId: string
+  logger: Logger
+}
 
 export type App = OpenAPIHono<{ Variables: Variables }>
+
+export type AppDependencies = {
+  logger: Logger
+  setRequestId: (requestId: string) => void
+}
 
 const errorSchema = z.object({
   code: z.string(),
@@ -32,15 +45,24 @@ const healthRoute = createRoute({
   },
 })
 
-export const createApp = (registerRoutes?: (app: App) => void): App => {
+export const createApp = (
+  dependencies: AppDependencies,
+  registerRoutes?: (app: App) => void,
+): App => {
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
+  if (Sentry.getClient()) {
+    app.use('*', sentry(app))
+  }
   app.use('*', async (context, next) => {
     const requestId = context.req.header('X-Request-Id') ?? crypto.randomUUID()
     context.set('requestId', requestId)
+    dependencies.setRequestId(requestId)
     await next()
     context.header('X-Request-Id', requestId)
   })
+  app.use('*', secureHeaders())
+  app.use('*', createRequestLoggerMiddleware(dependencies.logger))
   app.notFound((context) => context.json({
     code: 'NOT_FOUND',
     message: 'The requested resource was not found.',

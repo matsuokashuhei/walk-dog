@@ -27,19 +27,20 @@ CREATE TABLE owners (
 ## Components and Data Flow
 
 - `apps/api/src/db/schema/owners.ts`は`owners`のDrizzle schemaを定義する。
-- `apps/api/src/db/client.ts`は`DATABASE_URL`から`pg` PoolとDrizzle clientを作成する。
-- `apps/api/src/db/migrate.ts`はPostgreSQL advisory lockを取得し、Drizzleの未適用migrationを順に適用する。
-- `apps/api/drizzle.config.ts`はmigration生成の入力と出力を定義する。
-- `apps/api/drizzle/`は生成されたSQL migrationと適用履歴を保持する。
+- `apps/api/src/config.ts`は`DATABASE_URL`と`DATABASE_POOL_MAX`を検証し、APIとmigrationへ接続設定を提供する。
+- `apps/api/src/db/client.ts`はプロセスごとに1つの`pg.Pool`を作成し、Drizzle clientへ渡す。プロセス終了時はPoolを閉じる。
+- `apps/api/src/db/migrate.ts`は専用のPostgreSQL接続で`walk_dog_schema_migration` advisory lockを取得し、Drizzle migratorで未適用migrationを順に適用する。処理は適用したmigration versionを出力し、接続終了時にlockを解放する。
+- `apps/api/drizzle.config.ts`はPostgreSQL dialect、`src/db/schema`、`drizzle/`を定義する。
+- `apps/api/drizzle/`はDrizzle Kitが生成したSQL migrationとschema snapshotを保持する。
 - `apps/compose.yml`は`postgres`、`migrate`、`api`を起動する。`postgres`のhealthcheck完了後に`migrate`がmigrationを適用し、`migrate`成功後に`api`が開始する。
-- `.env.example`はローカルPostgreSQL接続値を提供し、`.env.local`は開発環境の接続値を提供する。
+- `apps/.env.example`はローカルPostgreSQL接続値を提供し、`apps/.env.local`は開発環境の接続値を提供する。
 
 ## Commands
 
 | Command | Result |
 | --- | --- |
-| `npm run db:generate` | Drizzle schemaからSQL migrationを生成する。 |
-| `npm run db:migrate` | advisory lockのもとで未適用migrationを順に適用する。 |
+| `npm run db:generate` | Drizzle schemaからSQL migrationを生成する。生成SQLをレビューしてから適用する。 |
+| `npm run migrate` | advisory lockのもとで未適用migrationを順に適用する。 |
 | `npm run test:integration` | `owners`テーブルと`cognito_subject`一意制約を確認する。 |
 | `docker compose -f apps/compose.yml up --build` | migration完了後にAPIを起動する。 |
 
@@ -55,3 +56,9 @@ CREATE TABLE owners (
 - `docs/development/staged-development.md`
 - `docs/logs/20260726141518-decide-and-execute-development/transcript.md`の4-3「R0 migrationに含めるschema」
 - `docs/specs/external-specification.html`の「ER図」と「エンティティ一覧と項目」
+- <https://orm.drizzle.team/docs/connect-overview>
+- <https://orm.drizzle.team/docs/sql-schema-declaration>
+- <https://orm.drizzle.team/docs/migrations>
+- <https://orm.drizzle.team/docs/drizzle-kit-generate>
+- <https://orm.drizzle.team/docs/drizzle-kit-migrate>
+- <https://orm.drizzle.team/docs/drizzle-config-file>

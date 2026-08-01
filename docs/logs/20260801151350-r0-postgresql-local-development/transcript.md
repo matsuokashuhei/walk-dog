@@ -128,3 +128,11 @@ migrationコマンドと検証条件を確定した。この判断はR0の検証
 ### Assistant
 
 R1・R3の機能説明を設計書から外し、R0で提供する内容だけを記述した。
+
+### User
+
+Drizzleのエージェントスキルを利用するため、最新のmainを取り込み、再計画するようレビューコメントを残した。
+
+### Assistant
+
+最新の`origin/main`をrebaseで取り込み、Drizzleの接続、schema、migrationスキルと公式ドキュメントを確認した。Drizzle schemaを正本とし、生成SQLのレビュー後に専用接続で`npm run migrate`を実行する構成へ設計書を更新した。

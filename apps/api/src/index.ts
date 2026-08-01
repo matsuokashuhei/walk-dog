@@ -16,5 +16,9 @@ const server = serve({
 })
 const shutdown = createShutdownHandler(server, pool, { close: closeSentry })
 
-process.once('SIGINT', shutdown)
-process.once('SIGTERM', shutdown)
+process.once('SIGINT', () => {
+  void shutdown()
+})
+process.once('SIGTERM', () => {
+  void shutdown()
+})

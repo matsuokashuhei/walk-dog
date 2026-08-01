@@ -40,7 +40,7 @@ test('GET /openapi.json describes the health endpoint and error schema', async (
   assert.equal(document.openapi, '3.1.0')
   assert.ok('/health' in document.paths)
   assert.ok('Error' in document.components.schemas)
-  assert.ok('X-Request-Id' in (document.paths['/health']?.get?.responses?.['200'].headers ?? {}))
+  assert.ok('X-Request-Id' in (document.paths['/health'].get?.responses?.['200'].headers ?? {}))
 })
 
 test('uses a received request ID for the health response', async () => {

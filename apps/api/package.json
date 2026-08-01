@@ -5,6 +5,11 @@
     "dev": "tsx watch --import ./src/instrument.ts src/index.ts",
     "build": "tsc",
     "start": "node --import ./dist/instrument.js dist/index.js",
+    "lint": "eslint .",
+    "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
+    "knip": "knip",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run jscpd && npm run knip && npm run typecheck",
     "test": "tsx --test test/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
@@ -23,10 +28,19 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^26.1.1",
     "@types/pg": "^8.20.3",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.5",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "jscpd": "^5.0.14",
+    "knip": "^6.31.0",
     "tsx": "^4.23.0",
-    "typescript": "^7.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.65.0"
   }
 }

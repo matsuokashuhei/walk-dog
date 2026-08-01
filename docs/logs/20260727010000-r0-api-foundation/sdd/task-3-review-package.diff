@@ -1,0 +1,106 @@
+# Review package: f8fc1eb6fa7a0b6f47ac8b93ddabc3b8dacf076c..2d67fdb
+
+## Commits
+2d67fdb feat: add OpenAPI document endpoint
+
+## Files changed
+ apps/api/src/app.ts       | 10 ++++++++++
+ apps/api/test/app.test.ts | 21 +++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
+
+## Diff
+diff --git a/apps/api/src/app.ts b/apps/api/src/app.ts
+index 21b97a5..c8256f5 100644
+--- a/apps/api/src/app.ts
++++ b/apps/api/src/app.ts
+@@ -11,20 +11,26 @@ const errorSchema = z.object({
+   retryable: z.boolean(),
+ })
+
+ const healthRoute = createRoute({
+   method: 'get',
+   path: '/health',
+   responses: {
+     200: {
+       content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } },
+       description: 'API process health state',
++      headers: {
++        'X-Request-Id': {
++          description: 'Request identifier for this response',
++          schema: { type: 'string' },
++        },
++      },
+     },
+     500: {
+       content: { 'application/json': { schema: errorSchema } },
+       description: 'API processing error',
+     },
+   },
+ })
+
+ export const createApp = (registerRoutes?: (app: App) => void): App => {
+   const app = new OpenAPIHono<{ Variables: Variables }>()
+@@ -41,13 +47,17 @@ export const createApp = (registerRoutes?: (app: App) => void): App => {
+     requestId: context.get('requestId'),
+     retryable: false,
+   }, 404))
+   app.onError((_error, context) => context.json({
+     code: 'INTERNAL_ERROR',
+     message: 'An unexpected error occurred.',
+     requestId: context.get('requestId'),
+     retryable: false,
+   }, 500))
+   app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
++  app.doc('/openapi.json', {
++    openapi: '3.1.0',
++    info: { title: 'walk / dog API', version: '0.1.0' },
++  })
+   registerRoutes?.(app)
+   return app
+ }
+diff --git a/apps/api/test/app.test.ts b/apps/api/test/app.test.ts
+index 6154eed..f3efae8 100644
+--- a/apps/api/test/app.test.ts
++++ b/apps/api/test/app.test.ts
+@@ -2,20 +2,41 @@ import assert from 'node:assert/strict'
+ import test from 'node:test'
+ import { createApp } from '../src/app.js'
+
+ test('GET /health returns the API health state', async () => {
+   const response = await createApp().request('/health')
+
+   assert.equal(response.status, 200)
+   assert.deepEqual(await response.json(), { status: 'ok' })
+ })
+
++test('GET /openapi.json describes the health endpoint and error schema', async () => {
++  const response = await createApp().request('/openapi.json')
++  const document = await response.json() as {
++    openapi: string
++    paths: Record<string, {
++      get?: {
++        responses?: Record<string, {
++          headers?: Record<string, unknown>
++        }>
++      }
++    }>
++    components: { schemas: Record<string, unknown> }
++  }
++
++  assert.equal(response.status, 200)
++  assert.equal(document.openapi, '3.1.0')
++  assert.ok('/health' in document.paths)
++  assert.ok('Error' in document.components.schemas)
++  assert.ok('X-Request-Id' in (document.paths['/health']?.get?.responses?.['200'].headers ?? {}))
++})
++
+ test('uses a received request ID for the health response', async () => {
+   const response = await createApp().request('/health', {
+     headers: { 'X-Request-Id': 'request-123' },
+   })
+
+   assert.equal(response.headers.get('X-Request-Id'), 'request-123')
+ })
+
+ test('returns the error contract for an unknown path', async () => {
+   const response = await createApp().request('/missing', {

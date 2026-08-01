@@ -5,7 +5,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test test/**/*.test.ts",
+    "test": "tsx --test test/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "migrate": "tsx src/db/migrate.ts",
     "test:integration": "tsx --test test/integration/**/*.test.ts"

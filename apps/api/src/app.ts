@@ -1,7 +1,6 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import * as Sentry from '@sentry/hono/node'
 import { sentry } from '@sentry/hono/node'
-import pino from 'pino'
 import { secureHeaders } from 'hono/secure-headers'
 import { type Logger } from './observability/logger.js'
 import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
@@ -15,7 +14,7 @@ type Variables = {
 export type App = OpenAPIHono<{ Variables: Variables }>
 
 export type AppDependencies = {
-  logger?: Logger
+  logger: Logger
   setRequestId?: (requestId: string) => void
 }
 
@@ -48,17 +47,9 @@ const healthRoute = createRoute({
 })
 
 export const createApp = (
+  dependencies: AppDependencies,
   registerRoutes?: (app: App) => void,
-  dependencies: AppDependencies = {},
 ): App => {
-  const logger = dependencies.logger ?? pino({
-    level: 'silent',
-    base: {
-      service: 'api',
-      environment: 'test',
-      release: 'test',
-    },
-  })
   const bindRequestId = dependencies.setRequestId ?? setRequestIdTag
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
@@ -73,7 +64,7 @@ export const createApp = (
     context.header('X-Request-Id', requestId)
   })
   app.use('*', secureHeaders())
-  app.use('*', createRequestLoggerMiddleware(logger))
+  app.use('*', createRequestLoggerMiddleware(dependencies.logger))
   app.notFound((context) => context.json({
     code: 'NOT_FOUND',
     message: 'The requested resource was not found.',

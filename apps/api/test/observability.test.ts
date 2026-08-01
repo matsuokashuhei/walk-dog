@@ -3,6 +3,7 @@ import { Writable } from 'node:stream'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
 import { createLogger, type Logger } from '../src/observability/logger.js'
+import { testLogger } from './test-logger.js'
 
 function createCapturingLogger() {
   const lines: Array<Record<string, unknown>> = []
@@ -22,7 +23,7 @@ function createCapturingLogger() {
 test('writes a structured HTTP completion log with requestId correlation', async () => {
   const { logger, lines } = createCapturingLogger()
 
-  await createApp(undefined, { logger }).request('/health', {
+  await createApp({ logger }).request('/health', {
     headers: { 'X-Request-Id': 'log-request-1' },
   })
 
@@ -43,13 +44,13 @@ test('exposes a request-scoped child logger on the Hono context', async () => {
   const { logger, lines } = createCapturingLogger()
   let requestLogger: Logger | undefined
 
-  await createApp((app) => {
+  await createApp({ logger }, (app) => {
     app.get('/log-check', (context) => {
       requestLogger = context.get('logger')
       context.get('logger').info({ step: 'handler' }, 'handler log')
       return context.json({ ok: true })
     })
-  }, { logger }).request('/log-check', {
+  }).request('/log-check', {
     headers: { 'X-Request-Id': 'child-logger-1' },
   })
 
@@ -61,14 +62,15 @@ test('exposes a request-scoped child logger on the Hono context', async () => {
 test('binds requestId on the Sentry isolation path', async () => {
   const requestIds: string[] = []
 
-  const response = await createApp((app) => {
-    app.get('/test-error', () => {
-      throw new Error('expected observability error')
-    })
-  }, {
+  const response = await createApp({
+    logger: testLogger,
     setRequestId: (requestId) => {
       requestIds.push(requestId)
     },
+  }, (app) => {
+    app.get('/test-error', () => {
+      throw new Error('expected observability error')
+    })
   }).request('/test-error', {
     headers: { 'X-Request-Id': 'sentry-request-1' },
   })
@@ -78,7 +80,7 @@ test('binds requestId on the Sentry isolation path', async () => {
 })
 
 test('responses include secure headers', async () => {
-  const response = await createApp().request('/health')
+  const response = await createApp({ logger: testLogger }).request('/health')
 
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')
 })

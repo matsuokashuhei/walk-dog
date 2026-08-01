@@ -1,22 +1,23 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
+import { testLogger } from './test-logger.js'
 
 test('GET /health returns the API health state', async () => {
-  const response = await createApp().request('/health')
+  const response = await createApp({ logger: testLogger }).request('/health')
 
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { status: 'ok' })
 })
 
 test('GET /health generates a non-empty request ID when none is received', async () => {
-  const response = await createApp().request('/health')
+  const response = await createApp({ logger: testLogger }).request('/health')
 
   assert.ok(response.headers.get('X-Request-Id'))
 })
 
 test('GET /openapi.json describes the health endpoint and error schema', async () => {
-  const response = await createApp().request('/openapi.json')
+  const response = await createApp({ logger: testLogger }).request('/openapi.json')
   const document = await response.json() as {
     openapi: string
     paths: Record<string, {
@@ -37,7 +38,7 @@ test('GET /openapi.json describes the health endpoint and error schema', async (
 })
 
 test('uses a received request ID for the health response', async () => {
-  const response = await createApp().request('/health', {
+  const response = await createApp({ logger: testLogger }).request('/health', {
     headers: { 'X-Request-Id': 'request-123' },
   })
 
@@ -45,7 +46,7 @@ test('uses a received request ID for the health response', async () => {
 })
 
 test('returns the error contract for an unknown path', async () => {
-  const response = await createApp().request('/missing', {
+  const response = await createApp({ logger: testLogger }).request('/missing', {
     headers: { 'X-Request-Id': 'request-404' },
   })
   const body = await response.json() as { requestId: string }
@@ -61,7 +62,7 @@ test('returns the error contract for an unknown path', async () => {
 })
 
 test('returns the error contract when a route throws', async () => {
-  const response = await createApp((app) => {
+  const response = await createApp({ logger: testLogger }, (app) => {
     app.get('/test-error', () => {
       throw new Error('expected test error')
     })

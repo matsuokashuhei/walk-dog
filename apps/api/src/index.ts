@@ -11,7 +11,7 @@ const observabilityConfig = loadObservabilityConfig(process.env)
 const logger = createLogger(observabilityConfig)
 const { pool } = createDbClient(databaseConfig)
 const server = serve({
-  fetch: createApp(undefined, { logger }).fetch,
+  fetch: createApp({ logger }).fetch,
   port: 3000,
 })
 const shutdown = createShutdownHandler(server, pool, { close: closeSentry })

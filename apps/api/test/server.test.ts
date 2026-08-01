@@ -25,3 +25,21 @@ test('closes the database pool after the HTTP server has stopped', async () => {
 
   assert.deepEqual(calls, ['server closing', 'pool'])
 })
+
+test('closes the database pool when stopping the HTTP server fails', async () => {
+  const calls: string[] = []
+  const serverError = new Error('server close failed')
+  const shutdown = createShutdownHandler(
+    {
+      close: (callback) => {
+        calls.push('server closing')
+        callback(serverError)
+      },
+    },
+    { end: async () => { calls.push('pool') } } as Pool,
+  )
+
+  await assert.rejects(shutdown(), (error) => error === serverError)
+
+  assert.deepEqual(calls, ['server closing', 'pool'])
+})

@@ -6,16 +6,19 @@ export function createShutdownHandler(
   pool: Pool,
 ): () => Promise<void> {
   return async () => {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error)
+            return
+          }
 
-        resolve()
+          resolve()
+        })
       })
-    })
-    await closeDbClient(pool)
+    } finally {
+      await closeDbClient(pool)
+    }
   }
 }

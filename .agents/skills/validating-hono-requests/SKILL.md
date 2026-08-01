@@ -18,6 +18,7 @@ Read the current official Hono validation docs before changing request validator
 
 - OpenAPI / Zod schemas are the source of request validation for public endpoints.
 - Prefer `@hono/zod-openapi` route definitions when the endpoint is documented; use `@hono/zod-validator` or `hono/validator` only when that path is intentional.
+- Shape Zod schemas with `$defining-zod-schemas`, refine or transform them with `$transforming-zod-schemas`, and map Zod issue wording with `$handling-zod-errors` when the schema itself changes.
 - Validation failures return the shared error JSON with HTTP status, `code`, `message`, `requestId`, and `retryable`.
 - JSON and form validators require a matching `Content-Type` header.
 
@@ -37,6 +38,7 @@ Read the current official Hono validation docs before changing request validator
 | JSON body validation | Validation guide | Schema fields and Content-Type requirement |
 | Query or path validation | Validation guide | Target key and schema |
 | Zod validator middleware | Validation guide Zod sections | Package choice and schema reuse |
+| Zod schema field or refine change | Zod defining / transforming skills | Schema owner and Hono target |
 | Custom validation error body | Validator error-handling example | Status, code, message, retryable |
 | Documented public input | OpenAPI skill | Schema owner in OpenAPI document |
 

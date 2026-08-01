@@ -1,0 +1,4 @@
+interface:
+  display_name: "Transform Zod Schemas"
+  short_description: "Refine, transform, and codec Zod 4 schemas."
+  default_prompt: "Use $transforming-zod-schemas for this Zod refine, transform, or codec change."

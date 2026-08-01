@@ -19,6 +19,7 @@ Read the current official Hono OpenAPI examples before changing OpenAPI schemas 
 - Use `@hono/zod-openapi` / `OpenAPIHono` as the API contract source.
 - Serve the document at `GET /openapi.json`.
 - OpenAPI schemas drive request validation, response validation, and mobile typed client generation.
+- Define shared Zod component schemas with `$defining-zod-schemas`; use `$converting-zod-json-schema` only for standalone JSON Schema conversion outside this OpenAPI pipeline.
 - Define `components.securitySchemes.BearerAuth` as HTTP bearer JWT. Protected routes use `security: [{ BearerAuth: [] }]`. `/health` and `/openapi.json` stay public.
 - Shared error responses use the documented error schema with `code`, `message`, `requestId`, and `retryable`.
 - Pair input schema changes with `$validating-hono-requests` behavior and verify with `$testing-hono-apis`.
@@ -37,10 +38,11 @@ Read the current official Hono OpenAPI examples before changing OpenAPI schemas 
 | Request | Read before implementation | Record |
 | --- | --- | --- |
 | New documented route | Zod OpenAPI example | Path, method, request/response schemas, security |
-| Shared component schema | Zod OpenAPI example | Schema name and fields |
+| Shared component schema | Zod OpenAPI example | Schema name and fields; define shape with `$defining-zod-schemas` when needed |
 | OpenAPI document endpoint | Zod OpenAPI example | Path and OpenAPI version |
 | Bearer security scheme | Project API design and Zod OpenAPI example | Scheme id and protected routes |
 | API reference UI | Swagger UI or Scalar example | UI path and document URL |
+| Standalone JSON Schema export | `$converting-zod-json-schema` | Conversion target outside `/openapi.json` |
 
 ## Completion check
 

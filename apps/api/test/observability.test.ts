@@ -3,6 +3,7 @@ import { Writable } from 'node:stream'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
 import { createLogger, type Logger } from '../src/observability/logger.js'
+import { setRequestIdTag } from '../src/observability/sentry.js'
 import { testLogger } from './test-logger.js'
 
 function createCapturingLogger() {
@@ -23,7 +24,7 @@ function createCapturingLogger() {
 test('writes a structured HTTP completion log with requestId correlation', async () => {
   const { logger, lines } = createCapturingLogger()
 
-  await createApp({ logger }).request('/health', {
+  await createApp({ logger, setRequestId: setRequestIdTag }).request('/health', {
     headers: { 'X-Request-Id': 'log-request-1' },
   })
 
@@ -44,7 +45,7 @@ test('exposes a request-scoped child logger on the Hono context', async () => {
   const { logger, lines } = createCapturingLogger()
   let requestLogger: Logger | undefined
 
-  await createApp({ logger }, (app) => {
+  await createApp({ logger, setRequestId: setRequestIdTag }, (app) => {
     app.get('/log-check', (context) => {
       requestLogger = context.get('logger')
       context.get('logger').info({ step: 'handler' }, 'handler log')
@@ -80,7 +81,10 @@ test('binds requestId on the Sentry isolation path', async () => {
 })
 
 test('responses include secure headers', async () => {
-  const response = await createApp({ logger: testLogger }).request('/health')
+  const response = await createApp({
+    logger: testLogger,
+    setRequestId: setRequestIdTag,
+  }).request('/health')
 
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')
 })

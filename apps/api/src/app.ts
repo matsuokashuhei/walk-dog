@@ -4,7 +4,6 @@ import { sentry } from '@sentry/hono/node'
 import { secureHeaders } from 'hono/secure-headers'
 import { type Logger } from './observability/logger.js'
 import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
-import { setRequestIdTag } from './observability/sentry.js'
 
 type Variables = {
   requestId: string
@@ -15,7 +14,7 @@ export type App = OpenAPIHono<{ Variables: Variables }>
 
 export type AppDependencies = {
   logger: Logger
-  setRequestId?: (requestId: string) => void
+  setRequestId: (requestId: string) => void
 }
 
 const errorSchema = z.object({
@@ -50,7 +49,6 @@ export const createApp = (
   dependencies: AppDependencies,
   registerRoutes?: (app: App) => void,
 ): App => {
-  const bindRequestId = dependencies.setRequestId ?? setRequestIdTag
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
   if (Sentry.getClient()) {
@@ -59,7 +57,7 @@ export const createApp = (
   app.use('*', async (context, next) => {
     const requestId = context.req.header('X-Request-Id') ?? crypto.randomUUID()
     context.set('requestId', requestId)
-    bindRequestId(requestId)
+    dependencies.setRequestId(requestId)
     await next()
     context.header('X-Request-Id', requestId)
   })

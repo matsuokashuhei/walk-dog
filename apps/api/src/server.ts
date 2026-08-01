@@ -4,7 +4,7 @@ import { closeDbClient } from './db/client.js'
 export function createShutdownHandler(
   server: { close: (callback: (error?: Error) => void) => unknown },
   pool: Pool,
-  sentry: { close: () => Promise<void> } = { close: async () => undefined },
+  sentry: { close: () => Promise<void> },
 ): () => Promise<void> {
   return async () => {
     try {

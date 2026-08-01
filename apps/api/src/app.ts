@@ -1,8 +1,18 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import pino from 'pino'
+import { secureHeaders } from 'hono/secure-headers'
+import { type Logger } from './observability/logger.js'
+import { createObservabilityMiddleware } from './observability/request-middleware.js'
+import { createNoopSentryBridge, type SentryBridge } from './observability/sentry.js'
 
 type Variables = { requestId: string }
 
 export type App = OpenAPIHono<{ Variables: Variables }>
+
+export type AppDependencies = {
+  logger?: Logger
+  sentry?: Pick<SentryBridge, 'setRequestId' | 'captureException'>
+}
 
 const errorSchema = z.object({
   code: z.string(),
@@ -32,7 +42,19 @@ const healthRoute = createRoute({
   },
 })
 
-export const createApp = (registerRoutes?: (app: App) => void): App => {
+export const createApp = (
+  registerRoutes?: (app: App) => void,
+  dependencies: AppDependencies = {},
+): App => {
+  const logger = dependencies.logger ?? pino({
+    level: 'silent',
+    base: {
+      service: 'api',
+      environment: 'test',
+      release: 'test',
+    },
+  })
+  const sentry = dependencies.sentry ?? createNoopSentryBridge()
   const app = new OpenAPIHono<{ Variables: Variables }>()
   app.openAPIRegistry.register('Error', errorSchema)
   app.use('*', async (context, next) => {
@@ -41,18 +63,23 @@ export const createApp = (registerRoutes?: (app: App) => void): App => {
     await next()
     context.header('X-Request-Id', requestId)
   })
+  app.use('*', secureHeaders())
+  app.use('*', createObservabilityMiddleware(logger, sentry))
   app.notFound((context) => context.json({
     code: 'NOT_FOUND',
     message: 'The requested resource was not found.',
     requestId: context.get('requestId'),
     retryable: false,
   }, 404))
-  app.onError((_error, context) => context.json({
-    code: 'INTERNAL_ERROR',
-    message: 'An unexpected error occurred.',
-    requestId: context.get('requestId'),
-    retryable: false,
-  }, 500))
+  app.onError((error, context) => {
+    sentry.captureException(error)
+    return context.json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId: context.get('requestId'),
+      retryable: false,
+    }, 500)
+  })
   app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
   app.doc('/openapi.json', {
     openapi: '3.1.0',

@@ -4,12 +4,6 @@
 
 R0は、認証済みCognito principalを内部Ownerへ一意に対応付けるPostgreSQL schema、Drizzle migration、ローカルDocker開発環境を提供する。
 
-## Release Context
-
-- R0は`owners`を業務データとして提供する。
-- R1はOwner表示名、Dog、Goal Revision、Walk、Participant、Eventの業務データを提供する。
-- R3はOwner Avatar参照を提供する。
-
 ## Data Model
 
 R0のmigrationは`owners`を作成する。
@@ -29,8 +23,6 @@ CREATE TABLE owners (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
-
-R1のmigrationは`display_name`を提供する。初回認証直後は未設定を受け付け、設定値は前後空白を除いた1〜100文字を受け付ける。R3のmigrationは、APIがS3へ保存したOwner Avatarの参照として`avatar_url`を提供する。
 
 ## Components and Data Flow
 

@@ -21,6 +21,8 @@ docker compose -f compose.yml up -d postgres --wait
 docker compose -f compose.yml run --rm migrate
 ```
 
+The `migrate` service runs `drizzle-kit migrate` with `DATABASE_URL` from `.env.local`.
+
 Run the database integration suite through the same Compose network:
 
 ```bash

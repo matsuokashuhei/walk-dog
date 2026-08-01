@@ -11,6 +11,7 @@
 - `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-design.md`
 - `docs/logs/20260801151350-r0-postgresql-local-development/postgresql-local-development-plan.md`
 - `docs/logs/20260801151350-r0-postgresql-local-development/completion-checklist.md`
+- `docs/logs/20260801151350-r0-postgresql-local-development/final-fix-report.md`
 
 ## Transcript
 
@@ -154,3 +155,11 @@ Drizzleの補助プロパティによりschemaテストが失敗したため、�
 ### Assistant
 
 schemaテストを4つのR0永続化列とSQL列名の検証へ調整し、Drizzleの補助プロパティをDB列の判定から除外した。`owners`生成SQLをレビューしてTask 2を完了した。
+
+### User
+
+Drizzle Kitの標準migration commandを使うよう指示した。
+
+### Assistant
+
+Drizzle公式のPostgreSQL migration、Kit overview、generate、migrate、config fileのドキュメントを確認した。`drizzle-kit migrate`は生成済みSQL migrationを適用する標準commandであり、`dbCredentials.url`が必要であることを確認した。`npm run migrate`を`drizzle-kit migrate`へ変更し、`drizzle.config.ts`へ`DATABASE_URL`を追加した。独自migration runnerと専用テストを削除し、統合テストは適用済みの`owners` schemaと一意制約を検証する構成へ変更した。

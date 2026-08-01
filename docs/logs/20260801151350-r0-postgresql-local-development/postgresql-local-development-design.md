@@ -27,10 +27,10 @@ CREATE TABLE owners (
 ## Components and Data Flow
 
 - `apps/api/src/db/schema/owners.ts`は`owners`のDrizzle schemaを定義する。
-- `apps/api/src/config.ts`は`DATABASE_URL`と`DATABASE_POOL_MAX`を検証し、APIとmigrationへ接続設定を提供する。
+- `apps/api/src/config.ts`は`DATABASE_URL`と`DATABASE_POOL_MAX`を検証し、APIへ接続設定を提供する。
 - `apps/api/src/db/client.ts`はプロセスごとに1つの`pg.Pool`を作成し、Drizzle clientへ渡す。プロセス終了時はPoolを閉じる。
-- `apps/api/src/db/migrate.ts`は専用のPostgreSQL接続で`walk_dog_schema_migration` advisory lockを取得し、Drizzle migratorで未適用migrationを順に適用する。処理は適用したmigration versionを出力し、接続終了時にlockを解放する。
-- `apps/api/drizzle.config.ts`はPostgreSQL dialect、`src/db/schema`、`drizzle/`を定義する。
+- `apps/api/drizzle.config.ts`はPostgreSQL dialect、`src/db/schema`、`drizzle/`、`DATABASE_URL`を定義する。
+- `apps/api/package.json`の`migrate` scriptはDrizzle Kitの`migrate` commandで未適用SQL migrationを適用する。
 - `apps/api/drizzle/`はDrizzle Kitが生成したSQL migrationとschema snapshotを保持する。
 - `apps/compose.yml`は`postgres`、`migrate`、`api`を起動する。`postgres`のhealthcheck完了後に`migrate`がmigrationを適用し、`migrate`成功後に`api`が開始する。
 - `apps/.env.example`はローカルPostgreSQL接続値を提供し、`apps/.env.local`は開発環境の接続値を提供する。
@@ -40,15 +40,15 @@ CREATE TABLE owners (
 | Command | Result |
 | --- | --- |
 | `npm run db:generate` | Drizzle schemaからSQL migrationを生成する。生成SQLをレビューしてから適用する。 |
-| `npm run migrate` | advisory lockのもとで未適用migrationを順に適用する。 |
+| `npm run migrate` | Drizzle Kitで未適用SQL migrationを順に適用する。 |
 | `npm run test:integration` | `owners`テーブルと`cognito_subject`一意制約を確認する。 |
 | `docker compose -f apps/compose.yml up --build` | migration完了後にAPIを起動する。 |
 
 ## States and Verification
 
-- `migrate`は適用したmigration名を出力し、成功状態を返す。
+- `migrate`は未適用SQL migrationを適用し、成功状態を返す。
 - `api`は`migrate`の成功状態を前提に開始し、`GET /health`へHTTP 200と`{ "status": "ok" }`を返す。
-- `migrate`は適用できないmigration名とPostgreSQLの結果を出力して失敗状態を返す。開発者はmigrationを更新して再実行する。
+- `migrate`はSQL migrationを適用できない場合に失敗状態を返す。開発者はmigrationを更新して再実行する。
 - 統合テストはmigration適用後に`owners`の作成と、同じ`cognito_subject`の2件目の登録が一意制約の結果を返すことを確認する。
 
 ## Sources

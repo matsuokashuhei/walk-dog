@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Provide the R0 `owners` PostgreSQL schema, Drizzle migration runner, and a local Docker environment that starts the API after migration succeeds.
+**Goal:** Provide the R0 `owners` PostgreSQL schema, Drizzle Kit migration command, and a local Docker environment that starts the API after migration succeeds.
 
-**Architecture:** `apps/api/src/db/schema` is the TypeScript source of truth. Drizzle Kit generates SQL into `apps/api/drizzle`; the generated SQL is reviewed and a dedicated node-postgres connection applies it under the `walk_dog_schema_migration` advisory lock. `apps/compose.yml` starts PostgreSQL, a one-shot migration service, and the Hono API in dependency order.
+**Architecture:** `apps/api/src/db/schema` is the TypeScript source of truth. Drizzle Kit generates SQL into `apps/api/drizzle`; the generated SQL is reviewed and `drizzle-kit migrate` applies it using `DATABASE_URL` from `drizzle.config.ts`. `apps/compose.yml` starts PostgreSQL, a one-shot migration service, and the Hono API in dependency order.
 
 **Tech Stack:** TypeScript, Hono, Drizzle ORM, Drizzle Kit, node-postgres (`pg`), PostgreSQL 16, Docker Compose, Node test runner, and `tsx`.
 
@@ -17,9 +17,9 @@
 - The TypeScript Drizzle schema is the migration source of truth.
 - Use `drizzle-kit generate`, review its SQL, then apply it; do not use `drizzle-kit push`.
 - Each API process owns one `pg.Pool`; `DATABASE_POOL_MAX` defaults to 10 and shutdown closes the pool.
-- Runtime migration uses the `walk_dog_schema_migration` advisory lock and releases it when the connection closes.
+- `npm run migrate` invokes `drizzle-kit migrate` with the PostgreSQL URL from the environment.
 - `postgres` becomes healthy before `migrate` runs, and `api` starts after `migrate` exits successfully.
-- Migration failure returns a failed process state with the migration version and PostgreSQL result in structured output; the API starts after a successful retry.
+- Migration failure returns a failed process state; the API starts after a successful retry.
 
 ## Documentation Reviewed
 
@@ -81,7 +81,7 @@ From `apps/api`, run `npm install drizzle-orm pg` and `npm install --save-dev dr
 ```json
 {
   "db:generate": "drizzle-kit generate",
-  "migrate": "tsx src/db/migrate.ts",
+  "migrate": "drizzle-kit migrate",
   "test:integration": "tsx --test test/integration/**/*.test.ts"
 }
 ```
@@ -167,16 +167,15 @@ git add apps/api/src/db/schema apps/api/drizzle.config.ts apps/api/drizzle apps/
 git commit -m "feat: add owners drizzle schema"
 ```
 
-### Task 3: Locked migration runner and PostgreSQL integration test
+### Task 3: Drizzle Kit migration command and PostgreSQL integration test
 
 **Files:**
-- Create: `apps/api/src/db/migrate.ts`
 - Create: `apps/api/test/integration/owners.test.ts`
+- Modify: `apps/api/drizzle.config.ts`
 - Modify: `apps/api/package.json`
 
 **Interfaces:**
-- `runMigrations(config: { databaseUrl: string }): Promise<void>`
-- `npm run migrate` exits nonzero when applying a migration fails.
+- `npm run migrate` invokes `drizzle-kit migrate` and exits nonzero when applying a migration fails.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -185,12 +184,9 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Client } from 'pg'
 import { loadDatabaseConfig } from '../../src/config.js'
-import { runMigrations } from '../../src/db/migrate.js'
-
 const config = loadDatabaseConfig(process.env)
 
 test('migration creates owners and enforces subject uniqueness', async () => {
-  await runMigrations({ databaseUrl: config.databaseUrl })
   const client = new Client({ connectionString: config.databaseUrl })
   await client.connect()
   try {
@@ -208,23 +204,23 @@ test('migration creates owners and enforces subject uniqueness', async () => {
 
 With PostgreSQL available, run `npm run test:integration`.
 
-Expected: FAIL because `src/db/migrate.ts` does not exist.
+Expected: FAIL because the `owners` table has not been migrated.
 
-- [ ] **Step 3: Implement the locked migration runner**
+- [ ] **Step 3: Configure the standard Drizzle Kit migration command**
 
-Create a dedicated `pg.Client`, connect with `DATABASE_URL`, run `pg_advisory_lock(hashtext('walk_dog_schema_migration'))`, and call `migrate(drizzle(client), { migrationsFolder })` from `drizzle-orm/node-postgres/migrator`. Read the Drizzle migration journal after the call and emit a JSON line containing applied versions. In `finally`, run the matching advisory unlock and close the client; let the original migration error reach the process.
+Add `dbCredentials.url` from `DATABASE_URL` to `drizzle.config.ts` and set the package `migrate` script to `drizzle-kit migrate`.
 
 - [ ] **Step 4: Run integration verification and build**
 
 Run: `npm run migrate && npm run test:integration && npm run build`
 
-Expected: migration succeeds, the integration test passes, and the build succeeds.
+Expected: Drizzle Kit applies the migration, the integration test passes, and the build succeeds.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/src/db/migrate.ts apps/api/test/integration/owners.test.ts apps/api/package.json
-git commit -m "feat: add locked postgres migrations"
+git add apps/api/drizzle.config.ts apps/api/test/integration/owners.test.ts apps/api/package.json
+git commit -m "feat: use drizzle kit for postgres migrations"
 ```
 
 ### Task 4: Compose services and local verification
@@ -287,7 +283,7 @@ docker compose -f apps/compose.yml logs migrate
 docker compose -f apps/compose.yml down
 ```
 
-Expected: `migrate` exits 0, `api` is running, `/health` returns the existing HTTP 200 JSON and `X-Request-Id`, and migration logs include the generated version.
+Expected: `migrate` exits 0, `api` is running, `/health` returns the existing HTTP 200 JSON and `X-Request-Id`, and Drizzle Kit reports the migration command completed.
 
 - [ ] **Step 5: Record and document verification**
 
@@ -304,6 +300,6 @@ git commit -m "feat: add local postgres compose environment"
 
 ## Plan Self-Review
 
-- Spec coverage: the plan covers the R0 `owners` table, validated settings, pool lifecycle, generated SQL review, advisory-locked migration, Compose ordering, failure state, and automated plus HTTP verification.
+- Spec coverage: the plan covers the R0 `owners` table, validated settings, pool lifecycle, generated SQL review, Drizzle Kit migration, Compose ordering, failure state, and automated plus HTTP verification.
 - Placeholder scan: no `TBD`, `TODO`, or unspecified implementation step remains; generated migration filenames are produced by the exact command and recorded after generation.
-- Type consistency: `loadDatabaseConfig`, `createDbClient`, `closeDbClient`, and `runMigrations` signatures are reused consistently.
+- Type consistency: `loadDatabaseConfig`, `createDbClient`, and `closeDbClient` signatures are reused consistently.

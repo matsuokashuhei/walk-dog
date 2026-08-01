@@ -21,6 +21,8 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` with the purpose, timestamp, baseline, and an empty artifact list.
 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
 6. Append the first user request and every visible user or assistant message in chronological order.
+7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.
+8. Continue to design or implementation only when the specification review status is `ready`. An `awaiting-confirmation` or `blocked` review pauses the session until the required decision or source clarification is recorded.
 
 ## Session Artifacts
 

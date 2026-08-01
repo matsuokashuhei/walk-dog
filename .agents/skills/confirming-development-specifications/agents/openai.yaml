@@ -1,0 +1,4 @@
+interface:
+  display_name: "Confirm Development Specifications"
+  short_description: "Verify release scope and specification evidence"
+  default_prompt: "Use $confirming-development-specifications before starting this development session."

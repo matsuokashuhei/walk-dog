@@ -23,6 +23,7 @@ Read the current official Zod 4 schema docs before changing schema definitions. 
 - Import with `import { z } from 'zod'` (Zod 4 classic API).
 - Keep `tsconfig` `strict` enabled; Zod depends on it.
 - Prefer top-level Zod 4 string formats such as `z.url()`, `z.email()`, and `z.uuid()` over deprecated chained string helpers.
+- Use `.nonempty()` for non-empty string validation instead of `.min(1)`. `.nonempty()` rejects empty strings semantically, while `.min(1)` accepts any single character including whitespace.
 - Prefer `z.enum()` over deprecated `z.nativeEnum()`.
 - Prefer `z.strictObject()` / `z.looseObject()` over deprecated `.strict()` / `.passthrough()` on plain objects.
 - Attach documentation metadata with `.meta()` or `.describe()` when the schema feeds OpenAPI or JSON Schema.
@@ -43,6 +44,7 @@ Read the current official Zod 4 schema docs before changing schema definitions. 
 | --- | --- | --- |
 | New object or field | Objects and primitives | Field names, types, optionality |
 | String format constraint | Strings and string formats | Format helper and allowed values |
+| Non-empty string | Strings | `.nonempty()` over `.min(1)` |
 | Enum or literal set | Enums and literals | Allowed values and TypeScript usage |
 | Pick, omit, extend, or partial | Object composition sections | Base schema and derived shape |
 | Discriminated union | Discriminated unions | Discriminator key and variants |

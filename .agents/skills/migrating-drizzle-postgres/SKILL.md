@@ -31,9 +31,22 @@ Run this sequence for a database shape change. Do not skip review.
 
 1. Update the TypeScript schema (`$defining-drizzle-schemas`).
 2. Run `drizzle-kit generate` with the project `drizzle.config`.
-3. Review the generated SQL migration for the intended shape change.
-4. Apply with the project migrate command (`npm run migrate` or the documented Kit migrate entrypoint).
-5. Verify the applied migration version and dependent checks.
+3. Rename the generated migration SQL file from the random Drizzle name to a meaningful name (e.g. `0000_create_owners.sql`). Update the `tag` field in `drizzle/meta/_journal.json` to match.
+4. Review the generated SQL migration for the intended shape change.
+5. Apply with the project migrate command (`npm run migrate` or the documented Kit migrate entrypoint).
+6. Verify the applied migration version and dependent checks.
+
+## Migration naming
+
+- Drizzle Kit generates random migration names (e.g. `0000_flaky_the_stranger.sql`). Rename them to describe the change (e.g. `0000_create_owners.sql`) and update the matching `tag` in `_journal.json`.
+
+## Undeployed tables
+
+- When a table from a pending migration has not been deployed to any environment, do not create a new migration for changes. Instead:
+  1. Delete the pending migration SQL file and its snapshot in `drizzle/meta/`.
+  2. Delete the corresponding `_journal.json` entry.
+  3. Run `drizzle-kit generate` to produce a single migration with the current schema.
+  4. Rename the file and update `_journal.json` as described above.
 
 ## Workflow
 

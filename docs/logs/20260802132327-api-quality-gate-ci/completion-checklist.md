@@ -18,6 +18,6 @@ CI: same four scripts as parallel matrix jobs (no test / E2E / Docker / ECR)
 
 - [x] Local `npm ci` + `npm run check` in `apps/api` succeeded
 - [x] Reusable workflow uses Node 24, SHA-pinned checkout/setup-node, `npm ci`, per-gate `npm run <gate>`
-- [ ] PR / publish Actions show four parallel gate jobs (after review-fix push)
+- [x] PR / publish Actions show four parallel gate jobs (after review-fix push)
 - [x] Crit skipped (tool unavailable); publish proceeds without Crit comments
 - [x] PR #22 review comments addressed (parallel gates, `publish` name, low-context job names, reusable workflow)

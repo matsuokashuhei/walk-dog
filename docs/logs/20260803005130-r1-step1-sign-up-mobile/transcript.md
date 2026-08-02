@@ -113,15 +113,19 @@ Bだ
 
 B1だ
 
+### User
+
+S2だ
+
 ### Assistant
 
-OTP 取得はメール受信箱 API（B1）を採用。SES sandbox 制約の確認を提示。
+SES sandbox 維持 + Mailosaur 宛先検証（S2）を採用。設計の再承認を求める。
 
 ## Sync
 
-- trigger: user chose OTP retrieval B1 (email inbox API)
+- trigger: user chose SES path S2 (verify Mailosaur in sandbox)
 - status: synced
-- artifacts updated: design.md, transcript
+- artifacts updated: design.md (E2E B+B1+S2), transcript
 - artifacts already current: specification-review.md
 - baseline conflicts: none
-- next permitted action: continue (await SES/inbox provider decision)
+- next permitted action: continue (design approval)

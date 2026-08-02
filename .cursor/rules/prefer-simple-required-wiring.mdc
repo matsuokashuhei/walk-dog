@@ -1,0 +1,29 @@
+---
+description: Prefer simple required wiring over defensive optionality that hides missing collaborators
+alwaysApply: true
+---
+
+# Prefer simple required wiring
+
+Do not write overly defensive code. Prefer simplicity over pathological complexity.
+
+When a collaborator is part of normal operation, require it at the type or call boundary. Do not soften the API so callers can omit it, and do not hide the omission behind a quiet substitute.
+
+## Prefer
+
+- Required parameters or required fields for collaborators the unit always needs
+- Explicit injection at every call site, including tests
+- Failures that surface at compile time or at the call boundary
+
+## Avoid
+
+- Optional collaborators that exist only so a default can fill them in
+- Quiet substitutes for missing wiring (silent loggers, empty closes, no-op callbacks)
+- Production factories that absorb test conveniences
+
+## Still allowed
+
+- Product contracts that define a real fallback or disabled state (for example generate a missing request ID, or skip Sentry when the DSN is empty)
+- Test-only stubs kept in test helpers, passed in explicitly
+
+Canonical principle: `AGENTS.md`.

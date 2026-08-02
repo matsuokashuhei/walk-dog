@@ -1,6 +1,6 @@
 ---
 name: designing-github-actions-ci
-description: Design high-quality GitHub Actions CI from official guides, including gate tables, reusable workflows, parallel jobs, low-context names, least permissions, and SHA-pinned actions. Use when adding or changing .github/workflows, reusable workflows, CI quality gates, or publish pipelines. Do not use for application feature code unrelated to Actions.
+description: Design high-quality GitHub Actions CI from official guides, including gate tables, reusable workflows, parallel jobs, low-context names, least permissions, and SHA-pinned actions. Use when designing or changing workflow files under .github/workflows, CI jobs that run those workflows, or publish pipelines implemented as workflows. Do not use when only authoring skills or docs about CI, or for application feature code unrelated to Actions.
 ---
 
 # Designing GitHub Actions CI
@@ -32,7 +32,7 @@ Do not present path filters, file lists, or reusable layout before the gate WHAT
 - Prefer parallel jobs (matrix allowed) for independent static gates such as lint, jscpd, knip, and typecheck.
 - Use low-context workflow and job display names (`publish`, `lint`, `pull-request`). Drop redundant qualifiers such as `Main publish` or `API quality gate`.
 - Match package runtime to the Dockerfile or documented Node version for that package.
-- Keep ECR publish, OIDC, SARIF upload, and E2E Compose as separate design slices when they are not in the current purpose.
+- Keep container image publish, cloud deploy identity federation, code-scanning result upload, and dependency-service E2E as separate design slices when they are not in the current purpose. When `docs/development/staged-development.md` already names a concrete mechanism, use that name only in the session design slice list.
 
 ## Workflow
 

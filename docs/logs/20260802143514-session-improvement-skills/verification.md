@@ -12,7 +12,7 @@
 - Workflow syntax: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (reachable)
 - Reuse workflows: https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows (reachable)
 - Secure use: https://docs.github.com/en/actions/reference/security/secure-use (reachable)
-- Secure your work: https://docs.github.com/en/actions/how-tos/secure-your-work (listed in skill)
+- Secure your work: https://docs.github.com/en/actions/how-tos/secure-your-work (reachable)
 
 ## Classification
 

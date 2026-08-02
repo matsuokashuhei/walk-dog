@@ -29,7 +29,12 @@ Eliminate future user corrections by turning findings into skill solutions. Soft
    - add or tighten a `REQUIRED SUB-SKILL` hook in `run-dev-session`.
 4. Write `docs/logs/<timestamp>-<slug>/retrospective.md` with findings, proposed skill paths and section intent, and status `awaiting-approval` or `ready-to-implement`. Add it to the transcript Artifact List.
 5. Present the skill proposals to the user. Implement skill changes only after explicit approval.
-6. After approved skill edits land, update the retrospective with outcomes and sync session artifacts via `syncing-session-artifacts`.
+6. After approved skill edits land (or after the user declines implementation and only the retrospective record remains), update the retrospective with outcomes and sync session artifacts via `syncing-session-artifacts`. After that sync, the next permitted action is `open-follow-up-pr`.
+7. Land the retrospective (and any approved skill edits) on `main` via a follow-up PR:
+   - Prefer a new branch from `origin/main` (the original session branch may already be deleted).
+   - Commit `retrospective.md`, the updated transcript and Artifact List, and any approved skill file changes.
+   - Push and open a follow-up PR against `main`.
+8. When that follow-up PR merges (retrospective-only or including approved skill edits), the next permitted action is `done`.
 
 ## Finding quality bar
 
@@ -51,4 +56,5 @@ Before closing the retrospective:
 - every finding has a skill action;
 - `retrospective.md` exists and is listed in the transcript Artifact List;
 - proposals were presented, and any implementation waited for user approval;
-- status reflects whether skill edits are still awaiting approval or already applied.
+- status reflects whether skill edits are still awaiting approval or already applied;
+- a follow-up PR path to `main` is defined or already opened (`open-follow-up-pr` → `done`).

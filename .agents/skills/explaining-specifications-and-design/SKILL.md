@@ -30,6 +30,7 @@ Structure every user-facing specification or design explanation as WHAT, then HO
 3. Draft HOW only after WHAT is complete enough to judge.
 4. Draft WHY as the shortest link from WHAT/HOW to acceptance or release fit.
 5. Present to the user in WHAT → HOW → WHY order. Put the same order at the top of design and plan documents when those documents are the approval surface.
+6. After the WHAT/HOW/WHY explanation is complete, if the user must approve an effect, switch to `run-dev-session` Decision Questions. Do not use Decision Questions as a substitute for the explanation.
 
 ## Completion check
 
@@ -37,4 +38,5 @@ Before asking for design or plan approval, confirm:
 
 - the user-facing summary uses WHAT → HOW → WHY in that order;
 - verification or gate subjects are explicit when the purpose includes quality gates or CI;
-- HOW does not substitute for a missing WHAT.
+- HOW does not substitute for a missing WHAT;
+- any remaining approval request uses Decision Questions only after the explanation, not instead of it.

@@ -45,3 +45,7 @@ Created worktree, added three skills, wired REQUIRED SUB-SKILL hooks into `run-d
 Commit `4483130`、push、PR #23 を作成した。
 
 https://github.com/matsuokashuhei/walk-dog/pull/23
+
+### Assistant
+
+PR #23 review comments addressed: narrowed GHA hook to workflow design/change; after-merge follow-up PR landing; generalized deferred slices; Decision Questions handoff; verification URL marked reachable. Co-authored-by nit deferred (Cursor-injected; no git config change).

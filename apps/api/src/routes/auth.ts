@@ -2,7 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi'
 import { eq } from 'drizzle-orm'
 import type { App } from '../app.js'
 import type { DbInstance } from '../db/client.js'
-import { createCognitoClient, type CognitoConfig } from '../auth/cognito.js'
+import type { CognitoClient } from '../auth/cognito.js'
 import { owners } from '../schema/owner.js'
 
 const signUpRequestSchema = z.object({
@@ -114,10 +114,9 @@ function ownerFromCognitoSubject(
 // eslint-disable-next-line max-lines-per-function
 export function registerAuthRoutes(
   app: App,
-  cognitoConfig: CognitoConfig,
   database: DbInstance,
+  cognito: CognitoClient,
 ): void {
-  const cognito = createCognitoClient(cognitoConfig)
 
   app.openapi(signUpRoute, async (ctx) => {
     const requestId = ctx.get('requestId')

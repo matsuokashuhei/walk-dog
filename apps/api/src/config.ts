@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 const cognitoConfigSchema = z.object({
-  AWS_REGION: z.string().min(1, { error: 'AWS_REGION must be a non-empty string' }),
-  COGNITO_USER_POOL_ID: z.string().min(1, { error: 'COGNITO_USER_POOL_ID must be a non-empty string' }),
-  COGNITO_CLIENT_ID: z.string().min(1, { error: 'COGNITO_CLIENT_ID must be a non-empty string' }),
+  AWS_REGION: z.string().nonempty({ error: 'AWS_REGION must be a non-empty string' }),
+  COGNITO_USER_POOL_ID: z.string().nonempty({ error: 'COGNITO_USER_POOL_ID must be a non-empty string' }),
+  COGNITO_CLIENT_ID: z.string().nonempty({ error: 'COGNITO_CLIENT_ID must be a non-empty string' }),
 })
 
 const databaseConfigSchema = z.object({

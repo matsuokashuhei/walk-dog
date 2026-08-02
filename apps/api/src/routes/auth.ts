@@ -140,6 +140,9 @@ export function registerAuthRoutes(
       if (error instanceof Error && error.name === 'InvalidParameterException') {
         return ctx.json({ code: 'INVALID_INPUT', message: '有効なメールアドレスを入力してください。', requestId, retryable: false }, 400)
       }
+      if (error instanceof Error && (error.name === 'TooManyRequestsException' || error.name === 'LimitExceededException')) {
+        return ctx.json({ code: 'RATE_LIMITED', message: 'しばらく待ってから再試行してください。', requestId, retryable: true }, 429)
+      }
       throw error
     }
   })
@@ -185,6 +188,9 @@ export function registerAuthRoutes(
             return ctx.json({ code: 'AUTHENTICATION_FAILED', message: 'このアカウントは既に確認済みです。サインインしてください。', requestId, retryable: false }, 409)
           case 'AliasExistsException':
             return ctx.json({ code: 'CODE_ALREADY_USED', message: 'このコードは既に使用されています。サインインしてください。', requestId, retryable: false }, 400)
+          case 'TooManyRequestsException':
+          case 'LimitExceededException':
+            return ctx.json({ code: 'RATE_LIMITED', message: 'しばらく待ってから再試行してください。', requestId, retryable: true }, 429)
         }
       }
       throw error

@@ -90,3 +90,17 @@ P1/P2 は見送り。retrospective-only で follow-up PR を main へ出す。
 - artifacts updated: retrospective.md (user decision), transcript
 - baseline conflicts: none
 - next permitted action: open-follow-up-pr
+
+### Assistant
+
+Follow-up PR #24 を作成（retrospective-only）。
+
+https://github.com/matsuokashuhei/walk-dog/pull/24
+
+## Artifact sync
+
+- status: synced
+- trigger: open-follow-up-pr
+- artifacts updated: transcript (PR URL)
+- baseline conflicts: none
+- next permitted action: done (when #24 merges)

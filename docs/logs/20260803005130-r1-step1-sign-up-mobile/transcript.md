@@ -13,6 +13,8 @@
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/specification-review.md`
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/design.md`
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/plan.md`
+  - `docs/logs/20260803005130-r1-step1-sign-up-mobile/e2e-codex-brief.md`
+  - `docs/logs/20260803005130-r1-step1-sign-up-mobile/e2e-report.md`
 
 ## Release context
 
@@ -122,15 +124,19 @@ S2だ
 
 OK
 
+### User
+
+このセッション内であなたがCodexにテストを依頼してほしい。あなたはテスト結果を評価する。
+
 ### Assistant
 
-Task 1–2 完了。Task 3 で Maestro インストールを試みたが、環境ポリシーにより拒否（E2EテストはCodexに依頼せよ）。`.maestro` フロー雛形は作成済み。E2E実行の扱いをユーザーに確認する。
+Herdr で Codex（e2e-codex）を起動し E2E brief を依頼。e2e-report.md を受領して評価する。
 
 ## Sync
 
-- trigger: Task 3 blocked on E2E execution policy
+- trigger: Codex E2E report received
 - status: synced
-- artifacts updated: transcript; `.maestro/` flows scaffolded
-- artifacts already current: design.md, plan.md, specification-review.md
+- artifacts updated: e2e-codex-brief.md, e2e-report.md (pending Artifact List), transcript
+- artifacts already current: design.md, plan.md
 - baseline conflicts: none
-- next permitted action: continue (await direction on Codex E2E handoff)
+- next permitted action: continue (await Mailosaur secrets / env fixes for E2E re-run)

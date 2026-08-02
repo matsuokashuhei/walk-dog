@@ -231,3 +231,7 @@ Artifact sync (post-retrospective skill edits):
 - artifacts updated: retrospective.md, transcript.md, confirming-development-specifications/SKILL.md, run-dev-session/SKILL.md
 - baseline conflicts: none
 - next permitted action: open-follow-up-pr
+
+### Assistant
+
+Follow-up PR を作成した: https://github.com/matsuokashuhei/walk-dog/pull/27

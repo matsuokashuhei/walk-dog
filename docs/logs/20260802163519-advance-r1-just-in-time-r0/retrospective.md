@@ -49,4 +49,4 @@ F2/F3/F4 share one root cause (plan sync without evidence/cross-check); S1+S2 co
 - Skill edits: applied after user approval (`Ok`)
   - S1: `.agents/skills/confirming-development-specifications/SKILL.md` — mobile R0 decomposition, delivered-claim evidence, Gaps checked cross-checks, plan-table readiness gate
   - S2: `.agents/skills/run-dev-session/SKILL.md` — Development Plan Sync prerequisite-table cross-check steps
-- Follow-up PR: opened from `origin/main` after merge (branch may differ from the deleted session branch)
+- Follow-up PR: https://github.com/matsuokashuhei/walk-dog/pull/27

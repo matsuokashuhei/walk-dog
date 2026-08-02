@@ -97,11 +97,27 @@ specification-review.md を作成。status: ready。next permitted action: desig
 
 Open questions 3件を確認済みとして記録。specification-review を `ready` に更新。設計の再承認を求める。
 
+### User
+
+自動E2Eをやれ
+
+### Assistant
+
+完了ゲートを自動E2Eに変更。A（UI+モック）と B（実API/Cognito）を提示。
+
+### User
+
+Bだ
+
+### Assistant
+
+案 B を採用。OTP 取得方法の確認を提示。
+
 ## Sync
 
-- trigger: user confirmed specification open questions
+- trigger: user chose Maestro E2E option B (real API/Cognito)
 - status: synced
-- artifacts updated: specification-review.md (status → ready), transcript
-- artifacts already current: design.md
+- artifacts updated: design.md (E2E gate B), transcript
+- artifacts already current: specification-review.md
 - baseline conflicts: none
-- next permitted action: continue (design approval)
+- next permitted action: continue (await OTP retrieval decision)

@@ -24,7 +24,9 @@ This matrix is the normative lifecycle definition. A skill result is accepted wh
 | `session-recorded` | `confirming-development-specifications` | `completed / brainstorm-design` | `specification-ready` |
 | `session-recorded` | `confirming-development-specifications` | `awaiting-user / request-specification-decision` | `specification-awaiting-user` |
 | `session-recorded` | `confirming-development-specifications` | `blocked / retry-specification-confirmation` | `session-recorded` |
-| `specification-awaiting-user` | `decision` dispatch group | decision accepted with a supplied `resume_state` | supplied `resume_state` |
+| `specification-awaiting-user` | `decision` dispatch group | `approve-specification-decision` | `session-recorded` |
+| `specification-awaiting-user` | `decision` dispatch group | `provide-specification-source` | `session-recorded` |
+| `specification-awaiting-user` | `decision` dispatch group | `revise-purpose` | `purpose-undecided` |
 | `specification-ready` | `superpowers:brainstorming` | `completed / continue-design-exploration` | `design-exploration` |
 | `specification-ready` | `superpowers:brainstorming` | `blocked / retry-design-exploration` | `specification-ready` |
 | `design-exploration` | `superpowers:brainstorming` | `awaiting-user / request-design-decision` | `design-awaiting-user` |
@@ -38,18 +40,25 @@ This matrix is the normative lifecycle definition. A skill result is accepted wh
 | `design-approved` | `superpowers:writing-plans` | `blocked / retry-plan-writing` | `design-approved` |
 | `plan-awaiting-approval` | `decision` dispatch group | `approve-plan` | `plan-approved` |
 | `plan-awaiting-approval` | `decision` dispatch group | `revise-plan` | `design-approved` |
-| `plan-approved` | `task-start` dispatch group | `completed / execute-current-task` | `implementation-active` |
-| `implementation-active` | `task-completion` dispatch group | `completed / start-next-task` | `implementation-active` |
-| `implementation-active` | `task-completion` dispatch group | `completed / prepare-review` | `implementation-complete` |
-| `implementation-active` | execution result | `awaiting-user / request-implementation-decision` | `implementation-awaiting-user` |
-| `implementation-active` | execution result | `blocked / retry-current-task` | `implementation-active` |
-| `implementation-awaiting-user` | `decision` dispatch group | decision accepted with `resume_state: implementation-active` | `implementation-active` |
+| `plan-approved` | `task-preparation` dispatch group | `completed / execute-current-task` | `implementation-active` |
+| `plan-approved` | `task-preparation` dispatch group | `blocked / retry-task-preparation` | `plan-approved` |
+| `task-ready` | `task-preparation` dispatch group | `completed / execute-current-task` | `implementation-active` |
+| `task-ready` | `task-preparation` dispatch group | `blocked / retry-task-preparation` | `task-ready` |
+| `implementation-active` | `superpowers:executing-plans` for the current task | `completed / record-task-result` | `implementation-task-complete` |
+| `implementation-active` | `superpowers:executing-plans` for the current task | `awaiting-user / request-implementation-decision` | `implementation-awaiting-user` |
+| `implementation-active` | `superpowers:executing-plans` for the current task | `blocked / retry-current-task` | `implementation-active` |
+| `implementation-awaiting-user` | `decision` dispatch group | `resume-current-task` | `implementation-active` |
+| `implementation-awaiting-user` | `decision` dispatch group | `revise-plan` | `design-approved` |
+| `implementation-task-complete` | `task-completion` dispatch group | `completed / start-next-task` | `task-ready` |
+| `implementation-task-complete` | `task-completion` dispatch group | `completed / prepare-review` | `implementation-complete` |
+| `implementation-task-complete` | `task-completion` dispatch group | `blocked / retry-task-result-recording` | `implementation-task-complete` |
 | `implementation-complete` | `pre-review` dispatch group | `completed / request-independent-review` | `review-ready` |
 | `implementation-complete` | `pre-review` dispatch group | `blocked / retry-artifact-sync` | `implementation-complete` |
 | `review-ready` | `reviewing-development-session` | `completed / publish-session` | `review-complete` |
 | `review-ready` | `reviewing-development-session` | `awaiting-user / request-review-decision` | `review-awaiting-user` |
 | `review-ready` | `reviewing-development-session` | `blocked / retry-independent-review` | `review-ready` |
-| `review-awaiting-user` | `decision` dispatch group | decision accepted with `resume_state: review-ready` | `review-ready` |
+| `review-awaiting-user` | `decision` dispatch group | `apply-review-direction` | `review-ready` |
+| `review-awaiting-user` | `decision` dispatch group | `revise-plan` | `design-approved` |
 | `review-complete` | `initial-publication` dispatch group | `completed / await-initial-pr-merge` | `initial-pr-open` |
 | `review-complete` | `initial-publication` dispatch group | `blocked / retry-initial-publication` | `review-complete` |
 | `initial-pr-open` | GitHub merge event validation | `initial-pr-merged` | `initial-pr-merged` |
@@ -57,9 +66,16 @@ This matrix is the normative lifecycle definition. A skill result is accepted wh
 | `initial-pr-merged` | `retrospecting-dev-session` | `blocked / retry-retrospective` | `initial-pr-merged` |
 | `retrospective-awaiting-user` | `decision` dispatch group | `approve-skill-changes` | `retrospective-changes-approved` |
 | `retrospective-awaiting-user` | `decision` dispatch group | `publish-retrospective-record` | `retrospective-ready` |
-| `retrospective-changes-approved` | `task-completion` dispatch group | `completed / publish-follow-up` | `retrospective-ready` |
-| `retrospective-changes-approved` | execution result | `awaiting-user / request-retrospective-change-decision` | `retrospective-awaiting-user` |
-| `retrospective-changes-approved` | execution result | `blocked / retry-retrospective-changes` | `retrospective-changes-approved` |
+| `retrospective-changes-approved` | `task-preparation` dispatch group | `completed / execute-retrospective-change` | `retrospective-implementation-active` |
+| `retrospective-changes-approved` | `task-preparation` dispatch group | `blocked / retry-task-preparation` | `retrospective-changes-approved` |
+| `retrospective-implementation-active` | `superpowers:executing-plans` for the current approved skill change | `completed / record-retrospective-change-result` | `retrospective-change-complete` |
+| `retrospective-implementation-active` | `superpowers:executing-plans` for the current approved skill change | `awaiting-user / request-retrospective-change-decision` | `retrospective-change-awaiting-user` |
+| `retrospective-implementation-active` | `superpowers:executing-plans` for the current approved skill change | `blocked / retry-retrospective-change` | `retrospective-implementation-active` |
+| `retrospective-change-awaiting-user` | `decision` dispatch group | `resume-retrospective-change` | `retrospective-implementation-active` |
+| `retrospective-change-awaiting-user` | `decision` dispatch group | `publish-approved-results` | `retrospective-ready` |
+| `retrospective-change-complete` | `task-completion` dispatch group | `completed / start-next-retrospective-change` | `retrospective-changes-approved` |
+| `retrospective-change-complete` | `task-completion` dispatch group | `completed / publish-follow-up` | `retrospective-ready` |
+| `retrospective-change-complete` | `task-completion` dispatch group | `blocked / retry-task-result-recording` | `retrospective-change-complete` |
 | `retrospective-ready` | `follow-up-publication` dispatch group | `completed / await-follow-up-pr-merge` | `follow-up-pr-open` |
 | `retrospective-ready` | `follow-up-publication` dispatch group | `blocked / retry-follow-up-publication` | `retrospective-ready` |
 | `follow-up-pr-open` | GitHub merge event validation | `follow-up-pr-merged` | `follow-up-pr-merged` |
@@ -90,7 +106,7 @@ decision:
   answers:
     - name: answer-name
       effect: state established by this answer
-      resume_state: state selected after this answer is recorded
+      resume_state: resulting state declared for this current state and answer in the lifecycle matrix
       resume_inputs:
         key: preserved-value
 ```
@@ -167,10 +183,10 @@ Each group validates one result before dispatching the next skill.
 | Group | Ordered skills | Completion action |
 | --- | --- | --- |
 | `session-start` | `recording-development-session` → `syncing-session-artifacts` | `confirm-specifications` |
-| `decision` | `recording-development-session` → `syncing-development-plan` when the classification is plan-level → `syncing-session-artifacts` | supplied decision action and `resume_state` |
-| `artifact-change` | `recording-development-session` → `syncing-session-artifacts` | supplied primary lifecycle action |
-| `task-start` | `tracking-development-tasks` → `superpowers:executing-plans` | `execute-current-task` |
-| `task-completion` | task verification → `tracking-development-tasks` → `recording-development-session` → `syncing-session-artifacts` | `start-next-task`, `prepare-review`, or `publish-follow-up` |
+| `decision` | `recording-development-session` → `syncing-development-plan` → `syncing-session-artifacts` | decision action and resulting state declared in the lifecycle matrix |
+| `artifact-change` | `recording-development-session` → `syncing-session-artifacts` | primary action declared by the caller's lifecycle matrix row |
+| `task-preparation` | `tracking-development-tasks` marks the current approved task active | `execute-current-task` or `execute-retrospective-change` |
+| `task-completion` | verified execution result → `tracking-development-tasks` marks the task complete → `recording-development-session` → `syncing-session-artifacts` | `start-next-task`, `prepare-review`, `start-next-retrospective-change`, or `publish-follow-up` |
 | `pre-review` | `recording-development-session` → `syncing-session-artifacts` | `request-independent-review` |
 | `initial-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-session` | `await-initial-pr-merge` |
 | `follow-up-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-follow-up` | `await-follow-up-pr-merge` |
@@ -198,13 +214,13 @@ The implementation plan is stored in the same session directory and becomes exec
 
 ### Decisions and staged-plan synchronization
 
-The orchestrator treats a user decision as a state input. The `decision` dispatch group records the decision and calls `syncing-development-plan` for plan-level classification. The plan synchronization skill updates the matching section of `docs/development/staged-development.md` and returns the synchronized result before the group resumes the primary lifecycle state.
+The orchestrator treats a user decision as a state input. The `decision` dispatch group records every confirmed decision and calls `syncing-development-plan`. The plan synchronization skill classifies the decision as plan-level, implementation-local, deferred release, or agent-process. It updates the matching section of `docs/development/staged-development.md` for a plan-level decision and returns the classified, synchronized result before the group resumes the primary lifecycle state.
 
-Implementation-local, deferred release, and agent-process classifications are recorded with their positive lifecycle effect and resume state.
+Implementation-local, deferred release, and agent-process classifications are recorded with their positive lifecycle effect and resulting state.
 
 ### Task progress
 
-`tracking-development-tasks` receives the approved top-level tasks and every task transition. It maintains the live todo state and returns the progress announcement. `superpowers:executing-plans` performs the approved task work and returns verification evidence to the tracker.
+`tracking-development-tasks` receives the approved top-level tasks and every task transition. The `task-preparation` group marks one approved task active. `superpowers:executing-plans` then performs that task and returns its status and verification evidence. The `task-completion` group records a completed result, marks the task complete, synchronizes artifacts, and selects the next declared task or review state. Approved retrospective skill changes use the same preparation, execution, and completion sequence.
 
 ### Review and publication
 

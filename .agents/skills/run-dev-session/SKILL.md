@@ -49,9 +49,9 @@ The live `update_plan` todos and the conversation announcements are the task-pro
 
 ## Session Artifacts
 
-`docs/logs/<timestamp>-<slug>/` is the location for the session transcript and every record created for that session: checklists, implementation plans, task briefs, implementation reports, review reports, and verification records.
+`docs/logs/<timestamp>-<slug>/` holds the session transcript and every session record.
 
-Add each session record to the transcript artifact list when it is created or changed. The artifact list identifies the records that session publication stages with the transcript.
+**REQUIRED SUB-SKILL:** Use `syncing-session-artifacts` whenever a session record is created or changed, and after review-response commits, follow-up fix commits, or merges into the session branch. Run it again immediately before Crit and immediately before Publish. Continue only when that skill returns `status: synced` with the matching next permitted action.
 
 ## Purpose Boundary
 
@@ -82,11 +82,13 @@ Place a separator after the proposal. Then ask one concise question that states 
 
 ## Artifacts and Review
 
-Maintain the artifact list in the transcript as files are created or changed. Do not modify a path that was already changed in the baseline; record the conflict and ask for direction.
+**REQUIRED SUB-SKILL:** Complete `syncing-session-artifacts` with `next permitted action: crit` before starting Crit.
 
-Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain.
+Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain. After each review-response commit, run `syncing-session-artifacts` again before the next Crit round or Publish.
 
 ## Publish
+
+**REQUIRED SUB-SKILL:** Complete `syncing-session-artifacts` with `next permitted action: publish` immediately before these steps.
 
 1. Stage the records in the session artifact list and `transcript.md`.
 2. Commit the session artifacts and log on the dedicated branch.

@@ -1,5 +1,5 @@
 {
-  "id": "b41c9d77-ee15-4c0f-b9d7-17b45e3ca2f7",
+  "id": "5c7fbb57-4ce3-420e-88df-fa3e72ebf330",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -12,8 +12,7 @@
           "name": "owner_id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "cognito_subject": {
           "name": "cognito_subject",

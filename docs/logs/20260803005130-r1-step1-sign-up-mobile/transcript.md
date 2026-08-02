@@ -128,15 +128,19 @@ OK
 
 このセッション内であなたがCodexにテストを依頼してほしい。あなたはテスト結果を評価する。
 
+### User
+
+MAILOSAUR は有料サービスなんだね。やめよう。
+
 ### Assistant
 
-Herdr で Codex（e2e-codex）を起動し E2E brief を依頼。e2e-report.md を受領して評価する。
+Mailosaur（B1/S2）を破棄。実 API E2E（B）維持前提で OTP 取得の代替案を提示。
 
 ## Sync
 
-- trigger: Codex E2E report received
+- trigger: user abandoned Mailosaur
 - status: synced
-- artifacts updated: e2e-codex-brief.md, e2e-report.md (pending Artifact List), transcript
-- artifacts already current: design.md, plan.md
+- artifacts updated: design.md (OTP retrieval awaiting replacement), transcript
+- artifacts already current: e2e-report.md
 - baseline conflicts: none
-- next permitted action: continue (await Mailosaur secrets / env fixes for E2E re-run)
+- next permitted action: continue (await OTP replacement decision)

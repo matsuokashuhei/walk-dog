@@ -124,7 +124,7 @@ The scoped re-review returned CLEAN after the registry and lifecycle fixes. Both
 ### 2026-08-02 — Final session-record commits
 
 - commit: `607f787 docs: record worktree cleanup sync`
-- commit: `pending — normalize this transcript chronologically`
+- commit: `5e94b9e docs: normalize session transcript order`
 - status: synced
 - trigger: session transcript ordering correction
 - artifacts updated: transcript

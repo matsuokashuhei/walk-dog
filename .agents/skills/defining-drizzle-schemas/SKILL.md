@@ -9,14 +9,14 @@ Read the current official Drizzle PostgreSQL schema docs before changing schema 
 
 ## Required documentation review
 
-1. Open <https://orm.drizzle.team/docs/pg/overview> and identify the schema change.
+1. Open <https://orm.drizzle.team/docs/overview> and identify the schema change.
 2. Read the matching docs before implementing:
-   - Schema layout and table declaration: <https://orm.drizzle.team/docs/pg/sql-schema-declaration>
-   - Column types: <https://orm.drizzle.team/docs/pg/column-types>
-   - Indexes and constraints: <https://orm.drizzle.team/docs/pg/indexes-constraints>
-   - Relations used by relational queries: <https://orm.drizzle.team/docs/pg/relations>
-   - PostgreSQL schemas (`pgSchema`) when needed: <https://orm.drizzle.team/docs/pg/schemas>
-   - Sequences or views when needed: <https://orm.drizzle.team/docs/pg/sequences>, <https://orm.drizzle.team/docs/pg/views>
+   - Schema layout and table declaration: <https://orm.drizzle.team/docs/sql-schema-declaration>
+   - Column types: <https://orm.drizzle.team/docs/column-types>
+   - Indexes and constraints: <https://orm.drizzle.team/docs/indexes-constraints>
+   - Relations used by relational queries: <https://orm.drizzle.team/docs/relations>
+   - PostgreSQL schemas (`pgSchema`) when needed: <https://orm.drizzle.team/docs/schemas>
+   - Sequences or views when needed: <https://orm.drizzle.team/docs/sequences>, <https://orm.drizzle.team/docs/views>
 3. Record the documentation URLs read and the schema decision in the active session log, design, or pull request description.
 
 ## Project defaults

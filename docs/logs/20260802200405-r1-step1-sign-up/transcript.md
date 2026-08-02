@@ -296,4 +296,46 @@ PR #32 マージ。
 
 ### Assistant
 
-transcript.md を発見。会話を転記中。
+transcript.md を発見。会話を転記。
+
+## 継続情報
+
+### マージ済み
+- PR #29 (#29): owners schema + Cognito client（mainにマージ済み）
+- PR #30 (#30): sign-up + verify API endpoints（mainにマージ済み）
+- PR #32 (#32): 振り返り + スキル改善（mainにマージ済み）
+
+### 未完了（PR 3, PR 4）
+
+以下のMobile実装が未着手。他のエージェントがこの情報から続行可能。
+
+#### PR 3 — Mobile: API client + Auth state
+
+実装済みのAPIエンドポイント:
+- `POST /v1/auth/sign-up`: `{ email }` → `{ requestId, username, session, codeDelivery }`
+- `POST /v1/auth/verify`: `{ username, session, code }` → `{ requestId, accessToken, idToken, refreshToken, owner }`
+
+作成すべきファイル:
+- `apps/mobile/src/lib/api.ts`: fetch wrapper（base URL, JSON, error抽出, 401 detection）
+- `apps/mobile/src/lib/auth.tsx`: expo-secure-store（access/id/refresh token保存・復元）+ React Context
+- `apps/mobile/src/app/_layout.tsx`: AuthProvider + 認証状態による画面分岐
+
+依存パッケージ: `expo-secure-store` が必要。
+
+#### PR 4 — Mobile: Sign Up + Verify screens
+
+作成すべきファイル:
+- `apps/mobile/src/app/auth/_layout.tsx`: 未認証Stackレイアウト
+- `apps/mobile/src/app/auth/sign-up.tsx`: email入力 → POST /v1/auth/sign-up → /verifyへ遷移
+- `apps/mobile/src/app/auth/verify.tsx`: OTP入力 → POST /v1/auth/verify → トークン保存 → トップへ遷移
+
+画面状態: Loading / Error（メッセージ+再試行）/ Input form
+
+### API動作確認環境
+
+- AWS Cognito User Pool: `ap-northeast-1_JtAcxAaub`（walkdog-local-user）
+- AWS Cognito Client ID: `43upvfsbiucgg4662phjvm8am8`（walkdog-local-app）
+- SES: `local.walkdog.cacheandbuffer.com` 検証済み、実稼働モードではない（sandbox）
+- テスト用SES verified identities: `matzuokashuheiii@gmail.com`, `matzuokashuhei@gmail.com`
+- ローカルPostgreSQL: `postgresql://walk_dog:password@localhost:5432/walk_dog_dev`
+- API起動: `AWS_REGION=ap-northeast-1 COGNITO_USER_POOL_ID=ap-northeast-1_JtAcxAaub COGNITO_CLIENT_ID=43upvfsbiucgg4662phjvm8am8 DATABASE_URL=postgresql://walk_dog:password@localhost:5432/walk_dog_dev ENVIRONMENT=development RELEASE=local npx tsx --import ./src/instrument.ts src/index.ts`

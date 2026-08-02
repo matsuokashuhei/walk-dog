@@ -123,6 +123,10 @@ Review fixesを検証した。`git diff --check` は成功し、設計・仕様�
 
 再reviewは、仕様判断のresume state、全判断の分類責務、task実行と結果記録の順序に残る3件を返した。仕様判断の固定遷移、全判断への `syncing-development-plan`、通常taskとretrospective changeの準備・実行・完了状態へ修正した。
 
+### Assistant
+
+最終reviewはpurpose承認のbootstrap分類経路を1件返した。`session-start` が承認済みpurposeをrecording、plan classification、artifact syncの順に処理する設計へ修正した。
+
 ## Artifact sync
 
 - status: synced

@@ -182,7 +182,7 @@ Each group validates one result before dispatching the next skill.
 
 | Group | Ordered skills | Completion action |
 | --- | --- | --- |
-| `session-start` | `recording-development-session` → `syncing-session-artifacts` | `confirm-specifications` |
+| `session-start` | `recording-development-session` records the approved bootstrap purpose → `syncing-development-plan` classifies it → `syncing-session-artifacts` | `confirm-specifications` |
 | `decision` | `recording-development-session` → `syncing-development-plan` → `syncing-session-artifacts` | decision action and resulting state declared in the lifecycle matrix |
 | `artifact-change` | `recording-development-session` → `syncing-session-artifacts` | primary action declared by the caller's lifecycle matrix row |
 | `task-preparation` | `tracking-development-tasks` marks the current approved task active | `execute-current-task` or `execute-retrospective-change` |
@@ -191,7 +191,7 @@ Each group validates one result before dispatching the next skill.
 | `initial-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-session` | `await-initial-pr-merge` |
 | `follow-up-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-follow-up` | `await-follow-up-pr-merge` |
 
-Every visible user or assistant message enters `recording-development-session` before the next primary lifecycle action. Every confirmed decision enters the `decision` group. Every created or changed artifact enters the `artifact-change` group or a more specific group containing the same recording and synchronization steps.
+Every visible user or assistant message enters `recording-development-session` before the next primary lifecycle action. The approved bootstrap purpose is preserved as workspace-preparation input and then enters the `session-start` group for recording and classification. Every confirmed decision after session creation enters the `decision` group. Every created or changed artifact enters the `artifact-change` group or a more specific group containing the same recording and synchronization steps.
 
 ### Specification and design exploration
 
@@ -214,7 +214,7 @@ The implementation plan is stored in the same session directory and becomes exec
 
 ### Decisions and staged-plan synchronization
 
-The orchestrator treats a user decision as a state input. The `decision` dispatch group records every confirmed decision and calls `syncing-development-plan`. The plan synchronization skill classifies the decision as plan-level, implementation-local, deferred release, or agent-process. It updates the matching section of `docs/development/staged-development.md` for a plan-level decision and returns the classified, synchronized result before the group resumes the primary lifecycle state.
+The orchestrator treats a user decision as a state input. The `session-start` group records and classifies the approved bootstrap purpose after the workspace exists. The `decision` dispatch group records every later confirmed decision and calls `syncing-development-plan`. The plan synchronization skill classifies the decision as plan-level, implementation-local, deferred release, or agent-process. It updates the matching section of `docs/development/staged-development.md` for a plan-level decision and returns the classified, synchronized result before the group resumes the primary lifecycle state.
 
 Implementation-local, deferred release, and agent-process classifications are recorded with their positive lifecycle effect and resulting state.
 

@@ -87,11 +87,31 @@ ok
 
 設計文書を自己レビューし、ユーザー承認とPR mergeの外部イベント遷移を状態表へ追加した。プレースホルダー、内部矛盾、未確定のスコープ項目は残っていない。
 
+### Assistant
+
+設計文書とセッション記録を commit `4c2537d` に保存し、文書レビューを依頼した。
+
+### User
+
+PRを作ってください。
+
+### Assistant
+
+公開前ゲートとして session artifacts の同期とCrit reviewを開始したが、`crit` commandは環境に存在しなかった。
+
+### User
+
+Critは削除済みと説明した。
+
+### Assistant
+
+設計のreview責務を `superpowers:requesting-code-review` と `superpowers:receiving-code-review` に置き換えた。
+
 ## Artifact sync
 
 - status: synced
-- trigger: design document creation and self-review
+- trigger: pre-review synchronization after review-method decision
 - artifacts updated: `transcript.md`, `orchestrate-dev-session-design.md`
-- artifacts already current: `specification-review.md`
+- artifacts already current: `specification-review.md`, `orchestrate-dev-session-design.md`
 - baseline conflicts: none
-- next permitted action: continue
+- next permitted action: review

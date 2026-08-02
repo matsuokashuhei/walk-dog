@@ -61,7 +61,7 @@ blocking:
 | `recording-development-session` | Session context, visible messages, artifact changes, and decisions | Transcript, Artifact List, chronological messages, and decision records |
 | `syncing-development-plan` | Confirmed decisions and session records | Staged-plan classification and synchronized plan result |
 | `tracking-development-tasks` | Approved plan and task event | Live todo state and task progress announcement |
-| `reviewing-development-session` | Synchronized review artifacts | Crit rounds, resolved comments, replies, and review completion |
+| `reviewing-development-session` | Synchronized review artifacts | Independent review rounds, evaluated findings, applied fixes, responses, and review completion |
 | `publishing-development-session` | Review-complete session artifacts | Session commit, pushed branch, and open initial PR |
 | `publishing-development-follow-up` | Merged-session retrospective artifacts | Follow-up branch, commit, push, and open follow-up PR |
 
@@ -123,7 +123,7 @@ A plan-level decision reaches its next state after `syncing-development-plan` up
 
 ### Review and publication
 
-`syncing-session-artifacts` establishes the review-ready result. `reviewing-development-session` runs Crit, resolves comments with the applicable implementation skills, replies to each comment, repeats review rounds, and returns `review-complete` when the unresolved-comment count is zero.
+`syncing-session-artifacts` establishes the review-ready result. `reviewing-development-session` uses `superpowers:requesting-code-review` for an independent review and `superpowers:receiving-code-review` to evaluate each finding against repository evidence. It applies confirmed fixes with the applicable implementation skills, records the response to each finding, repeats review rounds, and returns `review-complete` when the unresolved-finding count is zero.
 
 `publishing-development-session` stages the Artifact List and transcript, commits them with the session deliverables, pushes the session branch, and opens the initial PR against `main`.
 
@@ -142,5 +142,5 @@ The explicit brainstorming transition makes specification and design exploration
 3. Run a responsibility-boundary scenario and confirm that `run-dev-session` performs state selection, skill dispatch, result validation, and state transition.
 4. Run a brainstorming-gate scenario from `specification-ready` through questions, approach comparison, section approval, design documentation, self-review, user review, and `superpowers:writing-plans`.
 5. Run a lifecycle scenario from purpose discovery through follow-up PR merge and confirm one accepted skill result for each transition.
-6. Run blocked-state scenarios for workspace preparation, specification confirmation, Crit resolution, and publication; confirm the observed state, message, and retry operation.
+6. Run blocked-state scenarios for workspace preparation, specification confirmation, review resolution, and publication; confirm the observed state, message, and retry operation.
 7. Compare transcript, specification review, design, plan, verification records, and Artifact List and confirm that every session artifact is synchronized.

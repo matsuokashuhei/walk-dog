@@ -1,0 +1,16 @@
+appId: com.cacheandbuffer.walkdog
+---
+- launchApp
+- assertVisible:
+    id: "sign-up-root"
+- tapOn:
+    id: "sign-up-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "sign-up-submit"
+- assertVisible:
+    id: "auth-error"
+- tapOn:
+    id: "sign-up-submit"
+- assertVisible:
+    id: "sign-up-root"

@@ -1,0 +1,5 @@
+appId: com.cacheandbuffer.walkdog
+---
+- launchApp
+- assertVisible:
+    id: "home-root"

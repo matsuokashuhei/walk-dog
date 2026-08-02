@@ -25,6 +25,7 @@
 3. Add OTP helper script that polls Mailosaur for Cognito code.
 4. Document/run prerequisites: local API + Cognito env, Simulator, Expo.
 5. Verify: Maestro flows pass against real API.
+6. **Execution note (2026-08-03):** Installing/running Maestro in this Cursor agent session was rejected (`E2EテストはCodexに依頼せよ`). Scaffold flows in-repo; run verification via Codex unless the user overrides.
 
 ## Task 4 — Crit + publish PR
 

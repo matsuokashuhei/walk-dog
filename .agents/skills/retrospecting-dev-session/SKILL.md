@@ -34,7 +34,7 @@ Eliminate future user corrections by turning findings into skill solutions. Soft
    - Prefer a new branch from `origin/main` (the original session branch may already be deleted).
    - Commit `retrospective.md`, the updated transcript and Artifact List, and any approved skill file changes.
    - Push and open a follow-up PR against `main`.
-8. When that follow-up PR merges (retrospective-only or including approved skill edits), the next permitted action is `done`.
+8. When that follow-up PR merges (retrospective-only or including approved skill edits), the next permitted action is `terminal-worktree-cleanup`; `run-dev-session` performs the cleanup and advances the session to `done` after every registered repository-owned worktree has a cleanup result.
 
 ## Finding quality bar
 
@@ -57,4 +57,4 @@ Before closing the retrospective:
 - `retrospective.md` exists and is listed in the transcript Artifact List;
 - proposals were presented, and any implementation waited for user approval;
 - status reflects whether skill edits are still awaiting approval or already applied;
-- a follow-up PR path to `main` is defined or already opened (`open-follow-up-pr` → `done`).
+- a follow-up PR path to `main` is defined or already opened (`open-follow-up-pr` → `terminal-worktree-cleanup` → `done`).

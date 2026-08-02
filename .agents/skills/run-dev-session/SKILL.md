@@ -17,8 +17,8 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 
 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
 2. Inspect `git status --short`. Record this baseline before changing files.
-3. Resolve the repository workspace root from the Git common directory. Create branch `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main` in `<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>`.
-4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, and an empty artifact list.
+3. Resolve the repository workspace root from the Git common directory. Create branch `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main` in `<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>`, and initialize an empty session `Worktrees` registry.
+4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, an empty `Worktrees` list, and an empty artifact list.
 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
 6. Append the first user request and every visible user or assistant message in chronological order.
 7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.
@@ -33,6 +33,7 @@ Repository-owned development files and session artifacts are created under the r
 3. Confirm that `.worktrees/` is covered by the repository `.gitignore` and that the resolved `WORKTREE_PATH` is under `${WORKSPACE_ROOT}/.worktrees/`.
 4. If the ignore check, directory creation, `git worktree add`, or path check fails, report the path and reason, provide the retry operation, and stop the session.
 5. Keep existing worktrees outside the workspace unchanged. New session files use the workspace-local worktree.
+6. After the path checks succeed, add the resolved path once to the session `Worktrees` registry and persist the same entry in the transcript `Worktrees` list. When this session creates another workspace, append its resolved path once to that ordered registry and persist the same entry before using it. The transcript list is the persisted record of the runtime registry, not a second cleanup list. Run `syncing-session-artifacts` after the record changes and continue only when the result is `status: synced`.
 
 ## Design and Plan
 
@@ -58,6 +59,8 @@ The live `update_plan` todos and the conversation announcements are the task-pro
 ## Session Artifacts
 
 `docs/logs/<timestamp>-<slug>/` holds the session transcript and every session record.
+
+The session `Worktrees` registry is the ordered ownership record for every workspace created by this session. Its transcript `Worktrees` list is the persisted representation of the same entries. Store workspace-relative paths in the transcript and resolve them against `WORKSPACE_ROOT` for Git operations.
 
 **REQUIRED SUB-SKILL:** Use `syncing-session-artifacts` whenever a session record is created or changed, and after review-response commits, follow-up fix commits, or merges into the session branch. Run it again immediately before Crit and immediately before Publish. Continue only when that skill returns `status: synced` with the matching next permitted action.
 
@@ -124,4 +127,10 @@ When the session pull request merges into `main` (including when the user asks t
    - Prefer a new branch from `origin/main` (the session branch may already be deleted after merge).
    - Commit `retrospective.md`, the updated transcript and Artifact List, and any approved skill file changes.
    - Push and open a follow-up PR against `main`.
-5. When the follow-up PR merges, or when the user declines skill implementation and only the retrospective record lands and merges, the next permitted action is `done`.
+5. When the follow-up PR merges, or when the user declines skill implementation and only the retrospective record lands and merges, the next permitted action is terminal worktree cleanup.
+6. Before reporting `done`, use `superpowers:finishing-a-development-branch` Step 6 for every path in the session `Worktrees` registry:
+   - Resolve the recorded paths against `WORKSPACE_ROOT` and change to the main repository root before removal.
+   - For each registered path under the workspace `.worktrees/` boundary, run `git worktree remove "$WORKTREE_PATH"` without a force option.
+   - After every owned path is removed, run `git worktree prune` and report the removed paths.
+   - When a path contains changes, preserve it, report the path and the same cleanup operation as the retry, and keep the session awaiting direction until cleanup succeeds.
+   - A path owned by the host environment remains in place and is reported with the platform cleanup operation. The session reaches `done` after every repository-owned registered path has a cleanup result and all cleanup gates have passed.

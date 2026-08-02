@@ -24,8 +24,10 @@
 | Flow | Success | Failure states |
 | --- | --- | --- |
 | Sign Up | username, session, codeDelivery → Verify へ遷移 | Loading → Error（message + 再試行） |
-| Verify | tokens + owner 保存 → 認証済みシェル | Loading → Error（message + 再試行 / 最初から） |
+| Verify | tokens + owner 保存 → 認証済み暫定ホーム | Loading → Error（message + 再試行 / 最初から） |
 | Launch | token あり → 認証済み / なし → Sign Up | — |
+
+Confirmed scope: Sign Up Mobile only. Dogs List is R1 Step 2. API paths are `/v1/auth/sign-up` and `/v1/auth/verify`.
 
 ### Valid transitions
 

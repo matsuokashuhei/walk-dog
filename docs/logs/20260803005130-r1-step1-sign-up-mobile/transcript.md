@@ -88,3 +88,20 @@ specification-review.md を作成。status: ready。next permitted action: desig
 - artifacts already current: design.md (approval deferred)
 - baseline conflicts: none
 - next permitted action: continue (await specification confirmation)
+
+### User
+
+全てOKだ
+
+### Assistant
+
+Open questions 3件を確認済みとして記録。specification-review を `ready` に更新。設計の再承認を求める。
+
+## Sync
+
+- trigger: user confirmed specification open questions
+- status: synced
+- artifacts updated: specification-review.md (status → ready), transcript
+- artifacts already current: design.md
+- baseline conflicts: none
+- next permitted action: continue (design approval)

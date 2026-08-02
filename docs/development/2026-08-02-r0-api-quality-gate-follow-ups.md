@@ -11,7 +11,7 @@
 
 ### 1. PR / main の GitHub Actions
 
-- **成果物:** `.github/workflows/pull-request.yml` と `.github/workflows/main-publish.yml` が `apps/api` で `npm ci` のあと `npm run check` を実行する。
+- **成果物:** `.github/workflows/api-check.yml` が `lint` / `jscpd` / `knip` / `typecheck` を並列実行する。`.github/workflows/pull-request.yml` と `.github/workflows/publish.yml` がそれを reusable workflow として呼び出す。
 - **参照:** `docs/specs/2026-07-26-hono-api-r0-design.md` の「継続的提供」
 
 ## Follow-up work

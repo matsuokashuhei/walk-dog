@@ -12,8 +12,9 @@
   - `docs/logs/20260802132327-api-quality-gate-ci/api-quality-gate-ci-design.md`
   - `docs/logs/20260802132327-api-quality-gate-ci/api-quality-gate-ci-plan.md`
   - `docs/logs/20260802132327-api-quality-gate-ci/completion-checklist.md`
+  - `.github/workflows/api-check.yml`
   - `.github/workflows/pull-request.yml`
-  - `.github/workflows/main-publish.yml`
+  - `.github/workflows/publish.yml`
   - `docs/development/2026-08-02-r0-api-quality-gate-follow-ups.md`
   - `docs/development/staged-development.md`
 
@@ -141,3 +142,20 @@ https://github.com/matsuokashuhei/walk-dog/pull/22
 | Defer E2E, SARIF, ECR OIDC on main | deferred | recorded in follow-up doc items 2+ and later R0 |
 | Node 24 + SHA-pinned Actions | implementation-local | encoded in workflows |
 | Crit review | outside tooling | skipped (Crit unavailable) |
+
+### User
+
+I added some comments on the PR check and address it
+
+### Assistant
+
+PR #22 のレビューに対応: reusable `api-check.yml` で lint / jscpd / knip / typecheck を並列実行。`publish` に改名。caller は thin wrapper。
+
+## Artifact sync
+
+- status: synced
+- trigger: review-response for PR #22 comments
+- artifacts updated: api-check.yml, pull-request.yml, publish.yml (replaced main-publish.yml), follow-up, staged-development, design, plan, checklist, transcript
+- artifacts already current: specification-review
+- baseline conflicts: none
+- next permitted action: continue

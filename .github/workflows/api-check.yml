@@ -1,20 +1,21 @@
-# Runs apps/api static quality gate on main.
-# Gate: npm run check → lint && jscpd && knip && typecheck
-# ECR publish / OIDC / image build remain later R0 work.
-name: Main publish
+# Reusable apps/api static gates: lint, jscpd, knip, typecheck (parallel).
+# Local convenience script `npm run check` remains sequential; CI runs gates separately.
+name: api-check
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  api-quality-gate:
-    name: API quality gate
+  check:
+    name: ${{ matrix.gate }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [lint, jscpd, knip, typecheck]
     defaults:
       run:
         working-directory: apps/api
@@ -32,5 +33,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run static quality gate
-        run: npm run check
+      - name: Run ${{ matrix.gate }}
+        run: npm run ${{ matrix.gate }}

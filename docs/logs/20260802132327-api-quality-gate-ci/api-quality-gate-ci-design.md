@@ -2,33 +2,32 @@
 
 ## Purpose
 
-Run the existing `apps/api` local static gate (`npm run check`) on Pull Requests and on `main`, matching follow-up #1 and the continuous-delivery quality-gate slice of the R0 Hono API design.
+Run the existing `apps/api` static gates on Pull Requests and on `main`, matching follow-up #1 and the continuous-delivery quality-gate slice of the R0 Hono API design.
 
-## What `npm run check` is
+## What the gates are
 
-`apps/api` defines:
+`apps/api` defines four gate scripts and a local sequential convenience script:
 
 ```text
-check = lint && jscpd && knip && typecheck
+check = lint && jscpd && knip && typecheck   # local only
 ```
 
-| Step | Command | Provides |
+| Gate | Command | Provides |
 | --- | --- | --- |
-| 1 | `npm run lint` | ESLint + SonarJS + TypeScript strict type-aware rules (size, complexity, unsafe any, floating promises, import cycles) |
-| 2 | `npm run jscpd` | Duplicate detection over `src` TypeScript |
-| 3 | `npm run knip` | Unused export / file / dependency / import detection |
-| 4 | `npm run typecheck` | `tsc --noEmit` |
+| lint | `npm run lint` | ESLint + SonarJS + TypeScript strict type-aware rules (size, complexity, unsafe any, floating promises, import cycles) |
+| jscpd | `npm run jscpd` | Duplicate detection over `src` TypeScript |
+| knip | `npm run knip` | Unused export / file / dependency / import detection |
+| typecheck | `npm run typecheck` | `tsc --noEmit` |
 
-Any failing step fails the whole gate. Current `check` does **not** run `npm test`, E2E, Docker build, or ECR publish. Those remain separate scripts or later follow-ups.
-
-This session wires that exact existing gate into GitHub Actions; it does not change the gate’s composition.
+CI runs the four gates as **parallel jobs**. Local `npm run check` remains the sequential convenience script and is not invoked by Actions. Gates do **not** include `npm test`, E2E, Docker build, or ECR publish.
 
 ## Scope
 
 In scope:
 
-- `.github/workflows/pull-request.yml` — on `pull_request`, checkout, Node.js 24, `npm ci`, `npm run check` in `apps/api`
-- `.github/workflows/main-publish.yml` — on `push` to `main`, the same sequence
+- `.github/workflows/api-check.yml` — reusable workflow (`workflow_call`) with parallel matrix jobs `lint` / `jscpd` / `knip` / `typecheck`
+- `.github/workflows/pull-request.yml` — calls `api-check` on `pull_request`
+- `.github/workflows/publish.yml` — calls `api-check` on push to `main` (display name `publish`)
 - Mark follow-up #1 complete in `docs/development/2026-08-02-r0-api-quality-gate-follow-ups.md`
 
 Out of scope (deferred):
@@ -37,20 +36,28 @@ Out of scope (deferred):
 - Docker image build
 - jscpd SARIF → Code Scanning
 - ECR OIDC publish, release manifest, Sentry release
-- `npm test` as a separate CI step (not part of current `check`)
+- `npm test` as a separate CI step
 
 ## Workflow shape
 
-Both workflows share one job, `api-quality-gate`:
+```text
+pull-request.yml ──┐
+                   ├──► api-check.yml ──► lint | jscpd | knip | typecheck (parallel)
+publish.yml ───────┘
+```
+
+Each matrix job:
 
 1. `actions/checkout` (pinned by full commit SHA)
 2. `actions/setup-node` with Node 24 and `cache: npm`, `cache-dependency-path: apps/api/package-lock.json`
 3. `npm ci` with `working-directory: apps/api`
-4. `npm run check` with `working-directory: apps/api`
+4. `npm run <gate>` with `working-directory: apps/api`
 
-PR workflow path filter (optional but preferred): run when `apps/api/**` or the workflow file itself changes, so unrelated mobile-only PRs skip the API gate until a shared monorepo gate exists.
+Job display names are the gate names (`lint`, `jscpd`, `knip`, `typecheck`). Caller job id is `check`.
 
-Main publish workflow runs on every push to `main` without a path filter so the default branch always records a gate result.
+PR path filter: `apps/api/**`, `.github/workflows/pull-request.yml`, `.github/workflows/api-check.yml`.
+
+Publish workflow runs on every push to `main` without a path filter.
 
 ## External actions
 
@@ -58,10 +65,10 @@ Pin `actions/checkout` and `actions/setup-node` to full commit SHAs (immutable),
 
 ## Follow-up document update
 
-Move item 1 into a Completed section (or mark it completed in place) and leave items 2–5 as remaining follow-ups. Item 2’s start condition (“GitHub Actions runs the API static gate”) becomes satisfied after this session merges.
+Move item 1 into a Completed section and leave items 2–5 as remaining follow-ups. Item 2’s start condition (“GitHub Actions runs the API static gate”) becomes satisfied after this session merges.
 
 ## Verification
 
 - Local: `cd apps/api && npm run check`
-- Static review of YAML: triggers, Node 24, working directory, `npm ci` then `npm run check`
-- Post-merge: confirm the workflow runs on GitHub Actions
+- Static review of YAML: reusable `workflow_call`, parallel matrix gates, Node 24, callers `pull-request` / `publish`
+- Post-merge / on PR: confirm four parallel gate jobs run on GitHub Actions

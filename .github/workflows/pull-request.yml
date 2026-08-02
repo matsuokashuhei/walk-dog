@@ -1,36 +1,16 @@
-# Runs apps/api static quality gate on pull requests.
-# Gate: npm run check → lint && jscpd && knip && typecheck
-name: Pull Request
+# Calls reusable api-check on pull requests that touch the API package or workflows.
+name: pull-request
 
 on:
   pull_request:
     paths:
       - "apps/api/**"
       - ".github/workflows/pull-request.yml"
+      - ".github/workflows/api-check.yml"
 
 permissions:
   contents: read
 
 jobs:
-  api-quality-gate:
-    name: API quality gate
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: apps/api/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run static quality gate
-        run: npm run check
+  check:
+    uses: ./.github/workflows/api-check.yml

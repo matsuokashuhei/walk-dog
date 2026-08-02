@@ -1,0 +1,15 @@
+# Calls reusable api-check on push to main.
+# ECR publish / OIDC / image build remain later R0 work.
+name: publish
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    uses: ./.github/workflows/api-check.yml

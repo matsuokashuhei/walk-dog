@@ -4,21 +4,24 @@
 
 ## Goal
 
-Add Pull Request and main publish GitHub Actions workflows that run `npm ci` then `npm run check` in `apps/api`, and mark follow-up #1 complete.
+Add Pull Request and publish GitHub Actions workflows that run the four `apps/api` static gates, and mark follow-up #1 complete.
 
 ## Gate under test
 
-CI executes the current `apps/api` script:
+Local convenience:
 
 ```text
 npm run check
-  → lint (ESLint + SonarJS + TS strict)
-  → jscpd (duplication in src)
-  → knip (unused code / deps)
-  → typecheck (tsc --noEmit)
+  → lint && jscpd && knip && typecheck
 ```
 
-Not included in `check` today: unit tests, E2E, image build, ECR. Do not expand `check` in this plan.
+CI (parallel matrix via reusable `api-check.yml`):
+
+```text
+lint | jscpd | knip | typecheck
+```
+
+Not included: unit tests, E2E, image build, ECR.
 
 ## Task 1: Pull Request workflow
 
@@ -26,17 +29,16 @@ Not included in `check` today: unit tests, E2E, image build, ECR. Do not expand 
 - Create: `.github/workflows/pull-request.yml`
 
 - [x] Add workflow triggered on `pull_request`
-- [x] Job `api-quality-gate`: checkout (SHA-pinned), setup-node 24 with npm cache on `apps/api/package-lock.json`
-- [x] `npm ci` then `npm run check` in `apps/api`
-- [x] Path filter for `apps/api/**` and `.github/workflows/pull-request.yml`
+- [x] Call reusable `api-check.yml` (job id `check`)
+- [x] Path filter for `apps/api/**`, `.github/workflows/pull-request.yml`, `.github/workflows/api-check.yml`
 
-## Task 2: Main publish workflow
+## Task 2: Publish workflow
 
 **Files:**
-- Create: `.github/workflows/main-publish.yml`
+- Create: `.github/workflows/publish.yml` (replaces `main-publish.yml`)
 
-- [x] Add workflow triggered on `push` to `main`
-- [x] Same job steps as Task 1 (no path filter)
+- [x] Add workflow `name: publish` triggered on `push` to `main`
+- [x] Call the same reusable `api-check.yml`
 - [x] Leave ECR / OIDC / image publish for a later R0 unit
 
 ## Task 3: Follow-up document + staged progress
@@ -52,8 +54,14 @@ Not included in `check` today: unit tests, E2E, image build, ECR. Do not expand 
 ## Task 4: Verify
 
 - [x] Run `npm run check` in `apps/api`
-- [x] Confirm both YAML files encode Node 24, `apps/api`, `npm ci`, `npm run check`
+- [x] Confirm reusable workflow encodes Node 24, `apps/api`, `npm ci`, per-gate scripts
 - [x] Update session checklist / transcript with verification results
+
+## Task 5: PR #22 review response
+
+- [x] Extract gates into `.github/workflows/api-check.yml` with parallel matrix jobs
+- [x] Rename workflow display name to `publish`; low-context job names `lint` / `jscpd` / `knip` / `typecheck`
+- [x] Thin callers to `uses: ./.github/workflows/api-check.yml`
 
 ## Constraints
 

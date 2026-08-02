@@ -11,6 +11,7 @@
 - Artifact List:
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/transcript.md`
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/specification-review.md`
+  - `docs/logs/20260803005130-r1-step1-sign-up-mobile/design.md`
 
 ## Release context
 
@@ -57,3 +58,16 @@ specification-review.md を作成。status: ready。next permitted action: desig
 - artifacts already current: Worktrees registry
 - baseline conflicts: none
 - next permitted action: continue (design)
+
+### Assistant
+
+設計を WHAT → HOW → WHY で提示。design.md を作成。承認待ち。
+
+## Sync
+
+- trigger: design.md created
+- status: synced
+- artifacts updated: design.md, transcript Artifact List
+- artifacts already current: specification-review.md
+- baseline conflicts: none
+- next permitted action: continue (await design approval)

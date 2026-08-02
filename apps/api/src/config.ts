@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const cognitoConfigSchema = z.object({
-  COGNITO_REGION: z.string().min(1, { error: 'COGNITO_REGION must be a non-empty string' }),
+  AWS_REGION: z.string().min(1, { error: 'AWS_REGION must be a non-empty string' }),
   COGNITO_USER_POOL_ID: z.string().min(1, { error: 'COGNITO_USER_POOL_ID must be a non-empty string' }),
   COGNITO_CLIENT_ID: z.string().min(1, { error: 'COGNITO_CLIENT_ID must be a non-empty string' }),
 })
@@ -50,7 +50,7 @@ export function loadCognitoConfig(env: NodeJS.ProcessEnv): {
   const config = cognitoConfigSchema.parse(env)
 
   return {
-    region: config.COGNITO_REGION,
+    region: config.AWS_REGION,
     userPoolId: config.COGNITO_USER_POOL_ID,
     clientId: config.COGNITO_CLIENT_ID,
   }

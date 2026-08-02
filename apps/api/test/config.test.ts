@@ -78,7 +78,7 @@ test('rejects a missing RELEASE', () => {
 test('loads Cognito configuration', () => {
   assert.deepEqual(
     loadCognitoConfig({
-      COGNITO_REGION: 'ap-northeast-1',
+      AWS_REGION: 'ap-northeast-1',
       COGNITO_USER_POOL_ID: 'ap-northeast-1_abc123',
       COGNITO_CLIENT_ID: 'test-client-id',
     }),
@@ -86,10 +86,10 @@ test('loads Cognito configuration', () => {
   )
 })
 
-test('rejects missing COGNITO_REGION', () => {
+test('rejects missing AWS_REGION', () => {
   assert.throws(
     () => loadCognitoConfig({ COGNITO_USER_POOL_ID: 'pool', COGNITO_CLIENT_ID: 'client' }),
-    /COGNITO_REGION/,
+    /AWS_REGION/,
   )
 })
 

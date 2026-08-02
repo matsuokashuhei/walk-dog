@@ -10,6 +10,7 @@
   - `docs/logs/20260802143514-session-improvement-skills/transcript.md`
   - `docs/logs/20260802143514-session-improvement-skills/specification-review.md`
   - `docs/logs/20260802143514-session-improvement-skills/verification.md`
+  - `docs/logs/20260802143514-session-improvement-skills/retrospective.md`
   - `.agents/skills/designing-github-actions-ci/SKILL.md`
   - `.agents/skills/explaining-specifications-and-design/SKILL.md`
   - `.agents/skills/retrospecting-dev-session/SKILL.md`
@@ -49,3 +50,57 @@ https://github.com/matsuokashuhei/walk-dog/pull/23
 ### Assistant
 
 PR #23 review comments addressed: narrowed GHA hook to workflow design/change; after-merge follow-up PR landing; generalized deferred slices; Decision Questions handoff; verification URL marked reachable. Co-authored-by nit deferred (Cursor-injected; no git config change).
+
+### User
+
+OK. マージしてください。
+
+### Assistant
+
+PR #23 を merge（`302a512`）。ローカル main worktree 衝突警告あり、GitHub 上は MERGED。
+
+### User
+
+はい
+
+### Assistant
+
+`retrospecting-dev-session` を実行。`retrospective.md` を作成。F1–F5 は `332b50c` で対応済み。未承認提案は P1（CI skill の URL 到達記録）と P2（Publish の Co-authored-by 指針）。
+
+## Artifact sync
+
+- status: synced
+- trigger: post-merge retrospective
+- artifacts updated: retrospective.md, transcript Artifact List
+- baseline conflicts: none
+- next permitted action: continue (awaiting approval of P1/P2, then `open-follow-up-pr`)
+
+### User
+
+今回はとくになし。
+
+### Assistant
+
+P1/P2 は見送り。retrospective-only で follow-up PR を main へ出す。
+
+## Artifact sync
+
+- status: synced
+- trigger: retrospective approval declined extras
+- artifacts updated: retrospective.md (user decision), transcript
+- baseline conflicts: none
+- next permitted action: open-follow-up-pr
+
+### Assistant
+
+Follow-up PR #24 を作成（retrospective-only）。
+
+https://github.com/matsuokashuhei/walk-dog/pull/24
+
+## Artifact sync
+
+- status: synced
+- trigger: open-follow-up-pr
+- artifacts updated: transcript (PR URL)
+- baseline conflicts: none
+- next permitted action: done (when #24 merges)

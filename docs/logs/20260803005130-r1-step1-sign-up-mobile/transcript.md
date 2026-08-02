@@ -109,15 +109,19 @@ Open questions 3件を確認済みとして記録。specification-review を `re
 
 Bだ
 
+### User
+
+B1だ
+
 ### Assistant
 
-案 B を採用。OTP 取得方法の確認を提示。
+OTP 取得はメール受信箱 API（B1）を採用。SES sandbox 制約の確認を提示。
 
 ## Sync
 
-- trigger: user chose Maestro E2E option B (real API/Cognito)
+- trigger: user chose OTP retrieval B1 (email inbox API)
 - status: synced
-- artifacts updated: design.md (E2E gate B), transcript
+- artifacts updated: design.md, transcript
 - artifacts already current: specification-review.md
 - baseline conflicts: none
-- next permitted action: continue (await OTP retrieval decision)
+- next permitted action: continue (await SES/inbox provider decision)

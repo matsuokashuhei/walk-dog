@@ -50,7 +50,7 @@ const verifyResponseSchema = z.object({
 
 const signUpRoute = createRoute({
   method: 'post',
-  path: '/auth/sign-up',
+  path: '/v1/auth/sign-up',
   tags: ['auth'],
   request: {
     body: { content: { 'application/json': { schema: signUpRequestSchema } } },
@@ -66,7 +66,7 @@ const signUpRoute = createRoute({
 
 const verifyRoute = createRoute({
   method: 'post',
-  path: '/auth/verify',
+  path: '/v1/auth/verify',
   tags: ['auth'],
   request: {
     body: { content: { 'application/json': { schema: verifyRequestSchema } } },
@@ -127,7 +127,7 @@ export function registerAuthRoutes(
       const output = await cognito.signUp(email)
       return ctx.json({
         requestId,
-        username: output.UserSub ?? email,
+        username: email,
         session: output.Session ?? null,
         codeDelivery: output.CodeDeliveryDetails
           ? { destination: output.CodeDeliveryDetails.Destination ?? '', attribute: output.CodeDeliveryDetails.AttributeName ?? '' }

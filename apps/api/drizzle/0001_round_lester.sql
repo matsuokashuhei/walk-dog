@@ -1,0 +1,1 @@
+ALTER TABLE "owners" ALTER COLUMN "owner_id" DROP DEFAULT;

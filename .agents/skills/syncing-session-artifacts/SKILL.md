@@ -18,6 +18,10 @@ Read these sources in this order:
 
 Session artifacts define what the session claims; commits and diffs define what changed; the baseline defines which paths the session must not silently overwrite.
 
+## Worktree consistency check
+
+Before syncing, verify that `.agents/skills/` files modified in the session exist at the same revision in both the worktree and the main repository checkout. When the session created or edited a skill file, ensure the same change is present in both locations, otherwise the skill will diverge silently.
+
 ## Required triggers
 
 Run this skill before continuing after any of these events:

@@ -47,3 +47,12 @@ Read the current official Hono routing and API docs before changing route handle
 ## Completion check
 
 Before reporting a routing change complete, provide the documentation reviewed, the routes changed, and the verification results.
+
+## Route test requirements
+
+Every new route must have at minimum:
+- One test for the success path (expected 2xx response with correct body shape).
+- One test for each documented error status (400, 401, 404, 409, 429, 500).
+- One test for request validation failure (malformed or missing required fields).
+
+Test patterns use `app.request()` from `$testing-hono-apis`.

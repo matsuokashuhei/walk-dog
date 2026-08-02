@@ -18,7 +18,7 @@ An undecided purpose begins a discovery conversation. Explore the current reposi
 1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
 2. Inspect `git status --short`. Record this baseline before changing files.
 3. Resolve the repository workspace root from the Git common directory. Create branch `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main` in `<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>`, and initialize an empty session `Worktrees` registry.
-4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, an empty `Worktrees` list, and an empty artifact list.
+4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, an empty `Worktrees` list, and an empty artifact list. Immediately stage and commit the transcript and any other created session artifacts so they survive worktree resets.
 5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
 6. Append the first user request and every visible user or assistant message in chronological order.
 7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.

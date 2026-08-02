@@ -2,55 +2,125 @@
 
 ## Purpose
 
-`run-dev-session` provides the development-session state machine. It selects the skill for the current state, passes the required inputs, validates the returned result, and advances to the permitted next state.
+`run-dev-session` provides the development-session state machine through four responsibilities: select the skill for the current state, pass the required inputs, validate the returned result, and advance to the permitted next state.
 
-Repository inspection, file updates, Git and GitHub operations, task tracking, review operations, and publication are provided by dedicated skills.
+Dedicated skills provide repository inspection, file updates, Git and GitHub operations, task tracking, review operations, and publication.
 
 ## WHAT
 
-### Lifecycle
+### Lifecycle transition matrix
 
-| Current state | Skill | Accepted next state |
-| --- | --- | --- |
-| `purpose-undecided` | `discovering-development-purpose` | `purpose-awaiting-approval` |
-| `purpose-confirmed` | `preparing-development-workspace` | `workspace-ready` |
-| `workspace-ready` | `recording-development-session` | `session-recorded` |
-| `session-recorded` | `confirming-development-specifications` | `specification-ready` |
-| `specification-ready` | `superpowers:brainstorming` | `design-section-approval` |
-| `design-section-approval` | `superpowers:brainstorming` | `design-documented` |
-| `design-documented` | `superpowers:brainstorming` self-review and `syncing-session-artifacts` | `design-user-review` |
-| `design-user-review` | user approval result validation | `design-approved` |
-| `design-approved` | `superpowers:writing-plans` | `plan-awaiting-approval` |
-| `plan-awaiting-approval` | user approval result validation | `plan-approved` |
-| `plan-approved` | `tracking-development-tasks` and `superpowers:executing-plans` | `implementation-complete` |
-| `implementation-complete` | `syncing-session-artifacts` and `reviewing-development-session` | `review-complete` |
-| `review-complete` | `publishing-development-session` | `initial-pr-open` |
-| `initial-pr-open` | merge result validation | `initial-pr-merged` |
-| `initial-pr-merged` | `retrospecting-dev-session` | `retrospective-ready` |
-| `retrospective-ready` | `publishing-development-follow-up` | `follow-up-pr-open` |
-| `follow-up-pr-open` | merge result validation | `follow-up-pr-merged` |
-| `follow-up-pr-merged` | session result validation | `done` |
+This matrix is the normative lifecycle definition. A skill result is accepted when its `status` and `next_permitted_action` match the row for the current state.
 
-A continuing session resumes from the latest completed state recorded in its session artifacts. A new or changed specification or design enters `superpowers:brainstorming` from `specification-ready`.
+| Current state | Dispatch or event | Accepted result or decision | Resulting state |
+| --- | --- | --- | --- |
+| `purpose-undecided` | `discovering-development-purpose` | `completed / request-purpose-approval` | `purpose-awaiting-approval` |
+| `purpose-awaiting-approval` | user decision | `approve-purpose` | `purpose-confirmed` |
+| `purpose-awaiting-approval` | user decision | `revise-purpose` | `purpose-undecided` |
+| `purpose-confirmed` | `preparing-development-workspace` | `completed / record-session-start` | `workspace-ready` |
+| `purpose-confirmed` | `preparing-development-workspace` | `blocked / retry-workspace-preparation` | `purpose-confirmed` |
+| `workspace-ready` | `session-start` dispatch group | `completed / confirm-specifications` | `session-recorded` |
+| `workspace-ready` | `session-start` dispatch group | `blocked / retry-session-recording` | `workspace-ready` |
+| `session-recorded` | `confirming-development-specifications` | `completed / brainstorm-design` | `specification-ready` |
+| `session-recorded` | `confirming-development-specifications` | `awaiting-user / request-specification-decision` | `specification-awaiting-user` |
+| `session-recorded` | `confirming-development-specifications` | `blocked / retry-specification-confirmation` | `session-recorded` |
+| `specification-awaiting-user` | `decision` dispatch group | decision accepted with a supplied `resume_state` | supplied `resume_state` |
+| `specification-ready` | `superpowers:brainstorming` | `completed / continue-design-exploration` | `design-exploration` |
+| `specification-ready` | `superpowers:brainstorming` | `blocked / retry-design-exploration` | `specification-ready` |
+| `design-exploration` | `superpowers:brainstorming` | `awaiting-user / request-design-decision` | `design-awaiting-user` |
+| `design-exploration` | `superpowers:brainstorming` | `completed / request-written-design-review` | `design-user-review` |
+| `design-exploration` | `superpowers:brainstorming` | `blocked / retry-design-exploration` | `design-exploration` |
+| `design-awaiting-user` | `decision` dispatch group | `approve-design-section` | `design-exploration` |
+| `design-awaiting-user` | `decision` dispatch group | `revise-design-section` | `design-exploration` |
+| `design-user-review` | `decision` dispatch group | `approve-written-design` | `design-approved` |
+| `design-user-review` | `decision` dispatch group | `revise-written-design` | `design-exploration` |
+| `design-approved` | `superpowers:writing-plans` | `completed / request-plan-approval` | `plan-awaiting-approval` |
+| `design-approved` | `superpowers:writing-plans` | `blocked / retry-plan-writing` | `design-approved` |
+| `plan-awaiting-approval` | `decision` dispatch group | `approve-plan` | `plan-approved` |
+| `plan-awaiting-approval` | `decision` dispatch group | `revise-plan` | `design-approved` |
+| `plan-approved` | `task-start` dispatch group | `completed / execute-current-task` | `implementation-active` |
+| `implementation-active` | `task-completion` dispatch group | `completed / start-next-task` | `implementation-active` |
+| `implementation-active` | `task-completion` dispatch group | `completed / prepare-review` | `implementation-complete` |
+| `implementation-active` | execution result | `awaiting-user / request-implementation-decision` | `implementation-awaiting-user` |
+| `implementation-active` | execution result | `blocked / retry-current-task` | `implementation-active` |
+| `implementation-awaiting-user` | `decision` dispatch group | decision accepted with `resume_state: implementation-active` | `implementation-active` |
+| `implementation-complete` | `pre-review` dispatch group | `completed / request-independent-review` | `review-ready` |
+| `implementation-complete` | `pre-review` dispatch group | `blocked / retry-artifact-sync` | `implementation-complete` |
+| `review-ready` | `reviewing-development-session` | `completed / publish-session` | `review-complete` |
+| `review-ready` | `reviewing-development-session` | `awaiting-user / request-review-decision` | `review-awaiting-user` |
+| `review-ready` | `reviewing-development-session` | `blocked / retry-independent-review` | `review-ready` |
+| `review-awaiting-user` | `decision` dispatch group | decision accepted with `resume_state: review-ready` | `review-ready` |
+| `review-complete` | `initial-publication` dispatch group | `completed / await-initial-pr-merge` | `initial-pr-open` |
+| `review-complete` | `initial-publication` dispatch group | `blocked / retry-initial-publication` | `review-complete` |
+| `initial-pr-open` | GitHub merge event validation | `initial-pr-merged` | `initial-pr-merged` |
+| `initial-pr-merged` | `retrospecting-dev-session` | `awaiting-user / request-retrospective-decision` | `retrospective-awaiting-user` |
+| `initial-pr-merged` | `retrospecting-dev-session` | `blocked / retry-retrospective` | `initial-pr-merged` |
+| `retrospective-awaiting-user` | `decision` dispatch group | `approve-skill-changes` | `retrospective-changes-approved` |
+| `retrospective-awaiting-user` | `decision` dispatch group | `publish-retrospective-record` | `retrospective-ready` |
+| `retrospective-changes-approved` | `task-completion` dispatch group | `completed / publish-follow-up` | `retrospective-ready` |
+| `retrospective-changes-approved` | execution result | `awaiting-user / request-retrospective-change-decision` | `retrospective-awaiting-user` |
+| `retrospective-changes-approved` | execution result | `blocked / retry-retrospective-changes` | `retrospective-changes-approved` |
+| `retrospective-ready` | `follow-up-publication` dispatch group | `completed / await-follow-up-pr-merge` | `follow-up-pr-open` |
+| `retrospective-ready` | `follow-up-publication` dispatch group | `blocked / retry-follow-up-publication` | `retrospective-ready` |
+| `follow-up-pr-open` | GitHub merge event validation | `follow-up-pr-merged` | `follow-up-pr-merged` |
+| `follow-up-pr-merged` | session result validation | `completed / finish-session` | `done` |
 
-### Common result contract
+A continuing session resumes from the latest completed state and pending action recorded in its session artifacts. A new or changed specification or design enters `superpowers:brainstorming` from `specification-ready`.
 
-Every lifecycle skill returns:
+### Result schemas
+
+Every skill result uses one of these three schemas.
 
 ```yaml
-status: completed | awaiting-user | blocked
+status: completed
 artifacts:
   - path
-next_permitted_action: action-name
 summary: observable completed outcome
-blocking:
-  reason: observable state and message
-  retry_action: concrete retry operation
+next_permitted_action: action-name
 ```
 
-`completed` returns the completed outcome and permitted next action. `awaiting-user` returns the decision effect and the state established by approval. `blocked` returns the observed state, message, and retry operation. The `blocking` value is present for a blocked result.
+```yaml
+status: awaiting-user
+artifacts:
+  - path
+summary: observable state awaiting a decision
+next_permitted_action: request-specific-decision
+decision:
+  question: concise decision question
+  answers:
+    - name: answer-name
+      effect: state established by this answer
+      resume_state: state selected after this answer is recorded
+      resume_inputs:
+        key: preserved-value
+```
 
-`run-dev-session` accepts the `status` and `next_permitted_action` pair defined for the current state and then selects the next skill.
+```yaml
+status: blocked
+artifacts:
+  - path
+summary: observable blocked outcome
+next_permitted_action: retry-specific-operation
+blocking:
+  state: state that remains active
+  message: observed failure message
+  retry_action: concrete retry operation
+  retry_inputs:
+    key: preserved-value
+  resume_state: state restored after a successful retry
+```
+
+The orchestrator validates every required field, the current-state pairing, and the permitted action before advancing.
+
+Existing lifecycle skills adopt the common schemas through this compatibility mapping during migration:
+
+| Existing result | Common status | Preserved meaning |
+| --- | --- | --- |
+| `ready` | `completed` | specification confirmation completed |
+| `synced` | `completed` | artifact synchronization completed |
+| `awaiting-confirmation` | `awaiting-user` | user decision establishes the resume state |
+| `awaiting-direction` | `awaiting-user` | user direction establishes the resume state |
+| `blocked` | `blocked` | observed state and retry data remain active |
 
 ### Dedicated responsibilities
 
@@ -69,7 +139,7 @@ Existing skills provide these outcomes:
 
 | Skill | Outcome |
 | --- | --- |
-| `confirming-development-specifications` | Source-backed specification, release, decision, and verification status |
+| `confirming-development-specifications` | Source-backed specification, release, decision, and verification result |
 | `explaining-specifications-and-design` | WHAT → HOW → WHY design and plan presentation |
 | `syncing-session-artifacts` | Aligned session records and next permitted action |
 | `retrospecting-dev-session` | Post-merge findings and approved skill-action proposals |
@@ -81,16 +151,31 @@ Existing skills provide these outcomes:
 
 ### Orchestration
 
-For each state, `run-dev-session` defines:
+For each state, `run-dev-session` defines the dispatched skill or event, assembled input, accepted result schema, permitted action, resulting state, and user-facing response. These are its four operational responsibilities:
 
-1. the skill to invoke;
-2. the input assembled from prior results;
-3. the accepted result status;
-4. the accepted next permitted action;
-5. the resulting state;
-6. the user-facing response for `awaiting-user` and `blocked`.
+1. select the skill or event for the current state;
+2. dispatch it with inputs from validated prior results;
+3. validate the returned status, fields, and permitted action;
+4. advance to the resulting state or retain the declared retry state.
 
-The orchestrator records no operational recipe. Each dedicated skill owns its commands, file changes, validation, completion state, and retry operation.
+Each dedicated skill owns its commands, file changes, validation, completion result, and retry operation.
+
+### Ordered dispatch groups
+
+Each group validates one result before dispatching the next skill.
+
+| Group | Ordered skills | Completion action |
+| --- | --- | --- |
+| `session-start` | `recording-development-session` → `syncing-session-artifacts` | `confirm-specifications` |
+| `decision` | `recording-development-session` → `syncing-development-plan` when the classification is plan-level → `syncing-session-artifacts` | supplied decision action and `resume_state` |
+| `artifact-change` | `recording-development-session` → `syncing-session-artifacts` | supplied primary lifecycle action |
+| `task-start` | `tracking-development-tasks` → `superpowers:executing-plans` | `execute-current-task` |
+| `task-completion` | task verification → `tracking-development-tasks` → `recording-development-session` → `syncing-session-artifacts` | `start-next-task`, `prepare-review`, or `publish-follow-up` |
+| `pre-review` | `recording-development-session` → `syncing-session-artifacts` | `request-independent-review` |
+| `initial-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-session` | `await-initial-pr-merge` |
+| `follow-up-publication` | `recording-development-session` → `syncing-session-artifacts` → `publishing-development-follow-up` | `await-follow-up-pr-merge` |
+
+Every visible user or assistant message enters `recording-development-session` before the next primary lifecycle action. Every confirmed decision enters the `decision` group. Every created or changed artifact enters the `artifact-change` group or a more specific group containing the same recording and synchronization steps.
 
 ### Specification and design exploration
 
@@ -102,20 +187,20 @@ The brainstorming result is established through:
 2. one decision question at a time;
 3. two or three approaches with a recommendation;
 4. design sections presented with `explaining-specifications-and-design` in WHAT → HOW → WHY order;
-5. user approval of each design section;
+5. user approval or revision of each design section;
 6. a design document under `docs/logs/<timestamp>-<slug>/`;
 7. placeholder, consistency, scope, and ambiguity self-review;
-8. `recording-development-session` and `syncing-session-artifacts` results;
-9. user review of the written design;
+8. `artifact-change` synchronization;
+9. user approval or revision of the written design;
 10. transition to `superpowers:writing-plans`.
 
 The implementation plan is stored in the same session directory and becomes executable after user approval.
 
 ### Decisions and staged-plan synchronization
 
-The orchestrator treats a user decision as a state input. `recording-development-session` records the decision and `syncing-development-plan` classifies it as plan-level, implementation-local, deferred to a named release-start decision, or outside the staged plan.
+The orchestrator treats a user decision as a state input. The `decision` dispatch group records the decision and calls `syncing-development-plan` for plan-level classification. The plan synchronization skill updates the matching section of `docs/development/staged-development.md` and returns the synchronized result before the group resumes the primary lifecycle state.
 
-A plan-level decision reaches its next state after `syncing-development-plan` updates the matching section of `docs/development/staged-development.md` and returns the synchronized result.
+Implementation-local, deferred release, and agent-process classifications are recorded with their positive lifecycle effect and resume state.
 
 ### Task progress
 
@@ -123,11 +208,11 @@ A plan-level decision reaches its next state after `syncing-development-plan` up
 
 ### Review and publication
 
-`syncing-session-artifacts` establishes the review-ready result. `reviewing-development-session` uses `superpowers:requesting-code-review` for an independent review and `superpowers:receiving-code-review` to evaluate each finding against repository evidence. It applies confirmed fixes with the applicable implementation skills, records the response to each finding, repeats review rounds, and returns `review-complete` when the unresolved-finding count is zero.
+The `pre-review` group establishes the review-ready result. `reviewing-development-session` uses `superpowers:requesting-code-review` for an independent review and `superpowers:receiving-code-review` to evaluate each finding against repository evidence. It applies confirmed fixes with the applicable implementation skills, records the response to each finding, repeats review rounds, and returns `review-complete` when the unresolved-finding count is zero.
 
-`publishing-development-session` stages the Artifact List and transcript, commits them with the session deliverables, pushes the session branch, and opens the initial PR against `main`.
+The `initial-publication` group synchronizes the session record, stages the Artifact List and transcript, commits the session deliverables, pushes the session branch, and opens the initial PR against `main`.
 
-After the initial PR merges, `retrospecting-dev-session` produces the retrospective and skill-action proposals. `publishing-development-follow-up` lands the synchronized retrospective records and approved skill changes through a follow-up PR against `main`.
+After the initial PR merges, `retrospecting-dev-session` produces the retrospective and skill-action proposals. The `follow-up-publication` group synchronizes and lands the retrospective records and approved skill changes through a follow-up PR against `main`.
 
 ## WHY
 
@@ -139,8 +224,10 @@ The explicit brainstorming transition makes specification and design exploration
 
 1. Preserve the RED baseline showing direct operational instructions in the current `run-dev-session`.
 2. Run `quick_validate.py` for every created or changed skill.
-3. Run a responsibility-boundary scenario and confirm that `run-dev-session` performs state selection, skill dispatch, result validation, and state transition.
-4. Run a brainstorming-gate scenario from `specification-ready` through questions, approach comparison, section approval, design documentation, self-review, user review, and `superpowers:writing-plans`.
-5. Run a lifecycle scenario from purpose discovery through follow-up PR merge and confirm one accepted skill result for each transition.
-6. Run blocked-state scenarios for workspace preparation, specification confirmation, review resolution, and publication; confirm the observed state, message, and retry operation.
-7. Compare transcript, specification review, design, plan, verification records, and Artifact List and confirm that every session artifact is synchronized.
+3. Validate the complete transition matrix: every declared state is reachable, every reachable state has an approval, revision, retry, or completion transition, and every resulting state is declared.
+4. Validate every result schema field and confirm that each status/action pair, current state, and resume state matches a declared transition; a mismatch returns an observable blocked result and retry operation.
+5. Run a responsibility-boundary scenario and confirm that `run-dev-session` performs its four orchestration responsibilities.
+6. Run a brainstorming-gate scenario from `specification-ready` through questions, approach comparison, section approval and revision, design documentation, self-review, written-design approval and revision, and `superpowers:writing-plans`.
+7. Run lifecycle scenarios for approval paths, revision loops, `awaiting-user` resume, blocked retry with preserved inputs, initial PR merge, retrospective choices, follow-up PR merge, and `done`.
+8. Validate every ordered dispatch group, including per-step result validation, message recording, plan-level decision synchronization, artifact synchronization, and completion action.
+9. Compare transcript, specification review, design, plan, verification records, and Artifact List and confirm that every session artifact is synchronized.

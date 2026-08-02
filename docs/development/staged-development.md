@@ -22,7 +22,7 @@
 ## 進捗状況
 
 - R0は進行中で、最初の作業単位としてAPI基盤を進める。
-- API品質ゲートの後続作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
+- API品質ゲートはローカルと GitHub Actions（PR / main の `npm run check`）まで導入済み。残作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
 
 ## R0: 開発基盤
 

@@ -1,0 +1,16 @@
+# Calls reusable api-check on pull requests that touch the API package or workflows.
+name: pull-request
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/pull-request.yml"
+      - ".github/workflows/api-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    uses: ./.github/workflows/api-check.yml

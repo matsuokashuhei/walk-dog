@@ -1,6 +1,6 @@
 # walk / dog 段階開発計画
 
-> **For agentic workers:** 実装時はリリース単位でタスクを分解し、各リリースの受け入れ条件を満たしてから次のリリースへ進める。
+> **For agentic workers:** 実装時はリリースの提供能力に沿ってタスクを分解する。R1 進行中は、未完了の R0 能力を必要な縦切りステップの直前に実装し、各ステップの受け入れ条件を満たしてから次のステップへ進める。
 
 **Goal:** iOSの開発チーム向けビルドで、OwnerがDogを選び、バックグラウンドで散歩を記録し、完了した散歩を確認できる状態を提供する。
 
@@ -18,11 +18,42 @@
 - SentryとVPSコンテナの構造化ログで、モバイル、API、ワーカーの状態遷移を観測する。
 - 利用規約とプライバシーポリシーは既存の公開文書を利用する。
 - R0のAPI基盤はHonoで実装する。
+- 開発焦点はR1（散歩記録の縦切り）とする。未完了のR0能力はR1各縦切りステップの直前に実装する。
 
 ## 進捗状況
 
-- R0は進行中で、最初の作業単位としてAPI基盤を進める。
-- API品質ゲートはローカル（`npm run check`）と GitHub Actions（PR / publish → reusable `api-check` で lint / jscpd / knip / typecheck 並列）まで導入済み。残作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
+- R1を進行中とする。未完了のR0能力は、下表の対応に従い必要な縦切りステップの直前に実装する。
+- R0で導入済み: Hono API基盤、ローカルComposeのPostgreSQL、Drizzle client、API観測性（Pino / Sentry / requestId）、API静的品質ゲート（ローカル `npm run check` と GitHub Actions の reusable `api-check`）。品質ゲートの残作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
+
+## R1 縦切りと未完了 R0 前提
+
+R1は次の縦切り順で進める。
+
+表の値:
+
+- **必須** … そのステップを成立させる前提
+- **配布・VPS反映** … 開発チーム向けビルド配布と、VPSへのAPI反映の前提
+- **ローカルAPI実機** … 実機がローカルCompose上のAPIへ接続して検証するときの前提
+- **VPS API実機** … 実機がVPS上のAPIへ接続して検証するときの前提
+- **—** … そのステップの成立前提ではない（後続ステップまたは別リリースで扱う）
+
+| R1 縦切り | PostgreSQL schema / migration | Cognito（API側トークン検証） | モバイル認証状態 | モバイル API クライアント | 永続送信キュー | iOS 位置情報権限 | S3/SQS/DynamoDB 接続 | Compose（ElasticMQ / DynamoDB Local / S3互換） | worker骨格 + ヘルス | Docker / ECR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **1. アカウント**（Sign Up / Sign In / OTP / Owner 表示名 / Sign Out） | 必須（owners・表示名） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
+| **2. Dog**（一覧・登録・選択、登録時 Daily 30分 Goal Revision） | 必須（Dog / Goal Revision） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
+| **3. Active Walk**（Ready → Starting → Recording → Completed / Failed を API と同期） | 必須（Walk / Participant） | 必須 | 必須 | 必須 | — | 必須（foreground / background） | — | — | — | 配布・VPS反映 |
+| **4. TrackPoint**（10秒ごと連番送信 → SQS → worker → DynamoDB） | — | 必須 | 必須 | 必須 | 必須 | 必須（取得元） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
+| **5. Finish**（受理済み連番の処理確定後に Completed） | — | 必須 | 必須 | 必須 | 必須（未送信の吐き出し） | 必須（記録継続） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
+| **6. Event + Detail**（Pee / Poop / Sniff / Greet、eventId Retry、地図・距離・時間・Event） | 必須（Event） | 必須 | 必須 | 必須 | 必須（Event Retry） | 必須（Event の latitude / longitude） | 必須（DynamoDB 経路） | 必須 | 必須 | 配布・VPS反映 |
+| **7. 実機検証**（起動／Foreground 復帰／タブ移動での Active Walk 照合、バックグラウンド位置） | — | 必須 | 必須 | 必須 | 必須（通信復帰） | 必須（foreground / background） | VPS API実機 | ローカルAPI実機 | 必須 | VPS API実機 |
+
+前提の意味:
+
+- **モバイル認証状態** … Cognito セッションの保持・復元・access token 付与（認証の提供者は Cognito。端末内の認証状態管理とは別層）
+- **モバイル API クライアント** … OpenAPI から生成した型付き client と共通エラー処理
+- **永続送信キュー** … 端末内の送信待ち（SQS ではない。流れは 端末キュー → API → SQS → worker → DynamoDB）
+- **iOS 位置情報権限** … foreground / background 許可と Start 条件・取得の土台
+- **Owner / Dog Avatar と S3** … Dog AvatarはR2（Dog編集・Avatarアップロード）、Owner AvatarはR3（Owner編集）の前提
 
 ## R0: 開発基盤
 
@@ -72,6 +103,6 @@
 
 ## リリース開始時に確定する判断
 
-- R1開始時: TrackPoint自動再試行の回数と時間上限。
+- R1 TrackPointステップ着手時: TrackPoint自動再試行の回数と時間上限。
 - R3開始時: 利用者向けのWalk・Owner削除、データ保持期間、既存法務文書の公開URL。
 - Android開始時: 地図、位置情報権限、省電力動作の受け入れ条件。

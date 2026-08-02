@@ -34,6 +34,14 @@ Repository-owned development files and session artifacts are created under the r
 4. If the ignore check, directory creation, `git worktree add`, or path check fails, report the path and reason, provide the retry operation, and stop the session.
 5. Keep existing worktrees outside the workspace unchanged. New session files use the workspace-local worktree.
 
+## Design and Plan
+
+After the specification review is `ready` and before asking the user to approve a design or implementation plan:
+
+1. **REQUIRED SUB-SKILL:** Use `explaining-specifications-and-design` to structure the user-facing design and plan explanation as WHAT → HOW → WHY. Do not present wiring, path filters, or file lists before WHAT is clear.
+2. When the purpose includes **designing or changing** GitHub Actions workflow files under `.github/workflows/`, CI jobs that run those workflows, or publish pipelines implemented as workflows, **REQUIRED SUB-SKILL:** Use `designing-github-actions-ci` during design and before writing workflow YAML. Record official docs read and the gate WHAT table in the session design. Do not require this skill when only authoring or editing skills, docs, or other process artifacts about CI.
+3. Present the structured design and plan, wait for approval, then continue to Task Progress.
+
 ## Task Progress
 
 After the specification review is `ready` and the written implementation plan is approved, use `superpowers:executing-plans` to execute the plan.
@@ -96,3 +104,16 @@ Before publishing, review every session artifact with `crit`. Exclude `transcrip
 4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.
 
 If branch creation, review, or publishing conflicts with baseline work, record the paths, reason, and restart condition in the transcript, then stop.
+
+## After merge
+
+When the session pull request merges into `main` (including when the user asks to merge and merge completes):
+
+1. **REQUIRED SUB-SKILL:** Use `retrospecting-dev-session` to turn user corrections and avoidable review comments into skill create or update proposals. Write `retrospective.md` in the session directory and add it to the Artifact List.
+2. Present the skill proposals. Implement skill changes only after explicit user approval.
+3. **REQUIRED SUB-SKILL:** Run `syncing-session-artifacts` after the retrospective record (and any approved skill edits) change session files. After that sync, the next permitted action is `open-follow-up-pr` until a follow-up PR exists.
+4. Land the retrospective (and any approved skill edits) on `main` via a follow-up PR:
+   - Prefer a new branch from `origin/main` (the session branch may already be deleted after merge).
+   - Commit `retrospective.md`, the updated transcript and Artifact List, and any approved skill file changes.
+   - Push and open a follow-up PR against `main`.
+5. When the follow-up PR merges, or when the user declines skill implementation and only the retrospective record lands and merges, the next permitted action is `done`.

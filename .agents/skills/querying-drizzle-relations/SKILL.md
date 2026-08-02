@@ -9,11 +9,11 @@ Read the current official Drizzle relational query docs before changing `db.quer
 
 ## Required documentation review
 
-1. Open <https://orm.drizzle.team/docs/pg/rqb> before changing relational query code.
+1. Open <https://orm.drizzle.team/docs/rqb> before changing relational query code.
 2. Read the matching docs before implementing:
-   - Relation declarations required by RQB: <https://orm.drizzle.team/docs/pg/relations-schema-declaration>
-   - Soft relations when declaring graph edges: <https://orm.drizzle.team/docs/pg/relations>
-   - Query overview for choosing RQB vs SQL-like: <https://orm.drizzle.team/docs/pg/data-querying>
+   - Relation declarations required by RQB: <https://orm.drizzle.team/docs/relations-schema-declaration>
+   - Soft relations when declaring graph edges: <https://orm.drizzle.team/docs/relations>
+   - Query overview for choosing RQB vs SQL-like: <https://orm.drizzle.team/docs/data-querying>
 3. Confirm the Drizzle client is initialized with the schema modules that export tables and relations.
 4. Record the documentation URLs read and the query decision in the active session log, design, or pull request description.
 

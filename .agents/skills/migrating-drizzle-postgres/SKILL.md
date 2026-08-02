@@ -9,12 +9,12 @@ Read the current official Drizzle Kit migration docs before generating or applyi
 
 ## Required documentation review
 
-1. Open <https://orm.drizzle.team/docs/pg/migrations> and identify the migration workflow.
+1. Open <https://orm.drizzle.team/docs/migrations> and identify the migration workflow.
 2. Read the matching docs before implementing:
-   - Kit overview: <https://orm.drizzle.team/docs/pg/kit-overview>
-   - Generate SQL: <https://orm.drizzle.team/docs/pg/drizzle-kit-generate>
-   - Apply SQL: <https://orm.drizzle.team/docs/pg/drizzle-kit-migrate>
-   - Config file: <https://orm.drizzle.team/docs/pg/drizzle-config-file>
+   - Kit overview: <https://orm.drizzle.team/docs/kit-overview>
+   - Generate SQL: <https://orm.drizzle.team/docs/drizzle-kit-generate>
+   - Apply SQL: <https://orm.drizzle.team/docs/drizzle-kit-migrate>
+   - Config file: <https://orm.drizzle.team/docs/drizzle-config-file>
 3. Record the documentation URLs read and the migration decision in the active session log, design, or pull request description.
 
 ## Project defaults
@@ -30,10 +30,21 @@ Read the current official Drizzle Kit migration docs before generating or applyi
 Run this sequence for a database shape change. Do not skip review.
 
 1. Update the TypeScript schema (`$defining-drizzle-schemas`).
-2. Run `drizzle-kit generate` with the project `drizzle.config`.
-3. Review the generated SQL migration for the intended shape change.
-4. Apply with the project migrate command (`npm run migrate` or the documented Kit migrate entrypoint).
-5. Verify the applied migration version and dependent checks.
+2. Run `drizzle-kit generate --name=<meaningful_name>` with the project `drizzle.config` (e.g. `--name=create_owners`).
+4. Review the generated SQL migration for the intended shape change.
+5. Apply with the project migrate command (`npm run migrate` or the documented Kit migrate entrypoint).
+6. Verify the applied migration version and dependent checks.
+
+## Migration naming
+
+- Use `drizzle-kit generate --name=<meaningful_name>` instead of relying on Drizzle's auto-generated random names. The generated file will use the provided name (e.g. `--name=create_owners` produces `0000_create_owners.sql`).
+
+## Undeployed tables
+
+- When a table from a pending migration has not been deployed to any environment, do not create a new migration for changes. Instead:
+  1. Delete the pending migration SQL file and its snapshot in `drizzle/meta/`.
+  2. Delete the corresponding `_journal.json` entry.
+  3. Run `drizzle-kit generate --name=<meaningful_name>` to produce a single migration with the current schema.
 
 ## Workflow
 

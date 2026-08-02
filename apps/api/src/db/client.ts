@@ -1,8 +1,11 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import * as schema from '../schema/owner.js'
+
+export type DbInstance = NodePgDatabase<typeof schema>
 
 export function createDbClient(config: { databaseUrl: string; poolMax: number }): {
-  db: NodePgDatabase
+  db: DbInstance
   pool: Pool
 } {
   const pool = new Pool({
@@ -10,7 +13,7 @@ export function createDbClient(config: { databaseUrl: string; poolMax: number })
     max: config.poolMax,
   })
 
-  return { db: drizzle({ client: pool }), pool }
+  return { db: drizzle({ client: pool, schema }), pool }
 }
 
 export async function closeDbClient(pool: Pool): Promise<void> {

@@ -9,9 +9,9 @@ Read the current official Drizzle PostgreSQL connection docs before changing dat
 
 ## Required documentation review
 
-1. Open <https://orm.drizzle.team/docs/pg/connect-overview> before changing connection code.
+1. Open <https://orm.drizzle.team/docs/connect-overview> before changing connection code.
 2. Read the matching docs before implementing:
-   - PostgreSQL driver connection: <https://orm.drizzle.team/docs/pg/get-started-postgresql>
+   - PostgreSQL driver connection: <https://orm.drizzle.team/docs/get-started-postgresql>
    - Get-started connection patterns when bootstrapping: <https://orm.drizzle.team/docs/get-started/postgresql-new> or <https://orm.drizzle.team/docs/get-started/postgresql-existing>
 3. Record the documentation URLs read and the connection decision in the active session log, design, or pull request description.
 

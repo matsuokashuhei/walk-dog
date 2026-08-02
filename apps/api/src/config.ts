@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+const cognitoConfigSchema = z.object({
+  AWS_REGION: z.string().nonempty({ error: 'AWS_REGION must be a non-empty string' }),
+  COGNITO_USER_POOL_ID: z.string().nonempty({ error: 'COGNITO_USER_POOL_ID must be a non-empty string' }),
+  COGNITO_CLIENT_ID: z.string().nonempty({ error: 'COGNITO_CLIENT_ID must be a non-empty string' }),
+})
+
 const databaseConfigSchema = z.object({
   DATABASE_URL: z
     .url({
@@ -33,6 +39,20 @@ export function loadDatabaseConfig(env: NodeJS.ProcessEnv): { databaseUrl: strin
   return {
     databaseUrl: config.DATABASE_URL,
     poolMax: config.DATABASE_POOL_MAX,
+  }
+}
+
+export function loadCognitoConfig(env: NodeJS.ProcessEnv): {
+  region: string
+  userPoolId: string
+  clientId: string
+} {
+  const config = cognitoConfigSchema.parse(env)
+
+  return {
+    region: config.AWS_REGION,
+    userPoolId: config.COGNITO_USER_POOL_ID,
+    clientId: config.COGNITO_CLIENT_ID,
   }
 }
 

@@ -18,14 +18,13 @@
 4. Wire testIDs for Maestro (`sign-up-email`, `sign-up-submit`, `verify-code`, `verify-submit`, `auth-error`, `home-root`).
 5. Verify: TypeScript check; screens render and call API client.
 
-## Task 3 — Mailosaur SES verify + Maestro E2E
+## Task 3 — Cognito OTP log (B2) + Maestro E2E
 
-1. Obtain Mailosaur server id / API key from user; verify recipient identity in SES (sandbox).
-2. Add Maestro flows under `apps/mobile/.maestro/` for: Sign Up success → Verify → home; failure Error/Retry; cold-start restore.
-3. Add OTP helper script that polls Mailosaur for Cognito code.
-4. Document/run prerequisites: local API + Cognito env, Simulator, Expo.
-5. Verify: Maestro flows pass against real API.
-6. **Execution note (2026-08-03):** Installing/running Maestro in this Cursor agent session was rejected (`E2EテストはCodexに依頼せよ`). Scaffold flows in-repo; run verification via Codex unless the user overrides.
+1. Add local Cognito Custom Message Lambda that logs OTP (email + code) as structured JSON; attach to user pool.
+2. Replace Mailosaur Maestro OTP script with CloudWatch log poller.
+3. Update Maestro README / flows for SES-verified recipient + log-based OTP.
+4. Ask Codex to install/run Maestro E2E against real API and evaluate the report.
+5. **Execution note:** Cursor agent does not run Maestro directly; Codex runs E2E. Mailosaur abandoned.
 
 ## Task 4 — Crit + publish PR
 

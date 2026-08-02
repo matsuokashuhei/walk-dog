@@ -1,0 +1,1 @@
+../../resources/cognito_custom_message.tf

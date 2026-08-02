@@ -74,13 +74,15 @@ Verify screen
 | Task 1 — Mobile API client + Auth state | API client、AuthProvider + Secure Store、Root layout の認証分岐 |
 | Task 2 — Sign Up + Verify screens + Maestro E2E | auth Stack、Sign Up、Verify（Loading / Error / Retry）、実 API / Cognito 向け自動 E2E |
 
-### Completion gate — automated E2E (B confirmed; Mailosaur abandoned)
+### Completion gate — automated E2E (B + B2, user confirmed)
 
 - Runner: Maestro on iOS Simulator
 - Target: local API + real Cognito (not mocked auth responses)
 - Scenarios: Sign Up success → Verify success → authenticated home; failure Error/Retry; cold start auth restore
-- OTP retrieval: **Mailosaur (B1/S2) abandoned — paid service. Awaiting replacement.**
-- SES: sandbox remains; recipient strategy depends on the replacement choice
+- OTP retrieval: Cognito Custom Message Lambda (local) writes OTP to structured logs; E2E polls CloudWatch (B2)
+- Sign Up recipient: existing SES-verified address (sandbox). Inbox is not read.
+- Abandoned: Mailosaur (B1/S2)
+- Prerequisites: AWS login, local API + Cognito, Maestro, iOS Simulator, SES-verified test email
 
 ## WHY
 

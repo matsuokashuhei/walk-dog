@@ -5,12 +5,12 @@ appId: com.cacheandbuffer.walkdog
     id: "sign-up-root"
 - tapOn:
     id: "sign-up-email"
-- inputText: ${MAILOSAUR_EMAIL}
+- inputText: ${E2E_EMAIL}
 - tapOn:
     id: "sign-up-submit"
 - assertVisible:
     id: "verify-root"
-- runScript: ../scripts/fetch-mailosaur-otp.js
+- runScript: scripts/fetch-cognito-otp.js
 - tapOn:
     id: "verify-code"
 - inputText: ${OTP}

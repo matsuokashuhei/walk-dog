@@ -130,17 +130,17 @@ OK
 
 ### User
 
-MAILOSAUR は有料サービスなんだね。やめよう。
+ok
 
 ### Assistant
 
-Mailosaur（B1/S2）を破棄。実 API E2E（B）維持前提で OTP 取得の代替案を提示。
+B2 確定。Custom Message Lambda + CloudWatch OTP ポーリングへ設計を更新し、ハーネス実装に着手。
 
 ## Sync
 
-- trigger: user abandoned Mailosaur
+- trigger: user confirmed OTP retrieval B2
 - status: synced
-- artifacts updated: design.md (OTP retrieval awaiting replacement), transcript
+- artifacts updated: design.md, plan.md, transcript
 - artifacts already current: e2e-report.md
 - baseline conflicts: none
-- next permitted action: continue (await OTP replacement decision)
+- next permitted action: continue (implement B2 harness)

@@ -2,30 +2,32 @@
 
 ## Prerequisites
 
-1. Local API on port 3000 with Cognito + PostgreSQL (see prior Sign Up session continuation).
+1. Local API on port 3000 with Cognito + PostgreSQL.
 2. `apps/mobile/.env` with `EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3000`.
-3. Mailosaur server id, API key, and a Mailosaur inbox address.
-4. That Mailosaur address verified in SES (sandbox):
+3. Cognito Custom Message Lambda deployed for local (`walkdog-local-cognito-custom-message`) so OTP is logged to CloudWatch.
+4. `E2E_EMAIL` set to an SES-verified recipient (sandbox). OTP is read from CloudWatch, not the inbox.
+5. AWS credentials (`AWS_PROFILE=walk-dog`) that can read the Lambda log group.
+6. iOS Simulator + app with bundle id `com.cacheandbuffer.walkdog`.
+7. Maestro CLI (`~/.maestro/bin/maestro`).
+8. Node dependency for the OTP poller: from `apps/mobile`, ensure `@aws-sdk/client-cloudwatch-logs` is available (install if missing).
+
+## Apply Custom Message Lambda (local)
 
 ```bash
 aws sso login --profile walk-dog
-aws sesv2 create-email-identity --email-identity "$MAILOSAUR_EMAIL" --region ap-northeast-1 --profile walk-dog
-# Open the SES verification link delivered to Mailosaur, then:
-aws sesv2 get-email-identity --email-identity "$MAILOSAUR_EMAIL" --region ap-northeast-1 --profile walk-dog --query VerificationStatus
+cd infra/aws/envs/local
+# follow infra/README.md terraform docker workflow, then terraform apply
 ```
-
-5. iOS Simulator + app running (`npx expo run:ios` or a build with bundle id `com.cacheandbuffer.walkdog`).
-6. Maestro CLI (`~/.maestro/bin/maestro`).
 
 ## Run
 
 ```bash
-export MAILOSAUR_API_KEY=...
-export MAILOSAUR_SERVER_ID=...
-export MAILOSAUR_EMAIL=...@...mailosaur.net
+export AWS_PROFILE=walk-dog
+export AWS_REGION=ap-northeast-1
+export E2E_EMAIL='verified-address@example.com'
 
 maestro test .maestro/sign-up-invalid-email.yaml
-maestro test .maestro/sign-up-success.yaml -e MAILOSAUR_EMAIL="$MAILOSAUR_EMAIL" -e MAILOSAUR_API_KEY="$MAILOSAUR_API_KEY" -e MAILOSAUR_SERVER_ID="$MAILOSAUR_SERVER_ID"
-# After a successful sign-up (tokens in Secure Store), with app still installed:
+maestro test .maestro/sign-up-success.yaml -e E2E_EMAIL="$E2E_EMAIL"
+# After a successful sign-up (tokens in Secure Store):
 maestro test .maestro/cold-start-authenticated.yaml
 ```

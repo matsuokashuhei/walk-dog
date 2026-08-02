@@ -52,6 +52,10 @@ resource "aws_cognito_user_pool" "user" {
     allow_admin_create_user_only = false
   }
 
+  lambda_config {
+    custom_message = aws_lambda_function.cognito_custom_message[each.key].arn
+  }
+
   tags = {
     Environment = each.key
     Project     = var.project

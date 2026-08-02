@@ -133,3 +133,13 @@ The scoped re-review returned CLEAN after the registry and lifecycle fixes. Fina
 - artifacts already current: specification-review.md, implementation-plan.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### 2026-08-02 — Implementation commit
+
+- commit: `878b68c chore: clean up session worktrees`
+- status: synced
+- trigger: review-response implementation commit
+- artifacts updated: none; the commit contains the current skill and session records
+- artifacts already current: transcript, specification-review.md, implementation-plan.md, red-scenarios.md, verification.md, `.agents/skills/run-dev-session/SKILL.md`, `.agents/skills/retrospecting-dev-session/SKILL.md`
+- baseline conflicts: none
+- next permitted action: publish

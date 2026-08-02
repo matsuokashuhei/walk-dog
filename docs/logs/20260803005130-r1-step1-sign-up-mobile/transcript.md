@@ -63,6 +63,14 @@ specification-review.md を作成。status: ready。next permitted action: desig
 
 設計を WHAT → HOW → WHY で提示。design.md を作成。承認待ち。
 
+### User
+
+仕様レビューを一人で進めてないか？僕に質問していないぞ？
+
+### Assistant
+
+指摘を受け、specification-review を `awaiting-confirmation` に戻す。設計承認は保留し、スコープ確認の質問を提示する。
+
 ## Sync
 
 - trigger: design.md created
@@ -71,3 +79,12 @@ specification-review.md を作成。status: ready。next permitted action: desig
 - artifacts already current: specification-review.md
 - baseline conflicts: none
 - next permitted action: continue (await design approval)
+
+## Sync
+
+- trigger: user correction — specification review must await confirmation
+- status: synced
+- artifacts updated: specification-review.md (status → awaiting-confirmation), transcript
+- artifacts already current: design.md (approval deferred)
+- baseline conflicts: none
+- next permitted action: continue (await specification confirmation)

@@ -13,6 +13,8 @@ export type CognitoConfig = {
   clientId: string
 }
 
+export type CognitoClient = ReturnType<typeof createCognitoClient>
+
 export function createCognitoClient(config: CognitoConfig) {
   const client = new CognitoIdentityProviderClient({ region: config.region })
 

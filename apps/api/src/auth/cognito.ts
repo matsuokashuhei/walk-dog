@@ -4,10 +4,7 @@ import {
   ConfirmSignUpCommand,
   AdminGetUserCommand,
   InitiateAuthCommand,
-  type SignUpCommandOutput,
-  type ConfirmSignUpCommandOutput,
-  type AdminGetUserCommandOutput,
-  type InitiateAuthCommandOutput,
+  RespondToAuthChallengeCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
 
 export type CognitoConfig = {
@@ -19,48 +16,40 @@ export type CognitoConfig = {
 export function createCognitoClient(config: CognitoConfig) {
   const client = new CognitoIdentityProviderClient({ region: config.region })
 
-  async function signUp(email: string): Promise<SignUpCommandOutput> {
-    return client.send(new SignUpCommand({
-      ClientId: config.clientId,
-      Username: email,
-      UserAttributes: [{ Name: 'email', Value: email }],
-    }))
+  return {
+    client,
+    signUp(email: string) {
+      return client.send(new SignUpCommand({
+        ClientId: config.clientId, Username: email,
+        UserAttributes: [{ Name: 'email', Value: email }],
+      }))
+    },
+    confirmSignUp(email: string, code: string, session?: string) {
+      return client.send(new ConfirmSignUpCommand({
+        ClientId: config.clientId, Username: email,
+        ConfirmationCode: code, Session: session,
+      }))
+    },
+    adminGetUser(email: string) {
+      return client.send(new AdminGetUserCommand({
+        UserPoolId: config.userPoolId, Username: email,
+      }))
+    },
+    initiateAuth(email: string, session?: string) {
+      return client.send(new InitiateAuthCommand({
+        ClientId: config.clientId,
+        AuthFlow: 'USER_AUTH',
+        AuthParameters: { USERNAME: email, PREFERRED_CHALLENGE: 'EMAIL_OTP' },
+        Session: session,
+      }))
+    },
+    respondToAuthChallenge(email: string, session: string, code: string) {
+      return client.send(new RespondToAuthChallengeCommand({
+        ClientId: config.clientId,
+        ChallengeName: 'EMAIL_OTP',
+        ChallengeResponses: { USERNAME: email, EMAIL_OTP_CODE: code },
+        Session: session,
+      }))
+    },
   }
-
-  async function confirmSignUp(
-    email: string,
-    code: string,
-    session?: string,
-  ): Promise<ConfirmSignUpCommandOutput> {
-    return client.send(new ConfirmSignUpCommand({
-      ClientId: config.clientId,
-      Username: email,
-      ConfirmationCode: code,
-      Session: session,
-    }))
-  }
-
-  async function adminGetUser(email: string): Promise<AdminGetUserCommandOutput> {
-    return client.send(new AdminGetUserCommand({
-      UserPoolId: config.userPoolId,
-      Username: email,
-    }))
-  }
-
-  async function initiateAuth(
-    email: string,
-    session?: string,
-  ): Promise<InitiateAuthCommandOutput> {
-    return client.send(new InitiateAuthCommand({
-      ClientId: config.clientId,
-      AuthFlow: 'USER_AUTH',
-      AuthParameters: {
-        USERNAME: email,
-        PREFERRED_CHALLENGE: 'EMAIL_OTP',
-      },
-      Session: session,
-    }))
-  }
-
-  return { client, signUp, confirmSignUp, adminGetUser, initiateAuth }
 }

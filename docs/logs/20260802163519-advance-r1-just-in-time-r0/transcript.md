@@ -201,3 +201,7 @@ Artifact sync (pre-publish):
 - artifacts updated: staged-development.md, specification-review.md, design.md, completion-checklist.md, transcript.md
 - baseline conflicts: none
 - next permitted action: publish
+
+### Assistant
+
+Session artifacts を commit / push し、PR を作成した: https://github.com/matsuokashuhei/walk-dog/pull/26

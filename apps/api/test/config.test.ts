@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { loadDatabaseConfig, loadObservabilityConfig } from '../src/config.js'
+import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/config.js'
 
 test('loads DATABASE_URL and defaults DATABASE_POOL_MAX to 10', () => {
   assert.deepEqual(loadDatabaseConfig({ DATABASE_URL: 'postgresql://walk:dog@localhost/walkdog' }), {
@@ -72,5 +72,37 @@ test('rejects a missing RELEASE', () => {
   assert.throws(
     () => loadObservabilityConfig({ ENVIRONMENT: 'development' }),
     /RELEASE is required/,
+  )
+})
+
+test('loads Cognito configuration', () => {
+  assert.deepEqual(
+    loadCognitoConfig({
+      COGNITO_REGION: 'ap-northeast-1',
+      COGNITO_USER_POOL_ID: 'ap-northeast-1_abc123',
+      COGNITO_CLIENT_ID: 'test-client-id',
+    }),
+    { region: 'ap-northeast-1', userPoolId: 'ap-northeast-1_abc123', clientId: 'test-client-id' },
+  )
+})
+
+test('rejects missing COGNITO_REGION', () => {
+  assert.throws(
+    () => loadCognitoConfig({ COGNITO_USER_POOL_ID: 'pool', COGNITO_CLIENT_ID: 'client' }),
+    /COGNITO_REGION/,
+  )
+})
+
+test('rejects missing COGNITO_USER_POOL_ID', () => {
+  assert.throws(
+    () => loadCognitoConfig({ COGNITO_REGION: 'region', COGNITO_CLIENT_ID: 'client' }),
+    /COGNITO_USER_POOL_ID/,
+  )
+})
+
+test('rejects missing COGNITO_CLIENT_ID', () => {
+  assert.throws(
+    () => loadCognitoConfig({ COGNITO_REGION: 'region', COGNITO_USER_POOL_ID: 'pool' }),
+    /COGNITO_CLIENT_ID/,
   )
 })

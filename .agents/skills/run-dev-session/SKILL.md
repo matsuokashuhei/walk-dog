@@ -73,6 +73,14 @@ If a confirmed decision is implementation-local, superseded, or outside the stag
 
 Synchronize a confirmed plan-level decision immediately after the user approves it, before presenting the next decision or starting implementation. Record the changed section and the corresponding transcript decision in the artifact log. Do not continue while a plan-level decision is unsynced or its classification is unclear.
 
+When the synced change is a prerequisite table (or equivalent step-to-foundation mapping):
+
+1. Cross-check every cell against the staged plan’s release capability sections and later-release boundaries.
+2. Cross-check product preconditions against the relevant files in `docs/specs/`.
+3. Use affirmative precondition labels only (required for the step, required for a named environment such as local-API device verification or VPS API device verification, or not a precondition for this step).
+4. Decompose mobile R0 foundations into auth state, API client, durable outbound queue, and iOS location permission; keep Cognito API verification and server-side SQS distinct.
+5. Record the cross-check result in the session transcript or specification review Gaps checked before treating the table as synced.
+
 At the end of the session, compare every confirmed decision in the transcript with `docs/development/staged-development.md`. Record each decision as synced, deferred to a named release-start decision, or outside the staged plan. Update the plan or ask for direction before publishing when the classification is unclear. The session is publishable only when this final comparison has no unresolved decision.
 
 ## Decision Questions

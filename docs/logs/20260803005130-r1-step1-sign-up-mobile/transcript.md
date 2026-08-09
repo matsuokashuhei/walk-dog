@@ -152,6 +152,14 @@ OKだ
 
 Pressable に accessibilityRole/button と accessible を付与し、Codex に E2E 再実行を依頼する。
 
+### User
+
+結果が更新されている。気づけ
+
+### Assistant
+
+更新済み e2e-report を評価。invalid email は passed。成功系は Custom Message が `{####}` プレースホルダしかログせず OTP 実体が取れず blocked。
+
 ## Sync
 
 - trigger: user switched E2E gate to Build iOS Apps plugin

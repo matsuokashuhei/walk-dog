@@ -30,19 +30,52 @@ type ScreenState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
 
-function firstParam(value: string | string[] | undefined): string {
+function requiredParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) {
-    return value[0] ?? ''
+    const first = value[0]
+    return first && first.length > 0 ? first : null
   }
-  return value ?? ''
+  return value && value.length > 0 ? value : null
 }
 
-export default function VerifyScreen() {
-  const router = useRouter()
-  const params = useLocalSearchParams<{ username?: string; session?: string }>()
+function RestartLink({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      testID="verify-restart"
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel="最初からやり直す"
+      style={styles.linkButton}
+      onPress={onPress}
+    >
+      <Text style={styles.linkText} accessible={false}>
+        最初からやり直す
+      </Text>
+    </Pressable>
+  )
+}
+
+function InvalidRouteVerify({ onRestart }: { onRestart: () => void }) {
+  return (
+    <View style={styles.container} testID="verify-root">
+      <Text style={styles.error} testID="auth-error">
+        確認に必要な情報がありません。最初からやり直してください。
+      </Text>
+      <RestartLink onPress={onRestart} />
+    </View>
+  )
+}
+
+function VerifyForm({
+  username,
+  session,
+  onRestart,
+}: {
+  username: string
+  session: string
+  onRestart: () => void
+}) {
   const { setSession } = useAuth()
-  const username = firstParam(params.username)
-  const session = firstParam(params.session)
   const [code, setCode] = useState('')
   const [state, setState] = useState<ScreenState>({ kind: 'idle' })
 
@@ -68,61 +101,66 @@ export default function VerifyScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Verify' }} />
-      <View style={styles.container} testID="verify-root">
-        <Text style={styles.label}>One-time code</Text>
-        <TextInput
-          testID="verify-code"
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="number-pad"
-          textContentType="oneTimeCode"
-          value={code}
-          onChangeText={setCode}
-          editable={state.kind !== 'loading'}
-          placeholder="123456"
-        />
+    <View style={styles.container} testID="verify-root">
+      <Text style={styles.label}>One-time code</Text>
+      <TextInput
+        testID="verify-code"
+        style={styles.input}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="number-pad"
+        textContentType="oneTimeCode"
+        value={code}
+        onChangeText={setCode}
+        editable={state.kind !== 'loading'}
+        placeholder="123456"
+      />
 
-        {state.kind === 'error' ? (
-          <Text style={styles.error} testID="auth-error">{state.message}</Text>
-        ) : null}
+      {state.kind === 'error' ? (
+        <Text style={styles.error} testID="auth-error">{state.message}</Text>
+      ) : null}
 
-        {state.kind === 'loading' ? (
-          <ActivityIndicator testID="verify-loading" style={styles.loading} />
-        ) : (
-          <Pressable
-            testID="verify-submit"
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel={state.kind === 'error' ? '再試行' : 'Confirm'}
-            style={styles.button}
-            onPress={() => {
-              void submit()
-            }}
-          >
-            <Text style={styles.buttonText} accessible={false}>
-              {state.kind === 'error' ? '再試行' : 'Confirm'}
-            </Text>
-          </Pressable>
-        )}
-
+      {state.kind === 'loading' ? (
+        <ActivityIndicator testID="verify-loading" style={styles.loading} />
+      ) : (
         <Pressable
-          testID="verify-restart"
+          testID="verify-submit"
           accessible
           accessibilityRole="button"
-          accessibilityLabel="最初からやり直す"
-          style={styles.linkButton}
+          accessibilityLabel={state.kind === 'error' ? '再試行' : 'Confirm'}
+          style={styles.button}
           onPress={() => {
-            router.replace('/sign-up')
+            void submit()
           }}
         >
-          <Text style={styles.linkText} accessible={false}>
-            最初からやり直す
+          <Text style={styles.buttonText} accessible={false}>
+            {state.kind === 'error' ? '再試行' : 'Confirm'}
           </Text>
         </Pressable>
-      </View>
+      )}
+
+      <RestartLink onPress={onRestart} />
+    </View>
+  )
+}
+
+export default function VerifyScreen() {
+  const router = useRouter()
+  const params = useLocalSearchParams<{ username: string; session: string }>()
+  const username = requiredParam(params.username)
+  const session = requiredParam(params.session)
+  const onRestart = () => {
+    router.replace('/sign-up')
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Verify' }} />
+      {username === null || session === null ? (
+        <InvalidRouteVerify onRestart={onRestart} />
+      ) : (
+        <VerifyForm username={username} session={session} onRestart={onRestart} />
+      )}
     </>
   )
 }

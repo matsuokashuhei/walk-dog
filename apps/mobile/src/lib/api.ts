@@ -65,7 +65,20 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   })
 
-  const payload: unknown = await response.json().catch(() => null)
+  let payload: unknown
+  try {
+    payload = await response.json()
+  } catch {
+    throw new ApiError(
+      {
+        code: 'UNEXPECTED_RESPONSE',
+        message: 'Response body was not valid JSON',
+        requestId: crypto.randomUUID(),
+        retryable: true,
+      },
+      response.status,
+    )
+  }
 
   if (!response.ok) {
     if (isApiErrorBody(payload)) {
@@ -75,7 +88,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
       {
         code: 'UNEXPECTED_RESPONSE',
         message: 'Unexpected error response from API',
-        requestId: '',
+        requestId: crypto.randomUUID(),
         retryable: true,
       },
       response.status,

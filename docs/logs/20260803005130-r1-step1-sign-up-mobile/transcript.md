@@ -15,6 +15,7 @@
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/plan.md`
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/e2e-codex-brief.md`
   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/e2e-report.md`
+  - `docs/logs/20260803005130-r1-step1-sign-up-mobile/defensive-code-review.md`
 
 ## Release context
 
@@ -230,3 +231,71 @@ PR created: https://github.com/matsuokashuhei/walk-dog/pull/33
 - artifacts already current: design.md, plan.md, e2e-report.md
 - baseline conflicts: none
 - next permitted action: continue (await review / merge)
+
+### User
+
+PR #33 の `origin/main` との差分について、不要に防御的なコードだけをレビューし、`defensive-code-review.md` に記録するよう依頼。
+
+### Assistant
+
+全 merge diff と Mobile API client / auth / Sign Up / Verify、および Cognito Custom Email Sender の周辺呼び出しを確認。P1 3件、P3 2件を記録し、防御的コードの観点で NOT APPROVED と判定。
+
+## Sync
+
+- trigger: defensive-code review record created
+- status: synced
+- artifacts updated: defensive-code-review.md, transcript Artifact List, transcript review entry
+- artifacts already current: specification-review.md, design.md, plan.md, e2e-codex-brief.md, e2e-report.md
+- baseline conflicts: none
+- next permitted action: continue (address review findings)
+
+### User
+
+P1 / P3 修正後の committed + uncommitted 差分を再レビューし、`defensive-code-review.md` を上書きするよう依頼。
+
+### Assistant
+
+前回の P1 3件と P3 2件の修正、および SSM local E2E 分離後の周辺コードを再確認。P1 は解消済みで、P3 3件を非ブロッキングとして記録し、防御的コードの観点で APPROVED と判定。
+
+## Sync
+
+- trigger: defensive-code fixes re-reviewed and review record overwritten
+- status: synced
+- artifacts updated: defensive-code-review.md, transcript re-review entry
+- artifacts already current: transcript Artifact List, specification-review.md, design.md, plan.md, e2e-codex-brief.md
+- baseline conflicts: none
+- next permitted action: continue (optional P3 cleanup / publish fixes)
+
+### User
+
+P1だけでなくP3も直してください。
+
+### Assistant
+
+P1/P3 を修正（OTP を production handler から分離、Sign Up/Verify 必須配線、api JSON、email 境界）。Codex sol 再レビューで **APPROVED**。残 P3 も追加で解消。terraform apply（local Custom Email Sender → `index.local` + SSM）が必要。
+
+## Sync
+
+- trigger: defensive-code remediation + APPROVED
+- status: synced
+- artifacts updated: defensive-code-review.md, design.md, plan.md, e2e-codex-brief.md, transcript
+- artifacts already current: specification-review.md
+- baseline conflicts: none
+- next permitted action: continue (commit/push + terraform apply + optional E2E)
+
+### User
+
+Custom Email Senderはまだ最適化しなくてよい。元に戻してくれ
+
+### Assistant
+
+Custom Email Sender を CloudWatch 平文 OTP の単一 handler に戻した。SSM / `index.local` は削除。モバイル側の Sign Up / Verify / api 修正は維持。
+
+## Sync
+
+- trigger: revert Custom Email Sender optimization
+- status: synced
+- artifacts updated: design.md, plan.md, e2e-codex-brief.md, defensive-code-review.md, transcript, lambda + OTP poller
+- artifacts already current: specification-review.md
+- baseline conflicts: none
+- next permitted action: continue

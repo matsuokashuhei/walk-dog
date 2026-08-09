@@ -37,11 +37,18 @@ export default function SignUpScreen() {
         method: 'POST',
         body: { email: email.trim() },
       })
+      if (!response.username || !response.session) {
+        setState({
+          kind: 'error',
+          message: 'サインアップ応答が不完全です。再試行してください。',
+        })
+        return
+      }
       router.push({
         pathname: '/verify',
         params: {
           username: response.username,
-          session: response.session ?? '',
+          session: response.session,
         },
       })
       setState({ kind: 'idle' })

@@ -23,7 +23,7 @@ if (!email) {
 const region = process.env.AWS_REGION ?? 'ap-northeast-1'
 const logGroup =
   process.env.COGNITO_OTP_LOG_GROUP ??
-  '/aws/lambda/walkdog-local-cognito-custom-message'
+  '/aws/lambda/walkdog-local-custom-message'
 const waitMs = Number(process.env.COGNITO_OTP_WAIT_MS ?? '60000')
 const startedAt = Date.now() - 30_000
 

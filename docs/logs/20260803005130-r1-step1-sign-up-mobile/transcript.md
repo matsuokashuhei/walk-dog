@@ -130,11 +130,11 @@ OK
 
 ### User
 
-ok
+terraformのコードをデプロイしました。またcloudwatchlogsのreadonlyaccessも付与しました。
 
 ### Assistant
 
-B2 確定。Custom Message Lambda + CloudWatch OTP ポーリングへ設計を更新し、ハーネス実装に着手。
+Cognito LambdaConfig.CustomMessage は `walkdog-local-custom-message` に接続済みを確認。OTP poller のデフォルトロググループをその関数名に合わせて更新。残ブロッカーは Maestro 用 Java。E2E 再実行の可否を確認する。
 
 ## Sync
 

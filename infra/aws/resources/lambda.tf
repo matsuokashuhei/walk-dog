@@ -1,6 +1,3 @@
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
-
 data "archive_file" "custom_email_sender" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/custom_email_sender"

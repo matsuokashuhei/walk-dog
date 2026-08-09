@@ -384,3 +384,20 @@ ZodError 契約修正と E2E passed 報告をコミットし、PR #33 へ push�
 - artifacts already current: design.md, plan.md, e2e-report.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+apps/mobile/scripts/e2e/fetch-cognito-otp.mjs をbashにしてくれ
+
+### Assistant
+
+OTP poller を `fetch-cognito-otp.sh` に置換。`@aws-sdk/client-cloudwatch-logs` を mobile から削除。セッション文書のパスを更新。
+
+## Sync
+
+- trigger: convert OTP poller from Node to bash
+- status: synced
+- artifacts updated: transcript, e2e-codex-brief.md, e2e-report.md, design.md, plan.md
+- artifacts already current: specification-review.md
+- baseline conflicts: none
+- next permitted action: continue

@@ -20,5 +20,5 @@ passed
 ## Execution notes
 
 - Maestro was not used.
-- The OTP poller path is `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs`.
+- The OTP poller path is `apps/mobile/scripts/e2e/fetch-cognito-otp.sh`.
 - The cold-start gate used Build iOS Apps / XcodeBuildMCP on simulator `A858B985-59B6-4699-A9AE-2C69CA06C2CA` and bundle `com.cacheandbuffer.walkdog`.

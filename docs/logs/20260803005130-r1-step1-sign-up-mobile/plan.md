@@ -21,7 +21,7 @@
 ## Task 3 — Cognito OTP log (B2) + Codex Build iOS App E2E
 
 1. Cognito **CustomEmailSender** Lambda + KMS (replaces Custom Message `{####}`): `walkdog-local-custom-email-sender`.
-2. OTP poller `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs` reads CloudWatch log group `/aws/lambda/walkdog-local-custom-email-sender` for plaintext `{ type:"cognito.otp", email, code }`.
+2. OTP poller `apps/mobile/scripts/e2e/fetch-cognito-otp.sh` reads CloudWatch log group `/aws/lambda/walkdog-local-custom-email-sender` for plaintext `{ type:"cognito.otp", email, code }`.
 3. Completion gate runner: **Codex Build iOS Apps plugin**.
 4. Ask Codex to build/run `apps/mobile` on iOS Simulator and execute:
    - invalid email → `auth-error` + retry

@@ -10,7 +10,7 @@ Use the **Build iOS Apps** plugin (`build-ios-apps@openai-curated` / XcodeBuildM
 
 Also verify **API responses** and **DB side effects**, not only UI.
 
-OTP helper: `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs`  
+OTP helper: `apps/mobile/scripts/e2e/fetch-cognito-otp.sh`  
 CloudWatch log group: `/aws/lambda/walkdog-local-custom-email-sender`  
 Structured log: `{ "type":"cognito.otp", "email", "code" }` (plaintext)
 
@@ -44,7 +44,7 @@ Use SES-verified `E2E_EMAIL=matzuokashuhei@gmail.com` (reset Cognito user first 
 - API: `http://127.0.0.1:3000` (`EXPO_PUBLIC_API_BASE_URL`)
 - Cognito pool `ap-northeast-1_JtAcxAaub` / client `43upvfsbiucgg4662phjvm8am8`
 - AWS profile: `walk-dog`
-- OTP poller path changed: `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs` (no `.maestro/`)
+- OTP poller path changed: `apps/mobile/scripts/e2e/fetch-cognito-otp.sh` (no `.maestro/`)
 
 ## Steps
 

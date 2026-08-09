@@ -80,7 +80,7 @@ Verify screen
 - Runner: Codex with **Build iOS Apps** plugin (XcodeBuildMCP)
 - Target: iOS Simulator build of `apps/mobile` + local API + real Cognito
 - Scenarios: Sign Up success → Verify success → authenticated home; failure Error/Retry; cold start auth restore
-- OTP retrieval: Cognito **CustomEmailSender** Lambda decrypts KMS-encrypted code, logs plaintext `{ type:"cognito.otp", email, code }`, sends mail via SES; poller at `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs`
+- OTP retrieval: Cognito **CustomEmailSender** Lambda decrypts KMS-encrypted code, logs plaintext `{ type:"cognito.otp", email, code }`, sends mail via SES; poller at `apps/mobile/scripts/e2e/fetch-cognito-otp.sh`
 - Gate result: **passed** (`e2e-report.md`) — invalid email; Sign Up → OTP → Verify → home-root; cold start → home-root
 - Abandoned: Mailosaur; Custom Message `{####}` placeholder logging; Maestro
 - Prerequisites: terraform apply for CustomEmailSender + KMS, AWS login, local API, iOS Simulator, SES-verified test email

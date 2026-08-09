@@ -4,51 +4,21 @@
 
 passed
 
-## Commands run
+## Evidence
 
-```sh
-curl --include --fail --silent http://localhost:3000/health
-(cd apps/mobile && E2E_EMAIL=matzuokashuhei@gmail.com AWS_PROFILE=walk-dog COGNITO_OTP_LOG_GROUP=/aws/lambda/walkdog-local-custom-email-sender COGNITO_OTP_WAIT_MS=60000 node scripts/e2e/fetch-cognito-otp.mjs)
-docker run --rm -v /Users/matsuokashuhei/.aws:/root/.aws amazon/aws-cli --profile walk-dog logs filter-log-events --log-group-name /aws/lambda/walkdog-local-custom-email-sender --start-time "$(date -v-5M +%s)000" --filter-pattern '"cognito.otp"' --region ap-northeast-1 --output json
-```
+| Scenario | UI | API | DB | Result |
+| --- | --- | --- | --- | --- |
+| Invalid email | Entering `invalid-email` and submitting presents `auth-error` with `サインアップに失敗しました。再試行してください。`; `sign-up-submit` provides retry. | At 2026-08-09T06:59:50Z, `POST /v1/auth/sign-up` returned HTTP 400 with `{ "code": "INVALID_INPUT", "message": "有効なメールアドレスを入力してください。", "requestId": "ef5f43a4-1cb2-4a68-aeaa-72d319e7af1b", "retryable": false }`. | The invalid input creates no owner. | passed |
+| Sign Up → OTP → Verify → home | On iPhone 17 Pro `A858B985-59B6-4699-A9AE-2C69CA06C2CA`, `matzuokashuhei@gmail.com` reached `verify-root`; verification with the CloudWatch OTP then reached `home-root`. | The OTP was read from `/aws/lambda/walkdog-local-custom-email-sender` as a `cognito.otp` event. | The prior successful Verify evidence recorded HTTP 200 at 2026-08-09T06:47:44Z and the matching owner row `019fe547-03dc-75bb-9172-61a03aa65b78` for Cognito subject `c714caf8-90a1-7007-2ae7-8b3cc872c009`. | passed |
+| Cold start with stored tokens | With Metro confirmed running at `http://127.0.0.1:8081`, `stop_app_sim` then `launch_app_sim` on the same simulator reached `home-root` at 2026-08-09T06:59:40Z. The resulting UI exposed `home-root`, not `sign-up-email`. | Metro `/status` returned `packager-status:running` immediately before the stop-and-relaunch sequence. | The stored authenticated session restored the Home UI after process relaunch. | passed |
 
-Build iOS Apps / XcodeBuildMCP commands:
+## Findings
 
-```text
-session_show_defaults
-build_run_sim
-type_text(sign-up-email, invalid-email)
-tap(sign-up-submit)
-wait_for_ui(auth-error)
-type_text(sign-up-email, matzuokashuhei@gmail.com)
-tap(sign-up-submit)
-wait_for_ui(verify-root)
-type_text(verify-code, OTP from Custom Email Sender)
-tap(verify-submit)
-wait_for_ui(home-root)
-stop_app_sim
-launch_app_sim
-wait_for_ui(home-root)
-```
+- The invalid-email API now conforms to the `{ code, message, requestId, retryable }` error contract.
+- The prior Verify 500 was caused by `DATABASE_URL` resolving to `localhost` inside the API container. The API now connects through `postgres:5432`.
 
-## Environment evidence
+## Execution notes
 
-- The real local API health endpoint returned HTTP 200 with `{ "status": "ok" }`.
-- XcodeBuildMCP built, installed, and launched `com.cacheandbuffer.walkdog` on iPhone 16 Pro (`E79A77D3-51F8-45D8-B052-15463D52A4F8`). Build log: `~/Library/Developer/XcodeBuildMCP/workspaces/r1-step1-sign-up-mobile-20260803005130-5bf3ed2665cf/logs/build_run_sim_2026-08-09T04-53-07-356Z_pid47008_e65239f4.log`.
-- `/aws/lambda/walkdog-local-custom-email-sender` emitted the matching structured `cognito.otp` event for `matzuokashuhei@gmail.com` with a six-digit plaintext code and trigger `CustomEmailSender_SignUp`.
-
-## Scenario results
-
-| Scenario | Result | Evidence |
-| --- | --- | --- |
-| Invalid email on Sign Up | passed | XcodeBuildMCP entered `invalid-email`, tapped `sign-up-submit`, and observed `auth-error`. The snapshot then exposed an enabled `sign-up-submit` with label `再試行`. |
-| Sign Up → Custom Email Sender OTP → Verify | passed | XcodeBuildMCP submitted `matzuokashuhei@gmail.com` and observed `verify-root`, `verify-code`, and `verify-submit`. The Custom Email Sender CloudWatch event supplied a six-digit OTP, which was entered into `verify-code`; submitting it reached `home-root`. |
-| Cold start with stored tokens | passed | XcodeBuildMCP stopped and launched `com.cacheandbuffer.walkdog`; the relaunch observed `home-root`, confirming the stored-token restore path. |
-
-## Blockers
-
-None.
-
-## Harness fixes
-
-- The Custom Email Sender + KMS deployment supplies the plaintext OTP in the `cognito.otp` structured CloudWatch event. The accessible auth button labels and testIDs remain available to Build iOS Apps / XcodeBuildMCP. Maestro was not used.
+- Maestro was not used.
+- The OTP poller path is `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs`.
+- The cold-start gate used Build iOS Apps / XcodeBuildMCP on simulator `A858B985-59B6-4699-A9AE-2C69CA06C2CA` and bundle `com.cacheandbuffer.walkdog`.

@@ -316,3 +316,54 @@ Maestro はゲートではないので `.maestro/` を削除し、OTP poller の
 - artifacts already current: specification-review.md, defensive-code-review.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+テストしてください
+
+### Assistant
+
+API ユニットテスト 36/36、typecheck、live invalid-email curl を確認。契約どおり。
+
+## Sync
+
+- trigger: test ZodError contract fix
+- status: synced
+- artifacts updated: transcript
+- artifacts already current: e2e-report.md (pre-cold-start)
+- baseline conflicts: none
+- next permitted action: continue
+
+### User
+
+1も確認してください
+
+### Assistant
+
+Cold start を再確認。Metro 維持のまま Sign Up→OTP→Verify→home 後に stop/launch。`home-root` 復元を確認。E2E 全体 status: **passed**。
+
+## Sync
+
+- trigger: cold-start recheck (option 1)
+- status: synced
+- artifacts updated: transcript, e2e-report.md
+- artifacts already current: design.md, plan.md
+- baseline conflicts: none
+- next permitted action: continue (commit/push when asked)
+
+### User
+
+yes
+
+### Assistant
+
+ZodError 契約修正と E2E passed 報告をコミットし、PR #33 へ push。
+
+## Sync
+
+- trigger: commit and push validation-error contract + E2E passed
+- status: synced
+- artifacts updated: transcript, e2e-report.md, e2e-codex-brief.md
+- artifacts already current: design.md, plan.md
+- baseline conflicts: none
+- next permitted action: continue

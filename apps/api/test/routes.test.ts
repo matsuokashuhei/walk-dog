@@ -125,7 +125,18 @@ test('POST /v1/auth/sign-up returns 400 for format validation error', async () =
     body: JSON.stringify({ email: 'not-an-email' }),
   })
 
+  const body = await response.json() as {
+    code: string
+    message: string
+    requestId: string
+    retryable: boolean
+  }
   assert.equal(response.status, 400)
+  assert.equal(body.code, 'INVALID_INPUT')
+  assert.equal(body.message, '有効なメールアドレスを入力してください。')
+  assert.equal(typeof body.requestId, 'string')
+  assert.equal(body.requestId.length > 0, true)
+  assert.equal(body.retryable, false)
 })
 
 test('POST /v1/auth/verify returns 200 with tokens for valid code', async () => {

@@ -49,7 +49,22 @@ export const createApp = (
   dependencies: AppDependencies,
   registerRoutes?: (app: App) => void,
 ): App => {
-  const app = new OpenAPIHono<{ Variables: Variables }>()
+  const app = new OpenAPIHono<{ Variables: Variables }>({
+    defaultHook: (result, context) => {
+      if (result.success) {
+        return
+      }
+      const emailIssue = result.error.issues.some((issue) => issue.path.includes('email'))
+      return context.json({
+        code: 'INVALID_INPUT',
+        message: emailIssue
+          ? '有効なメールアドレスを入力してください。'
+          : '入力内容を確認してください。',
+        requestId: context.get('requestId'),
+        retryable: false,
+      }, 400)
+    },
+  })
   app.openAPIRegistry.register('Error', errorSchema)
   if (Sentry.getClient()) {
     app.use('*', sentry(app))

@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { z } from 'zod'
 import { ApiError, apiRequest } from '@/lib/api'
 
 type SignUpResponse = {
@@ -25,10 +26,6 @@ type ScreenState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
 
-function isValidEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-}
-
 export default function SignUpScreen() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -36,7 +33,7 @@ export default function SignUpScreen() {
 
   const submit = async () => {
     const trimmedEmail = email.trim()
-    if (!isValidEmail(trimmedEmail)) {
+    if (!z.email().safeParse(trimmedEmail).success) {
       setState({
         kind: 'error',
         message: '有効なメールアドレスを入力してください。',

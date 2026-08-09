@@ -471,3 +471,19 @@ Docs reviewed: https://zod.dev/api?id=strings ; defining-zod-schemas project def
 - artifacts updated: auth.ts, transcript, retrospective.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+進めてください（mobile Zod email）
+
+### Assistant
+
+Docs: https://zod.dev/api?id=string-formats (`z.email()`), https://zod.dev/basics?id=parsing-data (`safeParse`). Added direct dep `zod@^4.4.3` to apps/mobile. Sign Up pre-submit uses `z.email().safeParse(trimmedEmail).success`; removed local isValidEmail regex.
+
+## Sync
+
+- trigger: mobile Zod email validation
+- status: synced
+- artifacts updated: transcript, sign-up.tsx, package.json/lock
+- baseline conflicts: none
+- next permitted action: continue

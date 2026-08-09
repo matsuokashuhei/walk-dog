@@ -53,7 +53,7 @@ resource "aws_cognito_user_pool" "user" {
   }
 
   lambda_config {
-    custom_message = aws_lambda_function.cognito_custom_message[each.key].arn
+    custom_message = aws_lambda_function.custom_message[each.key].arn
   }
 
   tags = {

@@ -133,7 +133,7 @@ test('POST /v1/auth/sign-up returns 400 for format validation error', async () =
   }
   assert.equal(response.status, 400)
   assert.equal(body.code, 'INVALID_INPUT')
-  assert.equal(body.message, '有効なメールアドレスを入力してください。')
+  assert.equal(body.message, '入力内容を確認してください。')
   assert.equal(typeof body.requestId, 'string')
   assert.equal(body.requestId.length > 0, true)
   assert.equal(body.retryable, false)

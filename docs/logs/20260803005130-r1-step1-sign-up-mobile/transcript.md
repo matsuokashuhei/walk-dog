@@ -367,3 +367,20 @@ ZodError 契約修正と E2E passed 報告をコミットし、PR #33 へ push�
 - artifacts already current: design.md, plan.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+実行して（3スキルに基づく validation 再設計）
+
+### Assistant
+
+`defaultHook` を汎用メッセージのみに再設計し createApp 外へ切り出し。Sign Up に email pre-submit を追加。フィールド分岐を削除。
+
+## Sync
+
+- trigger: redesign validation errors per main skills #34
+- status: synced
+- artifacts updated: transcript
+- artifacts already current: design.md, plan.md, e2e-report.md
+- baseline conflicts: none
+- next permitted action: continue

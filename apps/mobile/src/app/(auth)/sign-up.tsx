@@ -25,17 +25,30 @@ type ScreenState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 export default function SignUpScreen() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [state, setState] = useState<ScreenState>({ kind: 'idle' })
 
   const submit = async () => {
+    const trimmedEmail = email.trim()
+    if (!isValidEmail(trimmedEmail)) {
+      setState({
+        kind: 'error',
+        message: '有効なメールアドレスを入力してください。',
+      })
+      return
+    }
+
     setState({ kind: 'loading' })
     try {
       const response = await apiRequest<SignUpResponse>('/v1/auth/sign-up', {
         method: 'POST',
-        body: { email: email.trim() },
+        body: { email: trimmedEmail },
       })
       if (!response.username || !response.session) {
         setState({

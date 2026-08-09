@@ -14,8 +14,8 @@ passed
 
 ## Findings
 
-- The invalid-email API now conforms to the `{ code, message, requestId, retryable }` error contract.
-- The prior Verify 500 was caused by `DATABASE_URL` resolving to `localhost` inside the API container. The API now connects through `postgres:5432`.
+- Invalid-email API validation returns the shared generic contract `{ code: "INVALID_INPUT", message: "入力内容を確認してください。", requestId, retryable: false }` from a field-agnostic `defaultHook`. Field-specific email copy is owned by Sign Up client pre-submit.
+- A prior Verify 500 resulted from `DATABASE_URL` resolving to `localhost` inside the API container. The API now connects through `postgres:5432`.
 
 ## Execution notes
 

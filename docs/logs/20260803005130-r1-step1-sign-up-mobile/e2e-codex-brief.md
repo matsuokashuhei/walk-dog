@@ -8,11 +8,11 @@ Worktree:
 
 Use the **Build iOS Apps** plugin (`build-ios-apps@openai-curated`) to drive the Expo mobile app on the iOS Simulator and verify Sign Up against the **real local API + Cognito**. Do **not** use Maestro as the gate.
 
-OTP retrieval is **B2**:
-- Custom Message Lambda: `walkdog-local-custom-message`
-- CloudWatch log group: `/aws/lambda/walkdog-local-custom-message`
-- Structured log: `{ "type":"cognito.otp", "email", "code" }`
-- Helper: `apps/mobile/.maestro/scripts/fetch-cognito-otp.mjs` (usable from shell; Maestro YAML optional)
+OTP retrieval is **Custom Email Sender** (not Custom Message `{####}`):
+- Lambda: `walkdog-local-custom-email-sender`
+- CloudWatch log group: `/aws/lambda/walkdog-local-custom-email-sender`
+- Structured log: `{ "type":"cognito.otp", "email", "code" }` with **plaintext** OTP after KMS decrypt
+- Helper: `apps/mobile/.maestro/scripts/fetch-cognito-otp.mjs`
 
 ## Required scenarios
 

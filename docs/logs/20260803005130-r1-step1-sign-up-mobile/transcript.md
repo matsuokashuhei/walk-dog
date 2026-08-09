@@ -154,26 +154,66 @@ Pressable に accessibilityRole/button と accessible を付与し、Codex に E
 
 ### User
 
-結果が更新されている。気づけ
+1
 
 ### Assistant
 
-更新済み e2e-report を評価。invalid email は passed。成功系は Custom Message が `{####}` プレースホルダしかログせず OTP 実体が取れず blocked。
+OTP 取得を Custom Email Sender（KMS 復号）へ切替。Terraform / Lambda 実装を追加。ユーザーに terraform apply を依頼する。
 
 ## Sync
 
-- trigger: user switched E2E gate to Build iOS Apps plugin
+- trigger: user chose Custom Email Sender (option 1) for plaintext OTP
 - status: synced
-- artifacts updated: design.md, plan.md, e2e-codex-brief.md, transcript
+- artifacts updated: design.md, plan.md, e2e-codex-brief.md, transcript, infra CustomEmailSender + KMS
 - artifacts already current: specification-review.md
 - baseline conflicts: none
-- next permitted action: continue (Codex E2E re-run)
+- next permitted action: continue (user terraform apply → Codex E2E re-run)
+
+### User
+
+I'm done with terraform apply
+
+### Assistant
+
+Verified Cognito LambdaConfig has CustomEmailSender + KMSKeyID. Re-prompted e2e-codex for Build iOS Apps E2E against `/aws/lambda/walkdog-local-custom-email-sender`.
 
 ## Sync
 
-- trigger: user confirmed OTP retrieval B2
+- trigger: terraform apply complete → E2E re-run
 - status: synced
-- artifacts updated: design.md, plan.md, transcript
-- artifacts already current: e2e-report.md
+- artifacts updated: transcript
+- artifacts already current: design.md, plan.md, e2e-codex-brief.md
 - baseline conflicts: none
-- next permitted action: continue (implement B2 harness)
+- next permitted action: continue (await e2e-report.md)
+
+### Assistant
+
+First E2E after apply blocked: existing Cognito user for `matzuokashuhei@gmail.com`. Deleted UNCONFIRMED user and re-ran.
+
+Second E2E: **passed** (invalid email, Sign Up → Custom Email Sender OTP → Verify → home, cold start). Report: `e2e-report.md`.
+
+## Sync
+
+- trigger: Task 3 E2E gate passed
+- status: synced
+- artifacts updated: transcript, e2e-report.md
+- artifacts already current: design.md, plan.md, e2e-codex-brief.md, specification-review.md
+- baseline conflicts: none
+- next permitted action: crit (Task 4)
+
+### User
+
+Critは不要だ。ではPRをつくって
+
+### Assistant
+
+Crit をスキップし、Custom Email Sender 変更をコミットして PR を作成する。
+
+## Sync
+
+- trigger: pre-publish (Crit skipped by user)
+- status: synced
+- artifacts updated: transcript, plan.md (Task 4 = publish only), design.md (E2E passed)
+- artifacts already current: e2e-report.md, e2e-codex-brief.md, specification-review.md
+- baseline conflicts: none
+- next permitted action: publish

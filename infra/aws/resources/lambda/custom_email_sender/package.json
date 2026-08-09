@@ -1,0 +1,9 @@
+{
+  "name": "walkdog-custom-email-sender",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-crypto/client-node": "^4.2.1",
+    "@aws-sdk/client-ses": "^3.758.0"
+  }
+}

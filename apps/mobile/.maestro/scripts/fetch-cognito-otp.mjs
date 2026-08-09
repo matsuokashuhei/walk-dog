@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Poll CloudWatch Logs for Cognito Custom Message OTP entries.
+ * Poll CloudWatch Logs for Cognito Custom Email Sender OTP entries.
  *
  * Env:
  *   E2E_EMAIL (required)
  *   AWS_PROFILE (default: walk-dog)
  *   AWS_REGION (default: ap-northeast-1)
- *   COGNITO_OTP_LOG_GROUP (default: /aws/lambda/walkdog-local-cognito-custom-message)
+ *   COGNITO_OTP_LOG_GROUP (default: /aws/lambda/walkdog-local-custom-email-sender)
  *   COGNITO_OTP_WAIT_MS (default: 60000)
  */
 import {
@@ -23,7 +23,7 @@ if (!email) {
 const region = process.env.AWS_REGION ?? 'ap-northeast-1'
 const logGroup =
   process.env.COGNITO_OTP_LOG_GROUP ??
-  '/aws/lambda/walkdog-local-custom-message'
+  '/aws/lambda/walkdog-local-custom-email-sender'
 const waitMs = Number(process.env.COGNITO_OTP_WAIT_MS ?? '60000')
 const startedAt = Date.now() - 30_000
 

@@ -45,3 +45,4 @@ terraform.rc
 
 # Generated Lambda deployment packages
 **/lambda/*.zip
+**/lambda/**/node_modules/

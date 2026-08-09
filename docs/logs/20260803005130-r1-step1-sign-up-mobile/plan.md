@@ -20,8 +20,8 @@
 
 ## Task 3 — Cognito OTP log (B2) + Codex Build iOS App E2E
 
-1. Cognito Custom Message Lambda deployed (done: `walkdog-local-custom-message`).
-2. OTP poller reads CloudWatch log group `/aws/lambda/walkdog-local-custom-message`.
+1. Cognito **CustomEmailSender** Lambda + KMS (replaces Custom Message `{####}`): `walkdog-local-custom-email-sender`.
+2. OTP poller reads CloudWatch log group `/aws/lambda/walkdog-local-custom-email-sender` for plaintext `{ type:"cognito.otp", email, code }`.
 3. Completion gate runner: **Codex Build iOS Apps plugin** (not Maestro).
 4. Ask Codex to build/run `apps/mobile` on iOS Simulator and execute:
    - invalid email → `auth-error` + retry
@@ -30,8 +30,8 @@
 5. Write `e2e-report.md` with passed/failed/blocked.
 6. Maestro YAML under `.maestro/` is retained as optional reference only; it is not the gate.
 
-## Task 4 — Crit + publish PR
+## Task 4 — Publish PR
 
 1. Sync session artifacts.
-2. Crit session records (exclude transcript); address comments.
+2. Crit skipped by user direction.
 3. Push branch and open PR against `main` with session log.

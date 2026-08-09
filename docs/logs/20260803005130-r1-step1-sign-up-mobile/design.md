@@ -75,15 +75,15 @@ Verify screen
 | Task 2 — Sign Up + Verify screens | auth Stack、Sign Up、Verify（Loading / Error / Retry） |
 | Task 3 — Automated E2E | Codex Build iOS App plugin on Simulator + real API / Cognito OTP (B2) |
 
-### Completion gate — automated E2E (B + B2, Build iOS App; user confirmed)
+### Completion gate — automated E2E (B + Custom Email Sender OTP, Build iOS App)
 
-- Runner: Codex with **Build iOS Apps** plugin (XcodeBuildMCP / Simulator UI automation). Maestro is not required.
+- Runner: Codex with **Build iOS Apps** plugin (XcodeBuildMCP). Maestro is not required.
 - Target: iOS Simulator build of `apps/mobile` + local API + real Cognito
 - Scenarios: Sign Up success → Verify success → authenticated home; failure Error/Retry; cold start auth restore
-- OTP retrieval: Cognito Custom Message Lambda logs OTP; poll CloudWatch (`/aws/lambda/walkdog-local-custom-message`) (B2)
-- Sign Up recipient: SES-verified address (sandbox). Inbox is not read.
-- Abandoned: Mailosaur (B1/S2); Maestro CLI as the gate runner
-- Prerequisites: AWS login, local API, Custom Message Lambda deployed, iOS Simulator, Expo/iOS build, SES-verified test email
+- OTP retrieval: Cognito **CustomEmailSender** Lambda decrypts KMS-encrypted code, logs plaintext `{ type:"cognito.otp", email, code }`, sends mail via SES
+- Gate result: **passed** (`e2e-report.md`) — invalid email; Sign Up → OTP → Verify → home-root; cold start → home-root
+- Abandoned: Mailosaur; Custom Message `{####}` placeholder logging; Maestro as gate runner
+- Prerequisites: terraform apply for CustomEmailSender + KMS, AWS login, local API, iOS Simulator, SES-verified test email
 
 ## WHY
 

@@ -53,7 +53,11 @@ resource "aws_cognito_user_pool" "user" {
   }
 
   lambda_config {
-    custom_message = aws_lambda_function.custom_message[each.key].arn
+    kms_key_id = aws_kms_key.cognito_email_sender[each.key].arn
+    custom_email_sender {
+      lambda_arn     = aws_lambda_function.custom_email_sender[each.key].arn
+      lambda_version = "V1_0"
+    }
   }
 
   tags = {

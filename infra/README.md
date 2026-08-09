@@ -8,9 +8,16 @@ aws configure export-credentials --format env-no-export > .env.aws
 ## `aws` dir
 ### `envs/local`
 
+Before `terraform apply`, install Cognito Custom Email Sender Lambda deps on the host (the zip includes `node_modules`):
+
+```
+cd aws/resources/lambda/custom_email_sender
+npm install --omit=dev
+```
+
 ```
 cd aws/envs/local
-ln -sf ../../resorces/* .
+ln -sf ../../resources/* .
 ```
 
 ```

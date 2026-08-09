@@ -50,7 +50,7 @@ export default function SignUpScreen() {
         method: 'POST',
         body: { email: trimmedEmail },
       })
-      if (!response.username || !response.session) {
+      if (!response.username) {
         setState({
           kind: 'error',
           message: 'サインアップ応答が不完全です。再試行してください。',
@@ -61,7 +61,7 @@ export default function SignUpScreen() {
         pathname: '/verify',
         params: {
           username: response.username,
-          session: response.session,
+          ...(response.session ? { session: response.session } : {}),
         },
       })
       setState({ kind: 'idle' })

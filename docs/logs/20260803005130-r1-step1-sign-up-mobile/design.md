@@ -29,6 +29,8 @@
 
 Confirmed scope: Sign Up Mobile only. Dogs List is R1 Step 2. API paths are `/v1/auth/sign-up` and `/v1/auth/verify`.
 
+UNCONFIRMED resume: on `UsernameExistsException`, call public `ResendConfirmationCode` (no AdminGetUser/IAM). Success → 200 with resent OTP (`session` may be null). `InvalidParameterException` (already confirmed) → 409. Sign In improvement is deferred.
+
 ### Valid transitions
 
 ```

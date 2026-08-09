@@ -5,13 +5,15 @@ import type { DbInstance } from '../db/client.js'
 import type { CognitoClient } from '../auth/cognito.js'
 import { owners } from '../schema/owner.js'
 
+export type { CognitoClient }
+
 const signUpRequestSchema = z.object({
   email: z.email(),
 })
 
 const verifyRequestSchema = z.object({
   username: z.string().min(1),
-  session: z.string().min(1),
+  session: z.string().min(1).nullable(),
   code: z.string().min(1),
 })
 
@@ -111,6 +113,136 @@ function ownerFromCognitoSubject(
   })
 }
 
+function codeDeliveryFromDetails(details: { Destination?: string; AttributeName?: string } | undefined) {
+  if (!details) {
+    return null
+  }
+  return {
+    destination: details.Destination ?? '',
+    attribute: details.AttributeName ?? '',
+  }
+}
+
+async function signUpChallengeForExistingEmail(
+  cognito: CognitoClient,
+  email: string,
+  requestId: string,
+) {
+  // ResendConfirmationCode is public (no IAM). Success ⇒ UNCONFIRMED; already confirmed ⇒ InvalidParameterException.
+  try {
+    const resent = await cognito.resendConfirmationCode(email)
+    return {
+      status: 200 as const,
+      body: {
+        requestId,
+        username: email,
+        session: null,
+        codeDelivery: codeDeliveryFromDetails(resent.CodeDeliveryDetails),
+      },
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'InvalidParameterException') {
+      return {
+        status: 409 as const,
+        body: {
+          code: 'AUTHENTICATION_FAILED',
+          message: 'アカウントの作成に失敗しました。サインインしてください。',
+          requestId,
+          retryable: false,
+        },
+      }
+    }
+    throw error
+  }
+}
+
+function signUpErrorResponse(error: unknown, requestId: string) {
+  if (!(error instanceof Error)) {
+    return null
+  }
+  if (error.name === 'InvalidParameterException') {
+    return {
+      status: 400 as const,
+      body: {
+        code: 'INVALID_INPUT',
+        message: '有効なメールアドレスを入力してください。',
+        requestId,
+        retryable: false,
+      },
+    }
+  }
+  if (error.name === 'TooManyRequestsException' || error.name === 'LimitExceededException') {
+    return {
+      status: 429 as const,
+      body: {
+        code: 'RATE_LIMITED',
+        message: 'しばらく待ってから再試行してください。',
+        requestId,
+        retryable: true,
+      },
+    }
+  }
+  return null
+}
+
+const VERIFY_ERROR_BY_NAME = {
+  ExpiredCodeException: {
+    status: 400 as const,
+    code: 'CODE_EXPIRED',
+    message: 'コードの有効期限が切れました。最初からやり直してください。',
+    retryable: false,
+  },
+  CodeMismatchException: {
+    status: 400 as const,
+    code: 'INVALID_CODE',
+    message: 'コードが正しくありません。同じコードで再試行するか、最初からやり直してください。',
+    retryable: false,
+  },
+  NotAuthorizedException: {
+    status: 409 as const,
+    code: 'AUTHENTICATION_FAILED',
+    message: 'このアカウントは既に確認済みです。サインインしてください。',
+    retryable: false,
+  },
+  AliasExistsException: {
+    status: 400 as const,
+    code: 'CODE_ALREADY_USED',
+    message: 'このコードは既に使用されています。サインインしてください。',
+    retryable: false,
+  },
+  TooManyRequestsException: {
+    status: 429 as const,
+    code: 'RATE_LIMITED',
+    message: 'しばらく待ってから再試行してください。',
+    retryable: true,
+  },
+  LimitExceededException: {
+    status: 429 as const,
+    code: 'RATE_LIMITED',
+    message: 'しばらく待ってから再試行してください。',
+    retryable: true,
+  },
+}
+
+function verifyErrorResponse(error: unknown, requestId: string) {
+  if (!(error instanceof Error)) {
+    return null
+  }
+  if (!(error.name in VERIFY_ERROR_BY_NAME)) {
+    return null
+  }
+  const mapped = VERIFY_ERROR_BY_NAME[error.name as keyof typeof VERIFY_ERROR_BY_NAME]
+  return {
+    status: mapped.status,
+    body: {
+      code: mapped.code,
+      message: mapped.message,
+      requestId,
+      retryable: mapped.retryable,
+    },
+  }
+}
+
 // eslint-disable-next-line max-lines-per-function
 export function registerAuthRoutes(
   app: App,
@@ -128,19 +260,19 @@ export function registerAuthRoutes(
         requestId,
         username: email,
         session: output.Session ?? null,
-        codeDelivery: output.CodeDeliveryDetails
-          ? { destination: output.CodeDeliveryDetails.Destination ?? '', attribute: output.CodeDeliveryDetails.AttributeName ?? '' }
-          : null,
+        codeDelivery: codeDeliveryFromDetails(output.CodeDeliveryDetails),
       }, 200)
     } catch (error) {
       if (error instanceof Error && error.name === 'UsernameExistsException') {
-        return ctx.json({ code: 'AUTHENTICATION_FAILED', message: 'アカウントの作成に失敗しました。サインインしてください。', requestId, retryable: false }, 409)
+        const result = await signUpChallengeForExistingEmail(cognito, email, requestId)
+        if (result.status === 200) {
+          return ctx.json(result.body, 200)
+        }
+        return ctx.json(result.body, 409)
       }
-      if (error instanceof Error && error.name === 'InvalidParameterException') {
-        return ctx.json({ code: 'INVALID_INPUT', message: '有効なメールアドレスを入力してください。', requestId, retryable: false }, 400)
-      }
-      if (error instanceof Error && (error.name === 'TooManyRequestsException' || error.name === 'LimitExceededException')) {
-        return ctx.json({ code: 'RATE_LIMITED', message: 'しばらく待ってから再試行してください。', requestId, retryable: true }, 429)
+      const mapped = signUpErrorResponse(error, requestId)
+      if (mapped) {
+        return ctx.json(mapped.body, mapped.status)
       }
       throw error
     }
@@ -151,8 +283,8 @@ export function registerAuthRoutes(
     const { username: email, session, code } = ctx.req.valid('json')
 
     try {
-      const confirmOutput = await cognito.confirmSignUp(email, code, session)
-      const authSession = confirmOutput.Session ?? session
+      const confirmOutput = await cognito.confirmSignUp(email, code, session ?? undefined)
+      const authSession = confirmOutput.Session ?? session ?? undefined
       const authOutput = await cognito.initiateAuth(email, authSession)
       const authResult = authOutput.AuthenticationResult
 
@@ -177,20 +309,9 @@ export function registerAuthRoutes(
         },
       }, 200)
     } catch (error) {
-      if (error instanceof Error) {
-        switch (error.name) {
-          case 'ExpiredCodeException':
-            return ctx.json({ code: 'CODE_EXPIRED', message: 'コードの有効期限が切れました。最初からやり直してください。', requestId, retryable: false }, 400)
-          case 'CodeMismatchException':
-            return ctx.json({ code: 'INVALID_CODE', message: 'コードが正しくありません。同じコードで再試行するか、最初からやり直してください。', requestId, retryable: false }, 400)
-          case 'NotAuthorizedException':
-            return ctx.json({ code: 'AUTHENTICATION_FAILED', message: 'このアカウントは既に確認済みです。サインインしてください。', requestId, retryable: false }, 409)
-          case 'AliasExistsException':
-            return ctx.json({ code: 'CODE_ALREADY_USED', message: 'このコードは既に使用されています。サインインしてください。', requestId, retryable: false }, 400)
-          case 'TooManyRequestsException':
-          case 'LimitExceededException':
-            return ctx.json({ code: 'RATE_LIMITED', message: 'しばらく待ってから再試行してください。', requestId, retryable: true }, 429)
-        }
+      const mapped = verifyErrorResponse(error, requestId)
+      if (mapped) {
+        return ctx.json(mapped.body, mapped.status)
       }
       throw error
     }

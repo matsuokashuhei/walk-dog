@@ -401,3 +401,40 @@ OTP poller を `fetch-cognito-otp.sh` に置換。`@aws-sdk/client-cloudwatch-lo
 - artifacts already current: specification-review.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+実行（UNCONFIRMED Sign Up 再開）
+
+### Assistant
+
+UNCONFIRMED 同一 email の Sign Up で OTP 再送して 200。CONFIRMED は 409 のまま。Verify は session null 許容。Mobile も追随。
+
+## Sync
+
+- trigger: implement UNCONFIRMED Sign Up resume
+- status: synced
+- artifacts updated: transcript, design.md
+- artifacts already current: plan.md, e2e-report.md
+- baseline conflicts: none
+- next permitted action: continue
+
+### Assistant
+
+Live 500 修正: AdminGetUser（IAM 必須）をやめ、UsernameExists 時は public の ResendConfirmationCode のみ。成功→200、already confirmed (InvalidParameterException)→409。UNCONFIRMED/CONFIRMED を live 確認済み。
+
+## Sync
+
+- trigger: fix UNCONFIRMED resume without AdminGetUser
+- status: synced
+- artifacts updated: transcript, design.md, auth.ts, routes.test.ts
+- baseline conflicts: none
+- next permitted action: continue
+
+### User
+
+テストするからデータを削除してシミュレーターを起動して
+
+### Assistant
+
+Cognito `matsuokashuheiii@gmail.com` UNCONFIRMED 削除、owners 0件確認。アプリ uninstall/reinstall + Sign Up 画面起動（API/Metro OK）。

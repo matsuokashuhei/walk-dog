@@ -5,6 +5,7 @@ import {
   AdminGetUserCommand,
   InitiateAuthCommand,
   RespondToAuthChallengeCommand,
+  ResendConfirmationCodeCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
 
 export type CognitoConfig = {
@@ -30,6 +31,11 @@ export function createCognitoClient(config: CognitoConfig) {
       return client.send(new ConfirmSignUpCommand({
         ClientId: config.clientId, Username: email,
         ConfirmationCode: code, Session: session,
+      }))
+    },
+    resendConfirmationCode(email: string) {
+      return client.send(new ResendConfirmationCodeCommand({
+        ClientId: config.clientId, Username: email,
       }))
     },
     adminGetUser(email: string) {

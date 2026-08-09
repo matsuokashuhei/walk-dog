@@ -72,7 +72,7 @@ function VerifyForm({
   onRestart,
 }: {
   username: string
-  session: string
+  session: string | null
   onRestart: () => void
 }) {
   const { setSession } = useAuth()
@@ -146,7 +146,7 @@ function VerifyForm({
 
 export default function VerifyScreen() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ username: string; session: string }>()
+  const params = useLocalSearchParams<{ username: string; session?: string }>()
   const username = requiredParam(params.username)
   const session = requiredParam(params.session)
   const onRestart = () => {
@@ -156,7 +156,7 @@ export default function VerifyScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Verify' }} />
-      {username === null || session === null ? (
+      {username === null ? (
         <InvalidRouteVerify onRestart={onRestart} />
       ) : (
         <VerifyForm username={username} session={session} onRestart={onRestart} />

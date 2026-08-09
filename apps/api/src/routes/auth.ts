@@ -12,9 +12,9 @@ const signUpRequestSchema = z.object({
 })
 
 const verifyRequestSchema = z.object({
-  username: z.string().min(1),
-  session: z.string().min(1).nullable(),
-  code: z.string().min(1),
+  username: z.string().nonempty(),
+  session: z.string().nonempty().nullable(),
+  code: z.string().nonempty(),
 })
 
 const errorSchema = z.object({

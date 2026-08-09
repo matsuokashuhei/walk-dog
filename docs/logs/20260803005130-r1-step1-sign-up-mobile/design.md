@@ -72,17 +72,18 @@ Verify screen
 | Task | Deliverable |
 | --- | --- |
 | Task 1 — Mobile API client + Auth state | API client、AuthProvider + Secure Store、Root layout の認証分岐 |
-| Task 2 — Sign Up + Verify screens + Maestro E2E | auth Stack、Sign Up、Verify（Loading / Error / Retry）、実 API / Cognito 向け自動 E2E |
+| Task 2 — Sign Up + Verify screens | auth Stack、Sign Up、Verify（Loading / Error / Retry） |
+| Task 3 — Automated E2E | Codex Build iOS App plugin on Simulator + real API / Cognito OTP (B2) |
 
-### Completion gate — automated E2E (B + B2, user confirmed)
+### Completion gate — automated E2E (B + B2, Build iOS App; user confirmed)
 
-- Runner: Maestro on iOS Simulator
-- Target: local API + real Cognito (not mocked auth responses)
+- Runner: Codex with **Build iOS Apps** plugin (XcodeBuildMCP / Simulator UI automation). Maestro is not required.
+- Target: iOS Simulator build of `apps/mobile` + local API + real Cognito
 - Scenarios: Sign Up success → Verify success → authenticated home; failure Error/Retry; cold start auth restore
-- OTP retrieval: Cognito Custom Message Lambda (local) writes OTP to structured logs; E2E polls CloudWatch (B2)
-- Sign Up recipient: existing SES-verified address (sandbox). Inbox is not read.
-- Abandoned: Mailosaur (B1/S2)
-- Prerequisites: AWS login, local API + Cognito, Maestro, iOS Simulator, SES-verified test email
+- OTP retrieval: Cognito Custom Message Lambda logs OTP; poll CloudWatch (`/aws/lambda/walkdog-local-custom-message`) (B2)
+- Sign Up recipient: SES-verified address (sandbox). Inbox is not read.
+- Abandoned: Mailosaur (B1/S2); Maestro CLI as the gate runner
+- Prerequisites: AWS login, local API, Custom Message Lambda deployed, iOS Simulator, Expo/iOS build, SES-verified test email
 
 ## WHY
 

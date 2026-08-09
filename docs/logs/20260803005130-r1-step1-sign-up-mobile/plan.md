@@ -18,13 +18,17 @@
 4. Wire testIDs for Maestro (`sign-up-email`, `sign-up-submit`, `verify-code`, `verify-submit`, `auth-error`, `home-root`).
 5. Verify: TypeScript check; screens render and call API client.
 
-## Task 3 — Cognito OTP log (B2) + Maestro E2E
+## Task 3 — Cognito OTP log (B2) + Codex Build iOS App E2E
 
-1. Add local Cognito Custom Message Lambda that logs OTP (email + code) as structured JSON; attach to user pool.
-2. Replace Mailosaur Maestro OTP script with CloudWatch log poller.
-3. Update Maestro README / flows for SES-verified recipient + log-based OTP.
-4. Ask Codex to install/run Maestro E2E against real API and evaluate the report.
-5. **Execution note:** Cursor agent does not run Maestro directly; Codex runs E2E. Mailosaur abandoned.
+1. Cognito Custom Message Lambda deployed (done: `walkdog-local-custom-message`).
+2. OTP poller reads CloudWatch log group `/aws/lambda/walkdog-local-custom-message`.
+3. Completion gate runner: **Codex Build iOS Apps plugin** (not Maestro).
+4. Ask Codex to build/run `apps/mobile` on iOS Simulator and execute:
+   - invalid email → `auth-error` + retry
+   - Sign Up success → OTP from CloudWatch → home
+   - cold start with stored tokens → home
+5. Write `e2e-report.md` with passed/failed/blocked.
+6. Maestro YAML under `.maestro/` is retained as optional reference only; it is not the gate.
 
 ## Task 4 — Crit + publish PR
 

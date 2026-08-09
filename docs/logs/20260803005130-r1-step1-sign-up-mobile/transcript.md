@@ -130,11 +130,20 @@ OK
 
 ### User
 
-terraformのコードをデプロイしました。またcloudwatchlogsのreadonlyaccessも付与しました。
+yes
 
 ### Assistant
 
-Cognito LambdaConfig.CustomMessage は `walkdog-local-custom-message` に接続済みを確認。OTP poller のデフォルトロググループをその関数名に合わせて更新。残ブロッカーは Maestro 用 Java。E2E 再実行の可否を確認する。
+完了ゲートを Maestro から Codex Build iOS Apps プラグインへ切替。design / plan / e2e-codex-brief を更新し、Codex に再依頼する。
+
+## Sync
+
+- trigger: user switched E2E gate to Build iOS Apps plugin
+- status: synced
+- artifacts updated: design.md, plan.md, e2e-codex-brief.md, transcript
+- artifacts already current: specification-review.md
+- baseline conflicts: none
+- next permitted action: continue (Codex E2E re-run)
 
 ## Sync
 

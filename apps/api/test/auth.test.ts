@@ -12,6 +12,7 @@ test('creates a Cognito client with provided config', () => {
   assert.ok(cognito.client)
   assert.equal(typeof cognito.signUp, 'function')
   assert.equal(typeof cognito.confirmSignUp, 'function')
+  assert.equal(typeof cognito.resendConfirmationCode, 'function')
   assert.equal(typeof cognito.adminGetUser, 'function')
   assert.equal(typeof cognito.initiateAuth, 'function')
   assert.equal(typeof cognito.respondToAuthChallenge, 'function')

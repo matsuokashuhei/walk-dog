@@ -22,6 +22,7 @@ function mockCognito(overrides: Partial<CognitoClient> = {}): CognitoClient {
     client: {} as any,
     signUp: async () => ({ UserSub: 'test-sub', Session: 'test-session', CodeDeliveryDetails: { Destination: 't***@t***', AttributeName: 'email' }, $metadata: {} }),
     confirmSignUp: async () => ({ Session: 'confirmed-session', $metadata: {} }),
+    resendConfirmationCode: async () => ({ CodeDeliveryDetails: { Destination: 't***@t***', AttributeName: 'email' }, $metadata: {} }),
     adminGetUser: async () => ({ UserStatus: 'CONFIRMED', Enabled: true, $metadata: {} }),
     initiateAuth: async () => ({
       AuthenticationResult: {
@@ -79,6 +80,9 @@ test('POST /v1/auth/sign-up returns 200 with session for valid email', async () 
 test('POST /v1/auth/sign-up returns 409 for existing confirmed user', async () => {
   const cognito = mockCognito({
     signUp: async () => { throw Object.assign(new Error(), { name: 'UsernameExistsException' }) },
+    resendConfirmationCode: async () => {
+      throw Object.assign(new Error('User is already confirmed.'), { name: 'InvalidParameterException' })
+    },
   })
   const app = createApp(appDependencies, (application) => {
     registerAuthRoutes(application, mockDb(), cognito)
@@ -93,6 +97,31 @@ test('POST /v1/auth/sign-up returns 409 for existing confirmed user', async () =
   assert.equal(response.status, 409)
   const body = await response.json() as any
   assert.equal(body.code, 'AUTHENTICATION_FAILED')
+})
+
+test('POST /v1/auth/sign-up resends OTP for existing unconfirmed user', async () => {
+  const cognito = mockCognito({
+    signUp: async () => { throw Object.assign(new Error(), { name: 'UsernameExistsException' }) },
+    resendConfirmationCode: async () => ({
+      CodeDeliveryDetails: { Destination: 'r***@e***', AttributeName: 'email' },
+      $metadata: {},
+    }),
+  })
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), cognito)
+  })
+
+  const response = await app.request('/v1/auth/sign-up', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'test@example.com' }),
+  })
+
+  assert.equal(response.status, 200)
+  const body = await response.json() as any
+  assert.equal(body.username, 'test@example.com')
+  assert.equal(body.session, null)
+  assert.equal(body.codeDelivery.destination, 'r***@e***')
 })
 
 test('POST /v1/auth/sign-up returns 400 for Cognito InvalidParameterException', async () => {
@@ -125,7 +154,18 @@ test('POST /v1/auth/sign-up returns 400 for format validation error', async () =
     body: JSON.stringify({ email: 'not-an-email' }),
   })
 
+  const body = await response.json() as {
+    code: string
+    message: string
+    requestId: string
+    retryable: boolean
+  }
   assert.equal(response.status, 400)
+  assert.equal(body.code, 'INVALID_INPUT')
+  assert.equal(body.message, '入力内容を確認してください。')
+  assert.equal(typeof body.requestId, 'string')
+  assert.equal(body.requestId.length > 0, true)
+  assert.equal(body.retryable, false)
 })
 
 test('POST /v1/auth/verify returns 200 with tokens for valid code', async () => {

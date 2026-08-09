@@ -45,11 +45,25 @@ const healthRoute = createRoute({
   },
 })
 
+const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) => {
+  if (result.success) {
+    return
+  }
+  return context.json({
+    code: 'INVALID_INPUT',
+    message: '入力内容を確認してください。',
+    requestId: context.get('requestId'),
+    retryable: false,
+  }, 400)
+}
+
 export const createApp = (
   dependencies: AppDependencies,
   registerRoutes?: (app: App) => void,
 ): App => {
-  const app = new OpenAPIHono<{ Variables: Variables }>()
+  const app = new OpenAPIHono<{ Variables: Variables }>({
+    defaultHook: validationErrorHook,
+  })
   app.openAPIRegistry.register('Error', errorSchema)
   if (Sentry.getClient()) {
     app.use('*', sentry(app))

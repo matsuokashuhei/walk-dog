@@ -52,6 +52,14 @@ resource "aws_cognito_user_pool" "user" {
     allow_admin_create_user_only = false
   }
 
+  lambda_config {
+    kms_key_id = aws_kms_key.cognito_email_sender[each.key].arn
+    custom_email_sender {
+      lambda_arn     = aws_lambda_function.custom_email_sender[each.key].arn
+      lambda_version = "V1_0"
+    }
+  }
+
   tags = {
     Environment = each.key
     Project     = var.project

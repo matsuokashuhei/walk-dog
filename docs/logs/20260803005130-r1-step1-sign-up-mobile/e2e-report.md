@@ -1,4 +1,4 @@
-# Sign Up Mobile Maestro E2E report
+# Sign Up Mobile iOS Simulator E2E report
 
 ## Status
 
@@ -7,41 +7,35 @@ blocked
 ## Commands run
 
 ```sh
-pwd
-rg --files -g 'AGENTS.md' -g 'SKILL.md' -g 'e2e-codex-brief.md' -g 'run-maestro*' -g 'package.json' -g 'README.md' | sed -n '1,160p'
-sed -n '1,240p' AGENTS.md
-sed -n '1,260p' apps/mobile/AGENTS.md
-sed -n '1,360p' apps/mobile/.maestro/README.md
-set -e
-printf 'mailosaur_env='
-if [ -n "${MAILOSAUR_API_KEY:-}" ] && [ -n "${MAILOSAUR_SERVER_ID:-}" ] && [ -n "${MAILOSAUR_EMAIL:-}" ]; then printf 'present\n'; else printf 'missing\n'; fi
-printf 'mobile_env='
-if [ -f apps/mobile/.env ]; then if rg -q '^EXPO_PUBLIC_API_BASE_URL=http://127\\.0\\.0\\.1:3000$' apps/mobile/.env; then printf 'configured\n'; else printf 'present-unmatched\n'; fi; else printf 'absent\n'; fi
-printf 'maestro='
-if [ -x "$HOME/.maestro/bin/maestro" ]; then "$HOME/.maestro/bin/maestro" --version; else printf 'unavailable\n'; fi
-printf 'api_port='
-if lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then printf 'listening\n'; else printf 'not-listening\n'; fi
-printf 'simulator='
-if xcrun simctl list devices booted | rg -q 'Booted'; then printf 'booted\n'; else printf 'not-booted\n'; fi
+open -a Simulator
+docker run --rm -v /Users/matsuokashuhei/.aws:/root/.aws amazon/aws-cli --profile walk-dog sts get-caller-identity --output json
+docker compose -f apps/compose.yml up -d postgres
+(cd apps/api && npm ci)
+(cd apps/api && AWS_PROFILE=walk-dog AWS_REGION=ap-northeast-1 COGNITO_USER_POOL_ID=ap-northeast-1_JtAcxAaub COGNITO_CLIENT_ID=43upvfsbiucgg4662phjvm8am8 DATABASE_URL=postgresql://walk_dog:password@localhost:5432/walk_dog_dev ENVIRONMENT=development RELEASE=local npm run dev)
+curl --include --fail --silent http://localhost:3000/health
+(cd apps/mobile && npx expo run:ios --device E79A77D3-51F8-45D8-B052-15463D52A4F8)
 ```
+
+## Environment evidence
+
+- Build iOS Apps / XcodeBuildMCP booted iPhone 16 Pro (`E79A77D3-51F8-45D8-B052-15463D52A4F8`).
+- XcodeBuildMCP built, installed, and launched `com.cacheandbuffer.walkdog` successfully. Runtime log: `~/Library/Developer/XcodeBuildMCP/workspaces/r1-step1-sign-up-mobile-20260803005130-5bf3ed2665cf/logs/com.cacheandbuffer.walkdog_2026-08-09T04-30-29-172Z_helperpid59284_ownerpid47008_1649393a.log`.
+- The local API health endpoint returned HTTP 200 with `{ "status": "ok" }`.
+- The `walk-dog` AWS SSO profile returned a caller identity, so Cognito and CloudWatch credentials were available.
 
 ## Scenario results
 
 | Scenario | Result | Evidence |
 | --- | --- | --- |
-| `sign-up-invalid-email.yaml` | blocked | Required Mailosaur credentials are unavailable, so the real-API gate was not started. |
-| `sign-up-success.yaml` | blocked | Required Mailosaur credentials are unavailable, so SES recipient verification and the Mailosaur OTP flow were not started. |
-| `cold-start-authenticated.yaml` | blocked | The authenticated sign-up prerequisite was not established. |
+| Invalid email on Sign Up | blocked | `sign-up-root` and `sign-up-email` appeared in the XcodeBuildMCP UI snapshot. After entering an invalid email, the snapshot exposed no target for `sign-up-submit`; Tab and Space did not submit the form. Consequently `auth-error` and the retry operation could not be observed. |
+| SES-verified sign up → CloudWatch OTP → Verify | blocked | The submit operation could not be invoked through the required Build iOS Apps UI automation, so no Cognito sign-up request or OTP was issued and `verify-root` / `home-root` could not be reached. |
+| Cold start with stored tokens | blocked | The authenticated-session prerequisite could not be established because the verification operation was unreachable. |
 
-## Blockers / missing secrets
+## Blockers
 
-- `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, and `MAILOSAUR_EMAIL` are not present in the process environment.
-- No local secret file supplying these values was found.
-- The required Maestro executable at `~/.maestro/bin/maestro` is unavailable.
-- CoreSimulatorService is unavailable; `xcrun simctl list devices booted` returned a connection-refused error.
-
-The local mobile environment is configured with the expected loopback API URL, and port 3000 is listening. Resume by supplying the three Mailosaur values, making the Maestro CLI and an iOS Simulator available, then verify the Mailosaur address in SES and run the three documented flows.
+- The XcodeBuildMCP accessibility snapshot exposes the email input (`sign-up-email`) but does not expose the `Pressable` with testID `sign-up-submit` as a tap target. The visible Continue control has no accessible button target or identifier in the snapshot.
+- This prevents the required Build iOS Apps plugin from submitting the form. Maestro was not used.
 
 ## Harness fixes
 
-None.
+- Expose each actionable `Pressable` as an accessibility button with its stable testID so XcodeBuildMCP can tap `sign-up-submit`, `verify-submit`, and `verify-restart`; then rerun the three scenarios and poll `/aws/lambda/walkdog-local-custom-message` after sign-up.

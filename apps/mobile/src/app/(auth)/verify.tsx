@@ -94,12 +94,15 @@ export default function VerifyScreen() {
         ) : (
           <Pressable
             testID="verify-submit"
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={state.kind === 'error' ? '再試行' : 'Confirm'}
             style={styles.button}
             onPress={() => {
               void submit()
             }}
           >
-            <Text style={styles.buttonText}>
+            <Text style={styles.buttonText} accessible={false}>
               {state.kind === 'error' ? '再試行' : 'Confirm'}
             </Text>
           </Pressable>
@@ -107,12 +110,17 @@ export default function VerifyScreen() {
 
         <Pressable
           testID="verify-restart"
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="最初からやり直す"
           style={styles.linkButton}
           onPress={() => {
             router.replace('/sign-up')
           }}
         >
-          <Text style={styles.linkText}>最初からやり直す</Text>
+          <Text style={styles.linkText} accessible={false}>
+            最初からやり直す
+          </Text>
         </Pressable>
       </View>
     </>

@@ -136,6 +136,22 @@ yes
 
 完了ゲートを Maestro から Codex Build iOS Apps プラグインへ切替。design / plan / e2e-codex-brief を更新し、Codex に再依頼する。
 
+### User
+
+docs/logs/20260803005130-r1-step1-sign-up-mobile/e2e-report.md　が出たようだ。
+
+### Assistant
+
+e2e-report を評価。status blocked。原因は sign-up-submit が accessibility ツリーに出ないこと。Pressable 修正を提案。
+
+### User
+
+OKだ
+
+### Assistant
+
+Pressable に accessibilityRole/button と accessible を付与し、Codex に E2E 再実行を依頼する。
+
 ## Sync
 
 - trigger: user switched E2E gate to Build iOS Apps plugin

@@ -80,12 +80,15 @@ export default function SignUpScreen() {
         ) : (
           <Pressable
             testID="sign-up-submit"
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={state.kind === 'error' ? '再試行' : 'Continue'}
             style={styles.button}
             onPress={() => {
               void submit()
             }}
           >
-            <Text style={styles.buttonText}>
+            <Text style={styles.buttonText} accessible={false}>
               {state.kind === 'error' ? '再試行' : 'Continue'}
             </Text>
           </Pressable>

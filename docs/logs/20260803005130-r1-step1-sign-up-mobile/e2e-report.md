@@ -8,7 +8,7 @@ passed
 
 ```sh
 curl --include --fail --silent http://localhost:3000/health
-(cd apps/mobile && E2E_EMAIL=matzuokashuhei@gmail.com AWS_PROFILE=walk-dog COGNITO_OTP_LOG_GROUP=/aws/lambda/walkdog-local-custom-email-sender COGNITO_OTP_WAIT_MS=60000 node .maestro/scripts/fetch-cognito-otp.mjs)
+(cd apps/mobile && E2E_EMAIL=matzuokashuhei@gmail.com AWS_PROFILE=walk-dog COGNITO_OTP_LOG_GROUP=/aws/lambda/walkdog-local-custom-email-sender COGNITO_OTP_WAIT_MS=60000 node scripts/e2e/fetch-cognito-otp.mjs)
 docker run --rm -v /Users/matsuokashuhei/.aws:/root/.aws amazon/aws-cli --profile walk-dog logs filter-log-events --log-group-name /aws/lambda/walkdog-local-custom-email-sender --start-time "$(date -v-5M +%s)000" --filter-pattern '"cognito.otp"' --region ap-northeast-1 --output json
 ```
 

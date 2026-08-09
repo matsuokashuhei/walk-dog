@@ -12,7 +12,7 @@ OTP retrieval is **Custom Email Sender** (not Custom Message `{####}`):
 - Lambda: `walkdog-local-custom-email-sender`
 - CloudWatch log group: `/aws/lambda/walkdog-local-custom-email-sender`
 - Structured log: `{ "type":"cognito.otp", "email", "code" }` with **plaintext** OTP after KMS decrypt
-- Helper: `apps/mobile/.maestro/scripts/fetch-cognito-otp.mjs`
+- Helper: `apps/mobile/scripts/e2e/fetch-cognito-otp.mjs`
 
 ## Required scenarios
 

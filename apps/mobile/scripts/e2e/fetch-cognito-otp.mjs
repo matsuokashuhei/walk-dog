@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Poll CloudWatch Logs for Cognito Custom Email Sender OTP entries.
+ * Poll CloudWatch Logs for Cognito Custom Email Sender OTP entries (local E2E).
  *
  * Env:
  *   E2E_EMAIL (required)

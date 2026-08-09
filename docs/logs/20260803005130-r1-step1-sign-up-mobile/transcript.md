@@ -299,3 +299,20 @@ Custom Email Sender を CloudWatch 平文 OTP の単一 handler に戻した。S
 - artifacts already current: specification-review.md
 - baseline conflicts: none
 - next permitted action: continue
+
+### User
+
+なるほど、なぜ不要なものをリポジトリーにいれる？
+
+### Assistant
+
+Maestro はゲートではないので `.maestro/` を削除し、OTP poller のみ `apps/mobile/scripts/e2e/` へ移した。
+
+## Sync
+
+- trigger: remove unused Maestro artifacts
+- status: synced
+- artifacts updated: plan.md, design.md, e2e-codex-brief.md, e2e-report.md, transcript
+- artifacts already current: specification-review.md, defensive-code-review.md
+- baseline conflicts: none
+- next permitted action: continue

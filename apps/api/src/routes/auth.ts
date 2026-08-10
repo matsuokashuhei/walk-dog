@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { createRoute, z } from '@hono/zod-openapi'
 import { eq } from 'drizzle-orm'
 import type { App } from '../app.js'
@@ -14,6 +15,12 @@ const signUpRequestSchema = z.object({
 const verifyRequestSchema = z.object({
   username: z.string().nonempty(),
   session: z.string().nonempty().nullable(),
+  code: z.string().nonempty(),
+})
+
+const signInVerifyRequestSchema = z.object({
+  username: z.string().nonempty(),
+  session: z.string().nonempty(),
   code: z.string().nonempty(),
 })
 
@@ -42,6 +49,16 @@ const signUpResponseSchema = z.object({
   }).nullable(),
 })
 
+const signInResponseSchema = z.object({
+  requestId: z.string(),
+  username: z.string(),
+  session: z.string().nonempty(),
+  codeDelivery: z.object({
+    destination: z.string(),
+    attribute: z.string(),
+  }),
+})
+
 const verifyResponseSchema = z.object({
   requestId: z.string(),
   accessToken: z.string(),
@@ -61,6 +78,34 @@ const signUpRoute = createRoute({
     200: { content: { 'application/json': { schema: signUpResponseSchema } }, description: 'Sign-up initiated' },
     400: { content: { 'application/json': { schema: errorSchema } }, description: 'Invalid input' },
     409: { content: { 'application/json': { schema: errorSchema } }, description: 'Already confirmed' },
+    429: { content: { 'application/json': { schema: errorSchema } }, description: 'Rate limited' },
+    500: { content: { 'application/json': { schema: errorSchema } }, description: 'Internal server error' },
+  },
+})
+
+const signInRoute = createRoute({
+  method: 'post',
+  path: '/v1/auth/sign-in',
+  tags: ['auth'],
+  request: { body: { content: { 'application/json': { schema: signUpRequestSchema } } } },
+  responses: {
+    200: { content: { 'application/json': { schema: signInResponseSchema } }, description: 'Sign-in challenge started' },
+    400: { content: { 'application/json': { schema: errorSchema } }, description: 'Invalid input' },
+    409: { content: { 'application/json': { schema: errorSchema } }, description: 'Authentication failed' },
+    429: { content: { 'application/json': { schema: errorSchema } }, description: 'Rate limited' },
+    500: { content: { 'application/json': { schema: errorSchema } }, description: 'Internal server error' },
+  },
+})
+
+const signInVerifyRoute = createRoute({
+  method: 'post',
+  path: '/v1/auth/sign-in/verify',
+  tags: ['auth'],
+  request: { body: { content: { 'application/json': { schema: signInVerifyRequestSchema } } } },
+  responses: {
+    200: { content: { 'application/json': { schema: verifyResponseSchema } }, description: 'Verification successful' },
+    400: { content: { 'application/json': { schema: errorSchema } }, description: 'Invalid code or input' },
+    409: { content: { 'application/json': { schema: errorSchema } }, description: 'Authentication failed' },
     429: { content: { 'application/json': { schema: errorSchema } }, description: 'Rate limited' },
     500: { content: { 'application/json': { schema: errorSchema } }, description: 'Internal server error' },
   },
@@ -243,6 +288,43 @@ function verifyErrorResponse(error: unknown, requestId: string) {
   }
 }
 
+function signInErrorResponse(error: unknown, requestId: string) {
+  if (!(error instanceof Error)) return null
+  if (error.name === 'TooManyRequestsException' || error.name === 'LimitExceededException') {
+    return { status: 429 as const, body: { code: 'RATE_LIMITED', message: 'しばらく待ってから再試行してください。', requestId, retryable: true } }
+  }
+  if (error.name === 'UserNotFoundException' || error.name === 'UserNotConfirmedException' || error.name === 'NotAuthorizedException') {
+    return { status: 409 as const, body: { code: 'AUTHENTICATION_FAILED', message: 'サインインに失敗しました。入力内容を確認してください。', requestId, retryable: false } }
+  }
+  return null
+}
+
+function signInVerifyErrorResponse(error: unknown, requestId: string) {
+  if (error instanceof Error && error.name === 'ExpiredCodeException') {
+    return {
+      status: 400 as const,
+      body: {
+        code: 'CODE_EXPIRED',
+        message: 'コードの有効期限が切れました。コードを再送してください。',
+        requestId,
+        retryable: true,
+      },
+    }
+  }
+  if (error instanceof Error && error.name === 'NotAuthorizedException') {
+    return {
+      status: 409 as const,
+      body: {
+        code: 'AUTHENTICATION_FAILED',
+        message: '認証情報の有効期限が切れました。コードを再送してください。',
+        requestId,
+        retryable: true,
+      },
+    }
+  }
+  return verifyErrorResponse(error, requestId)
+}
+
 // eslint-disable-next-line max-lines-per-function
 export function registerAuthRoutes(
   app: App,
@@ -274,6 +356,27 @@ export function registerAuthRoutes(
       if (mapped) {
         return ctx.json(mapped.body, mapped.status)
       }
+      throw error
+    }
+  })
+
+  app.openapi(signInRoute, async (ctx) => {
+    const requestId = ctx.get('requestId')
+    const { email } = ctx.req.valid('json')
+    try {
+      const output = await cognito.initiateAuth(email)
+      if (output.ChallengeName !== 'EMAIL_OTP' || !output.Session) {
+        return ctx.json({ code: 'INTERNAL_SERVER_ERROR', message: '認証情報の取得に失敗しました。', requestId, retryable: true }, 500)
+      }
+      return ctx.json({
+        requestId,
+        username: email,
+        session: output.Session,
+        codeDelivery: { destination: output.ChallengeParameters?.CODE_DELIVERY_DESTINATION ?? '', attribute: 'email' },
+      }, 200)
+    } catch (error) {
+      const mapped = signInErrorResponse(error, requestId)
+      if (mapped) return ctx.json(mapped.body, mapped.status)
       throw error
     }
   })
@@ -313,6 +416,24 @@ export function registerAuthRoutes(
       if (mapped) {
         return ctx.json(mapped.body, mapped.status)
       }
+      throw error
+    }
+  })
+
+  app.openapi(signInVerifyRoute, async (ctx) => {
+    const requestId = ctx.get('requestId')
+    const { username: email, session, code } = ctx.req.valid('json')
+    try {
+      const output = await cognito.respondToAuthChallenge(email, session, code)
+      const result = output.AuthenticationResult
+      if (!result?.AccessToken || !result.IdToken || !result.RefreshToken) {
+        return ctx.json({ code: 'INTERNAL_SERVER_ERROR', message: '認証情報の取得に失敗しました。', requestId, retryable: true }, 500)
+      }
+      const owner = await ownerFromCognitoSubject(database, decodeIdTokenSubject(result.IdToken))
+      return ctx.json({ requestId, accessToken: result.AccessToken, idToken: result.IdToken, refreshToken: result.RefreshToken, owner: { ownerId: owner.ownerId, displayName: null, avatarUrl: null, createdAt: owner.createdAt.toISOString(), updatedAt: owner.updatedAt.toISOString() } }, 200)
+    } catch (error) {
+      const mapped = signInVerifyErrorResponse(error, requestId)
+      if (mapped) return ctx.json(mapped.body, mapped.status)
       throw error
     }
   })

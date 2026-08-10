@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-assertion, sonarjs/no-nested-functions, id-length */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-assertion, sonarjs/no-nested-functions, id-length */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
@@ -225,4 +225,92 @@ test('POST /v1/auth/verify returns 409 for already confirmed user', async () => 
   assert.equal(response.status, 409)
   const body = await response.json() as any
   assert.equal(body.code, 'AUTHENTICATION_FAILED')
+})
+
+test('POST /v1/auth/sign-in returns an email OTP challenge', async () => {
+  const cognito = mockCognito({
+    initiateAuth: async () => ({
+      ChallengeName: 'EMAIL_OTP',
+      Session: 'sign-in-session',
+      ChallengeParameters: { CODE_DELIVERY_DESTINATION: 't***@t***' },
+      $metadata: {},
+    }),
+  })
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), cognito)
+  })
+
+  const response = await app.request('/v1/auth/sign-in', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com' }),
+  })
+
+  assert.equal(response.status, 200)
+  const body = await response.json() as any
+  assert.equal(body.username, 'test@example.com')
+  assert.equal(body.session, 'sign-in-session')
+  assert.equal(body.codeDelivery.destination, 't***@t***')
+  assert.equal(body.codeDelivery.attribute, 'email')
+})
+
+test('POST /v1/auth/sign-in/verify returns tokens for a valid OTP', async () => {
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), mockCognito())
+  })
+
+  const response = await app.request('/v1/auth/sign-in/verify', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'test@example.com', session: 'sign-in-session', code: '12345678' }),
+  })
+
+  assert.equal(response.status, 200)
+  const body = await response.json() as any
+  assert.equal(body.accessToken, 'mock-access')
+  assert.equal(body.owner.ownerId, '019fc312-f7eb-73c4-9351-2a6ea25e4fcb')
+})
+
+test('POST /v1/auth/sign-in/verify returns CODE_EXPIRED for an expired OTP', async () => {
+  const cognito = mockCognito({
+    respondToAuthChallenge: async () => { throw Object.assign(new Error(), { name: 'ExpiredCodeException' }) },
+  })
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), cognito)
+  })
+
+  const response = await app.request('/v1/auth/sign-in/verify', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'test@example.com', session: 'sign-in-session', code: '12345678' }),
+  })
+
+  assert.equal(response.status, 400)
+  const body = await response.json() as any
+  assert.equal(body.code, 'CODE_EXPIRED')
+  assert.equal(body.message, 'コードの有効期限が切れました。コードを再送してください。')
+})
+
+test('POST /v1/auth/sign-in returns 429 when Cognito rate limits the challenge', async () => {
+  const cognito = mockCognito({
+    initiateAuth: async () => { throw Object.assign(new Error(), { name: 'TooManyRequestsException' }) },
+  })
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), cognito)
+  })
+  const response = await app.request('/v1/auth/sign-in', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com' }),
+  })
+  assert.equal(response.status, 429)
+  assert.equal((await response.json() as any).code, 'RATE_LIMITED')
+})
+
+test('POST /v1/auth/sign-in/verify tells the user to resend after an invalid challenge session', async () => {
+  const cognito = mockCognito({
+    respondToAuthChallenge: async () => { throw Object.assign(new Error(), { name: 'NotAuthorizedException' }) },
+  })
+  const app = createApp(appDependencies, (application) => {
+    registerAuthRoutes(application, mockDb(), cognito)
+  })
+  const response = await app.request('/v1/auth/sign-in/verify', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'test@example.com', session: 'sign-in-session', code: '12345678' }),
+  })
+  assert.equal(response.status, 409)
+  const body = await response.json() as any
+  assert.equal(body.code, 'AUTHENTICATION_FAILED')
+  assert.equal(body.message, '認証情報の有効期限が切れました。コードを再送してください。')
 })

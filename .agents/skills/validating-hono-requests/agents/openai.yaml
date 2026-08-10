@@ -1,4 +1,0 @@
-interface:
-  display_name: "Validate Hono Requests"
-  short_description: "Validate Hono request input."
-  default_prompt: "Use $validating-hono-requests for this Hono validation change."

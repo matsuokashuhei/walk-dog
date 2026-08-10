@@ -1,4 +1,0 @@
-interface:
-  display_name: "Define Drizzle Schemas"
-  short_description: "Define PostgreSQL schemas with Drizzle."
-  default_prompt: "Use $defining-drizzle-schemas for this schema change."

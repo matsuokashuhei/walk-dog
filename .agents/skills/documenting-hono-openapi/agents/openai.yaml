@@ -1,4 +1,0 @@
-interface:
-  display_name: "Document Hono OpenAPI"
-  short_description: "Define Hono OpenAPI contracts."
-  default_prompt: "Use $documenting-hono-openapi for this Hono OpenAPI change."

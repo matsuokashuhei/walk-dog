@@ -1,4 +1,0 @@
-interface:
-  display_name: "Migrate Drizzle Postgres"
-  short_description: "Generate and apply Drizzle SQL migrations."
-  default_prompt: "Use $migrating-drizzle-postgres for this migration change."

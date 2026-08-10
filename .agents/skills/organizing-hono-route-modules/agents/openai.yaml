@@ -1,0 +1,4 @@
+interface:
+  display_name: "Honoルートモジュール整理"
+  short_description: "Hono endpoint の責務と命名を統一する"
+  default_prompt: "$organizing-hono-route-modules を使い、Hono の endpoint 単位の構成を整理してください。"

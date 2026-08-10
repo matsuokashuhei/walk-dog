@@ -5,7 +5,7 @@ import { createDbClient } from './db/client.js'
 import { createLogger } from './observability/logger.js'
 import { closeSentry, setRequestIdTag } from './observability/sentry.js'
 import { createCognitoClient } from './auth/cognito.js'
-import { registerAuthRoutes } from './routes/auth.js'
+import { registerSignInRoute, registerSignInVerifyRoute, registerSignUpRoute, registerSignUpVerifyRoute } from './routes/index.js'
 import { createShutdownHandler } from './server.js'
 
 const databaseConfig = loadDatabaseConfig(process.env)
@@ -15,7 +15,13 @@ const logger = createLogger(observabilityConfig)
 const { db, pool } = createDbClient(databaseConfig)
 const app = createApp(
   { logger, setRequestId: setRequestIdTag },
-  (application) => { registerAuthRoutes(application, db, createCognitoClient(cognitoConfig)) },
+  (application) => { 
+    const cognito = createCognitoClient(cognitoConfig)
+    registerSignUpRoute(application, cognito)
+    registerSignUpVerifyRoute(application, db, cognito)
+    registerSignInRoute(application, cognito)
+    registerSignInVerifyRoute(application, db, cognito)
+  },
 )
 const server = serve({ fetch: app.fetch, port: 3000 })
 const shutdown = createShutdownHandler(server, pool, { close: closeSentry })

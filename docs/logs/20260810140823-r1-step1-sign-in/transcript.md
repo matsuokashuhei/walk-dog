@@ -34,3 +34,12 @@ Confirmed the R1 Sign In scope against the staged plan, external specification, 
 - artifacts already current: none
 - baseline conflicts: none
 - next permitted action: implementation
+
+## Sync
+
+- status: synced
+- trigger: follow-up review removed the file-level `max-lines` suppression
+- artifacts updated: transcript
+- implementation update: `auth.ts` delegates Sign In routes and Owner resolution to focused route modules
+- verification: API lint, 42 contract tests, and API typecheck passed
+- next permitted action: publish follow-up commit

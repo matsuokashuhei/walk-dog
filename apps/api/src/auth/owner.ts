@@ -27,3 +27,23 @@ export function ownerFromCognitoSubject(
     return { ownerId: existing[0].ownerId, createdAt: existing[0].createdAt, updatedAt: existing[0].updatedAt }
   })
 }
+
+export function toAuthenticationResponse(
+  requestId: string,
+  tokens: { accessToken: string; idToken: string; refreshToken: string },
+  owner: { ownerId: string; createdAt: Date; updatedAt: Date },
+) {
+  return {
+    requestId,
+    accessToken: tokens.accessToken,
+    idToken: tokens.idToken,
+    refreshToken: tokens.refreshToken,
+    owner: {
+      ownerId: owner.ownerId,
+      displayName: null,
+      avatarUrl: null,
+      createdAt: owner.createdAt.toISOString(),
+      updatedAt: owner.updatedAt.toISOString(),
+    },
+  }
+}

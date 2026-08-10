@@ -85,7 +85,7 @@ function VerifyForm({
   const submit = async () => {
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<VerifyResponse>(flow === 'sign-in' ? '/v1/auth/sign-in/verify' : '/v1/auth/verify', {
+      const response = await apiRequest<VerifyResponse>(flow === 'sign-in' ? '/v1/auth/sign-in/verify' : '/v1/auth/sign-up/verify', {
         method: 'POST',
         body: { username, session: challengeSession, code: code.trim() },
       })

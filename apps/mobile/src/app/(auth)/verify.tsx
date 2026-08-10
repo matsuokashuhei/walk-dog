@@ -69,22 +69,25 @@ function InvalidRouteVerify({ onRestart }: { onRestart: () => void }) {
 function VerifyForm({
   username,
   session,
+  flow,
   onRestart,
 }: {
   username: string
   session: string | null
+  flow: 'sign-in' | 'sign-up'
   onRestart: () => void
 }) {
   const { setSession } = useAuth()
   const [code, setCode] = useState('')
+  const [challengeSession, setChallengeSession] = useState(session)
   const [state, setState] = useState<ScreenState>({ kind: 'idle' })
 
   const submit = async () => {
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<VerifyResponse>('/v1/auth/verify', {
+      const response = await apiRequest<VerifyResponse>(flow === 'sign-in' ? '/v1/auth/sign-in/verify' : '/v1/auth/verify', {
         method: 'POST',
-        body: { username, session, code: code.trim() },
+        body: { username, session: challengeSession, code: code.trim() },
       })
       await setSession({
         accessToken: response.accessToken,
@@ -97,6 +100,18 @@ function VerifyForm({
         ? error.message
         : '確認に失敗しました。再試行してください。'
       setState({ kind: 'error', message })
+    }
+  }
+
+  const resend = async () => {
+    setState({ kind: 'loading' })
+    try {
+      const response = await apiRequest<{ session: string }>('/v1/auth/sign-in', { method: 'POST', body: { email: username } })
+      setChallengeSession(response.session)
+      setCode('')
+      setState({ kind: 'idle' })
+    } catch (error) {
+      setState({ kind: 'error', message: error instanceof ApiError ? error.message : 'コードの再送に失敗しました。再試行してください。' })
     }
   }
 
@@ -113,7 +128,8 @@ function VerifyForm({
         value={code}
         onChangeText={setCode}
         editable={state.kind !== 'loading'}
-        placeholder="123456"
+        placeholder={flow === 'sign-in' ? '12345678' : '123456'}
+        maxLength={flow === 'sign-in' ? 8 : 6}
       />
 
       {state.kind === 'error' ? (
@@ -140,26 +156,27 @@ function VerifyForm({
       )}
 
       <RestartLink onPress={onRestart} />
+      {flow === 'sign-in' && state.kind !== 'loading' ? <Pressable testID="verify-resend" accessible accessibilityRole="button" accessibilityLabel="コードを再送" style={styles.linkButton} onPress={() => { void resend() }}><Text style={styles.linkText} accessible={false}>コードを再送</Text></Pressable> : null}
     </View>
   )
 }
 
 export default function VerifyScreen() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ username: string; session?: string }>()
+  const params = useLocalSearchParams<{ username: string; session?: string; flow?: string }>()
   const username = requiredParam(params.username)
   const session = requiredParam(params.session)
   const onRestart = () => {
-    router.replace('/sign-up')
+    router.replace(params.flow === 'sign-in' ? '/sign-in' : '/sign-up')
   }
 
   return (
     <>
       <Stack.Screen options={{ title: 'Verify' }} />
-      {username === null ? (
+      {username === null || (params.flow === 'sign-in' && session === null) ? (
         <InvalidRouteVerify onRestart={onRestart} />
       ) : (
-        <VerifyForm username={username} session={session} onRestart={onRestart} />
+        <VerifyForm username={username} session={session} flow={params.flow === 'sign-in' ? 'sign-in' : 'sign-up'} onRestart={onRestart} />
       )}
     </>
   )

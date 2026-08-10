@@ -58,6 +58,7 @@ export default function SignUpScreen() {
         pathname: '/verify',
         params: {
           username: response.username,
+          flow: 'sign-up',
           ...(response.session ? { session: response.session } : {}),
         },
       })

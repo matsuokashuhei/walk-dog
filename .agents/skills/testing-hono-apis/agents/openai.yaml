@@ -1,4 +1,4 @@
 interface:
-  display_name: "Test Hono APIs"
-  short_description: "Test Hono APIs with app.request."
-  default_prompt: "Use $testing-hono-apis for this Hono API test change."
+  display_name: "Hono API テスト"
+  short_description: "endpoint 単位で Hono の HTTP 契約を検証する"
+  default_prompt: "$testing-hono-apis を使い、Hono API の契約テストを endpoint 単位で整理してください。"

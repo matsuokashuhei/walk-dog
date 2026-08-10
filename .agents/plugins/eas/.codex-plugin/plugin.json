@@ -1,0 +1,29 @@
+{
+  "name": "eas",
+  "version": "1.0.0",
+  "description": "EAS (Expo Application Services) skills for building, deploying, and monitoring Expo apps.",
+  "author": {
+    "name": "Expo",
+    "url": "https://expo.dev"
+  },
+  "homepage": "https://docs.expo.dev/eas",
+  "repository": "https://github.com/expo/eas-cli",
+  "license": "MIT",
+  "keywords": [
+    "expo",
+    "eas",
+    "build",
+    "deploy",
+    "monitoring"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "EAS",
+    "shortDescription": "EAS services for building, deploying, and monitoring Expo apps.",
+    "longDescription": "Covers EAS Build, Submit, Hosting, Update Insights, Observe (app metrics), Workflows, Simulator (cloud simulators), and App Store deployment.",
+    "developerName": "Expo",
+    "category": "Productivity",
+    "capabilities": ["Skills"],
+    "defaultPrompt": ["Use EAS to build and deploy an Expo app."]
+  }
+}

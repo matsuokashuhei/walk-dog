@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "eas",
+  "version": "1.0.0",
+  "description": "EAS (Expo Application Services) skills for building, deploying, and monitoring Expo apps.",
+  "author": {
+    "name": "Expo",
+    "url": "https://expo.dev"
+  },
+  "homepage": "https://docs.expo.dev/eas",
+  "repository": "https://github.com/expo/eas-cli",
+  "license": "MIT",
+  "keywords": [
+    "expo",
+    "eas",
+    "build",
+    "submit",
+    "deploy",
+    "hosting",
+    "app-stores",
+    "observe",
+    "update",
+    "workflows",
+    "simulator"
+  ]
+}

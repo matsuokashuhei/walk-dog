@@ -1,41 +1,49 @@
 ---
 name: creating-pull-requests
-description: Create and maintain pull requests with self-descriptive titles, complete descriptions, and verifiable review evidence. Use when opening a PR, updating its description, or responding to review feedback.
+description: PR の作成、説明更新、レビュー対応、またはユーザーが指定した外部レビューの証跡を扱うときに使用する。
 ---
 
-# Creating Pull Requests
+# Pull Request の作成と更新
 
-## PR titles
+## タイトル
 
-- Titles must be self-contained and understandable without project context or session numbering.
-- Do not use internal numbering such as "PR 1", "Step 1", or "Task 1" in the title — reviewers cannot map these to the project plan.
-- Use concrete nouns and verbs that describe the change: "Add owners table", "Fix token refresh", "Remove deprecated endpoint".
+- タイトルはプロジェクト文脈やセッション番号なしで変更内容を示す。
+- 具体的な名詞と動詞で変更を表す。例: `Add owners table`、`Fix token refresh`。
 
-## PR descriptions
+## PR 本文
 
-Include these sections in the PR body:
+PR 本文には次の節を含める。
 
 ### Changes
 
-List every meaningful change as a bullet point with the file path and a one-line summary. Group by component or concern.
+意味のある変更を、ファイルパスと1行の要約でコンポーネントごとに列挙する。
 
 ### Verification
 
-List the verification commands run and their results:
-- `npm test` — number of tests, pass/fail
-- `npm run check` — lint / jscpd / knip / typecheck results
+実行した検証コマンドと結果を列挙する。
 
-## Responding to reviews
+- `npm test` — テスト数と結果
+- `npm run check` — lint、jscpd、knip、typecheck の結果
 
-- When a reviewer leaves inline comments, apply the change and reply with a brief resolution note.
-- Push follow-up fixes as separate commits; preserve the review history.
-- Update the PR description if the change set meaningfully diverges from the original description.
-- Do not rewrite commit history after review has started.
+## レビュー対応
 
-## Review lifecycle
+- inline comment は対応内容を反映し、解決内容を返信する。
+- follow-up 修正は別コミットとして push し、レビュー履歴を保持する。
+- 変更内容に合わせて PR 本文を更新する。
 
-1. Open PR with a descriptive title and complete description.
-2. Wait for reviewer comments.
-3. Apply changes and push fixes.
-4. Reply to each comment with the resolution.
-5. Repeat until all comments are resolved.
+## ユーザー指定レビュー
+
+ユーザーがモデル、レビュー担当、観点、承認条件を指定したときは、PR 公開前に次を行う。
+
+1. レビュー依頼に、対象 diff、モデル、`AGENTS.md`、関連 skill、Critical / Important の判定、承認の完了条件を記載する。
+2. レビューの全メッセージをセッション成果物へ保存し、モデル、対象、依頼文、結果を PR 本文にも記録する。
+3. 指摘ごとに修正コミットと解決内容を記録し、同じ観点の再レビューを実行する。
+4. 最終レビューの承認応答を確認してから PR を ready for review または merge の状態へ進める。
+
+## ライフサイクル
+
+1. 説明的なタイトルと完全な本文で PR を作成する。
+2. レビューコメントを確認する。
+3. 修正を適用して push する。
+4. 各コメントへ解決内容を返信する。
+5. すべてのコメントが解決した状態を確認する。

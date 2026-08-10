@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS E2E 証跡"
+  short_description: "iOS E2E の画面証跡と結果を記録する"
+  default_prompt: "$recording-ios-e2e-evidence を使い、iOS E2E の画面証跡と実行結果をセッション成果物へ記録してください。"

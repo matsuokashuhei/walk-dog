@@ -39,5 +39,5 @@ git clone --depth 1 https://github.com/hashicorp/agent-skills.git "$TERRAFORM_RE
 sync_skills "$TERRAFORM_REPOSITORY/terraform/code-generation/skills" "$SKILLS_DIR" "*"
 
 if ! $DRY_RUN; then
-  node "$REPOSITORY_DIR/scripts/agent-skills.mjs" sync
+  "$REPOSITORY_DIR/scripts/agent-skills.sh" sync
 fi

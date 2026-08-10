@@ -10,8 +10,8 @@
 
 # スキル
 - `.agents/skills/` はCodex、Coarse、OpenAIが参照するスキル正本である。スキル本文とリソースはこの配下だけで更新する。
-- `.agents/skill-library/` は分類済みの参照ビューである。正本を更新またはインストールした後は、`node scripts/agent-skills.mjs sync` を実行する。
-- `node scripts/agent-skills.mjs check` は台帳、正本、ハッシュ、分類リンクの整合性を検証する。
+- `.agents/skill-library/` は分類済みの参照ビューである。正本を更新またはインストールした後は、`scripts/agent-skills.sh sync` を実行する。
+- `scripts/agent-skills.sh check` は正本と分類リンクの整合性を検証する。
 
 # 開発計画
 - `docs/development/staged-development.md` は、walk / dog のリリース順序、承認済みの基盤判断、各リリースの提供機能、検証条件を定義する計画書である。

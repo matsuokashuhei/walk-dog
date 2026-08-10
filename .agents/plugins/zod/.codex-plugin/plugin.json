@@ -1,0 +1,26 @@
+{
+  "name": "zod",
+  "version": "1.0.0",
+  "description": "Zod 4 skills for schema definition, parsing, transformations, error formatting, and JSON Schema conversion.",
+  "author": {
+    "name": "walk-dog"
+  },
+  "keywords": [
+    "zod",
+    "validation",
+    "schema",
+    "typescript",
+    "json-schema",
+    "error-handling"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Zod",
+    "shortDescription": "Define, parse, and transform Zod schemas.",
+    "longDescription": "Covers Zod 4 schema shapes, parsing, transformations, error formatting, and JSON Schema conversion.",
+    "developerName": "walk-dog",
+    "category": "Framework",
+    "capabilities": ["Skills"],
+    "defaultPrompt": ["Use Zod to define and validate this TypeScript data contract."]
+  }
+}

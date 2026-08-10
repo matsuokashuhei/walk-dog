@@ -1,0 +1,26 @@
+{
+  "name": "drizzle",
+  "version": "1.0.0",
+  "description": "Drizzle PostgreSQL skills for connection setup, schema definition, migrations, relational queries, and SQL-like queries.",
+  "author": {
+    "name": "walk-dog"
+  },
+  "keywords": [
+    "drizzle",
+    "postgresql",
+    "database",
+    "schema",
+    "migration",
+    "query"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Drizzle",
+    "shortDescription": "Define and query Drizzle PostgreSQL data.",
+    "longDescription": "Covers PostgreSQL client setup, Drizzle schemas, SQL migrations, relational queries, and SQL-like data access.",
+    "developerName": "walk-dog",
+    "category": "Framework",
+    "capabilities": ["Skills"],
+    "defaultPrompt": ["Use Drizzle to define and query PostgreSQL data."]
+  }
+}

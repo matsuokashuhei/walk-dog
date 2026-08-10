@@ -1,4 +1,0 @@
-interface:
-  display_name: "Parse Zod Data"
-  short_description: "Parse values and infer types with Zod 4."
-  default_prompt: "Use $parsing-zod-data for this Zod parse or type inference change."

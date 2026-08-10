@@ -1,0 +1,27 @@
+{
+  "name": "hono",
+  "version": "1.0.0",
+  "description": "Hono API development skills for Node.js bootstrap, routing, middleware, validation, OpenAPI, and contract testing.",
+  "author": {
+    "name": "walk-dog"
+  },
+  "keywords": [
+    "hono",
+    "api",
+    "nodejs",
+    "openapi",
+    "middleware",
+    "validation",
+    "testing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Hono",
+    "shortDescription": "Build and verify Hono APIs.",
+    "longDescription": "Covers Hono Node.js bootstrap, routes, middleware, request validation, OpenAPI contracts, route organization, and HTTP contract tests.",
+    "developerName": "walk-dog",
+    "category": "Framework",
+    "capabilities": ["Skills"],
+    "defaultPrompt": ["Use Hono to build a documented and tested API endpoint."]
+  }
+}

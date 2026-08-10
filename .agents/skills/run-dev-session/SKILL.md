@@ -41,7 +41,7 @@ After the specification review is `ready` and before asking the user to approve 
 
 1. **REQUIRED SUB-SKILL:** Use `explaining-specifications-and-design` to structure the user-facing design and plan explanation as WHAT → HOW → WHY. Do not present wiring, path filters, or file lists before WHAT is clear.
 2. When the purpose includes **designing or changing** GitHub Actions workflow files under `.github/workflows/`, CI jobs that run those workflows, or publish pipelines implemented as workflows, **REQUIRED SUB-SKILL:** Use `designing-github-actions-ci` during design and before writing workflow YAML. Record official docs read and the gate WHAT table in the session design. Do not require this skill when only authoring or editing skills, docs, or other process artifacts about CI.
-3. When the purpose or change set includes **defining or changing** Zod schemas (`z.object`, `z.string`, enums, composition, metadata, or format helpers such as `z.email()`), **REQUIRED SUB-SKILL:** Use `defining-zod-schemas` before editing those schemas. Record the official Zod docs read and the schema decision in the session design or transcript. Follow project defaults there, including `.nonempty()` for non-empty strings and top-level format helpers such as `z.email()`.
+3. When the purpose or change set includes **defining or changing** Zod schemas (`z.object`, `z.string`, enums, composition, metadata, or format helpers such as `z.email()`), **REQUIRED SUB-SKILL:** Use `zod:defining-zod-schemas` before editing those schemas. Record the official Zod docs read and the schema decision in the session design or transcript. Follow project defaults there, including `.nonempty()` for non-empty strings and top-level format helpers such as `z.email()`.
 4. Present the structured design and plan, wait for approval, then continue to Task Progress.
 5. ユーザーが skill の作成または更新を依頼したときは、成果物を独立したトップレベル Task として計画に登録する。ユーザーが指定した言語、skill 名、配置先、baseline、forward-test、validator、承認順序を完了条件にする。**REQUIRED SUB-SKILL:** `skill-creator` と `superpowers:writing-skills` を使用する。
 
@@ -49,7 +49,7 @@ After the specification review is `ready` and before asking the user to approve 
 
 After the specification review is `ready` and the written implementation plan is approved, use `superpowers:executing-plans` to execute the plan.
 
-When a Task's change set includes defining or changing Zod schemas, run the `defining-zod-schemas` REQUIRED SUB-SKILL from Design and Plan before editing those schemas, even if the schema work was not the original Task title.
+When a Task's change set includes defining or changing Zod schemas, run the `zod:defining-zod-schemas` REQUIRED SUB-SKILL from Design and Plan before editing those schemas, even if the schema work was not the original Task title.
 
 1. In executing-plans Step 1.5, register every top-level Task from the plan in the live `update_plan` todos. Count each top-level Task once; steps nested under a Task are part of that Task.
 2. After registering the todos and before starting the first Task, announce the total and next Task in the conversation: `Implementation plan: N tasks. Next: Task 1 — <name>`.

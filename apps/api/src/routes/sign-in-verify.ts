@@ -2,7 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi'
 import type { App } from '../app.js'
 import type { CognitoClient } from '../auth/cognito.js'
 import { authenticationResponseSchema, authErrorSchema } from '../auth/contracts.js'
-import { decodeIdTokenSubject, ownerFromCognitoSubject } from '../auth/owner.js'
+import { decodeIdTokenSubject, ownerFromCognitoSubject, toAuthenticationResponse } from '../auth/owner.js'
 import type { DbInstance } from '../db/client.js'
 
 const signInVerifyRoute = createRoute({
@@ -38,7 +38,11 @@ export function registerSignInVerifyRoute(app: App, database: DbInstance, cognit
         return ctx.json({ code: 'INTERNAL_SERVER_ERROR', message: '認証情報の取得に失敗しました。', requestId, retryable: true }, 500)
       }
       const owner = await ownerFromCognitoSubject(database, decodeIdTokenSubject(result.IdToken))
-      return ctx.json({ requestId, accessToken: result.AccessToken, idToken: result.IdToken, refreshToken: result.RefreshToken, owner: { ownerId: owner.ownerId, displayName: null, avatarUrl: null, createdAt: owner.createdAt.toISOString(), updatedAt: owner.updatedAt.toISOString() } }, 200)
+      return ctx.json(toAuthenticationResponse(requestId, {
+        accessToken: result.AccessToken,
+        idToken: result.IdToken,
+        refreshToken: result.RefreshToken,
+      }, owner), 200)
     } catch (error) {
       const mapped = signInVerifyErrorResponse(error, requestId)
       if (mapped) return ctx.json(mapped.body, mapped.status)

@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import * as Sentry from '@sentry/hono/node'
 import { sentry } from '@sentry/hono/node'
 import { secureHeaders } from 'hono/secure-headers'
+import { errorSchema } from './contracts/error.js'
 import { type Logger } from './observability/logger.js'
 import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
 
@@ -16,13 +17,6 @@ export type AppDependencies = {
   logger: Logger
   setRequestId: (requestId: string) => void
 }
-
-const errorSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  requestId: z.string(),
-  retryable: z.boolean(),
-})
 
 const healthRoute = createRoute({
   method: 'get',

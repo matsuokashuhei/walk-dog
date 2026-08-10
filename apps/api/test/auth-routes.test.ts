@@ -10,7 +10,7 @@ test('registerAuthRoutes adds every authentication endpoint to OpenAPI', async (
 
   assert.equal(response.status, 200)
   assert.ok('/v1/auth/sign-up' in document.paths)
-  assert.ok('/v1/auth/verify' in document.paths)
+  assert.ok('/v1/auth/sign-up/verify' in document.paths)
   assert.ok('/v1/auth/sign-in' in document.paths)
   assert.ok('/v1/auth/sign-in/verify' in document.paths)
 })

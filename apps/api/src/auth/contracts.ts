@@ -1,11 +1,7 @@
 import { z } from '@hono/zod-openapi'
+import { errorSchema } from '../contracts/error.js'
 
-export const authErrorSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  requestId: z.string(),
-  retryable: z.boolean(),
-})
+export { errorSchema as authErrorSchema }
 
 const ownerResponseSchema = z.object({
   ownerId: z.string(),

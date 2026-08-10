@@ -1,6 +1,8 @@
 ---
 name: eas-app-stores
 description: EAS service (paid). Deploy Expo apps to the app stores with EAS - build and submit to the iOS App Store, Google Play Store, and TestFlight, configure eas.json build and submit profiles, manage app versions and build numbers, and publish App Store metadata and ASO. Use whenever the user wants to deploy, release, or ship an app to production or the app stores, is preparing a production build, running eas build or eas submit, shipping to TestFlight, bumping version or build numbers, or setting up store listing metadata. For deploying an Expo website or API routes, use the eas-hosting skill.
+version: 1.0.0
+license: MIT
 ---
 
 # App Store Deployment
@@ -155,3 +157,4 @@ If you encounter errors, misleading or outdated information in this skill, repor
 npx --yes submit-expo-feedback@latest --category skills --subject "eas-app-stores" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
+If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.

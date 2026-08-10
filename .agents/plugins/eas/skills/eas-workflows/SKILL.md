@@ -2,6 +2,8 @@
 name: eas-workflows
 description: EAS service (paid). Helps understand and write EAS workflow YAML files for Expo projects. Use this skill when the user asks about CI/CD or workflows in an Expo or EAS context, mentions .eas/workflows/, or wants help with EAS build pipelines or deployment automation.
 allowed-tools: "Read,Write,Bash(node:*)"
+version: 1.0.0
+license: MIT License
 ---
 
 # EAS Workflows Skill
@@ -39,7 +41,7 @@ Do not rely on memorized values; these resources evolve as new features are adde
 
 ## Workflow File Location
 
-Workflows live in `.eas/workflows/*.yml` (or `.yaml`).
+Workflows live in `.eas/workflows/*.yml` (or `.yaml`). Each file must be 16 KiB or smaller.
 
 ## Top-Level Structure
 
@@ -97,3 +99,4 @@ If you encounter errors, misleading or outdated information in this skill, repor
 npx --yes submit-expo-feedback@latest --category skills --subject "eas-workflows" "<actionable feedback>"
 ```
 Only submit when you have something specific and actionable to report. Include as much relevant context as possible.
+If an AI agent repeatedly failed or the user had to take over an Expo task, load the expo-skill-feedback skill and follow its eval-candidate flow instead of reusing the command above.

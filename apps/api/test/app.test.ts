@@ -1,13 +1,23 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
-import { setRequestIdTag } from '../src/observability/sentry.js'
+import { healthRoute, registerHealthRoutes } from '../src/modules/health/index.js'
+import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
 import { testLogger } from './support/test-logger.js'
 
 const appDependencies = {
   logger: testLogger,
   setRequestId: setRequestIdTag,
 }
+
+test('registerHealthRoutes serves GET /health', async () => {
+  assert.equal(healthRoute.method, 'get')
+  assert.equal(healthRoute.path, '/health')
+  const routes = registerHealthRoutes()
+  const response = await routes.request('/health')
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), { status: 'ok' })
+})
 
 test('GET /health returns the API health state', async () => {
   const response = await createApp(appDependencies).request('/health')

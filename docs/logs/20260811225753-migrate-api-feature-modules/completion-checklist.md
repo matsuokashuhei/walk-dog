@@ -8,7 +8,14 @@
 - [x] Task 1: `npm test`, `npm run check`, and `git diff --check` passed.
 - [x] Task 1: Independent review resolved for Critical/Important findings (exact OpenAPI path→method map and full verify nullable assertions).
 - [x] Task 1: Commit `test: preserve API migration baseline`.
-- [ ] Task 2: Shared HTTP, health, config, and observability boundaries.
+- [x] Task 2: Pointed app/config/observability tests at target modules; added `registerHealthRoutes` aggregate assertion (TDD red confirmed).
+- [x] Task 2: Created `shared/http/types.ts` and moved error contract to `shared/http/error-contract.ts`.
+- [x] Task 2: Extracted health feature module (`contracts`, `routes/health`, `registerHealthRoutes`).
+- [x] Task 2: Moved config and observability into `infrastructure/`.
+- [x] Task 2: Wired `createApp` to mount health child; kept `registerRoutes?` for remaining auth routes.
+- [x] Task 2: Targeted tests, `npm test` (47/47), `npm run check`, and `git diff --check` passed.
+- [x] Task 2: Independent review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 2: Commit `refactor: extract API platform boundaries`.
 - [ ] Task 3: Owner repository boundary.
 - [ ] Task 4: Sign Up and Sign In start slices.
 - [ ] Task 5: OTP verification slices.

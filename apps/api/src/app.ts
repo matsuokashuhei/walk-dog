@@ -1,43 +1,17 @@
-import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import { OpenAPIHono } from '@hono/zod-openapi'
 import * as Sentry from '@sentry/hono/node'
 import { sentry } from '@sentry/hono/node'
 import { secureHeaders } from 'hono/secure-headers'
-import { errorSchema } from './contracts/error.js'
-import { type Logger } from './observability/logger.js'
-import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
-
-type Variables = {
-  requestId: string
-  logger: Logger
-}
-
-export type App = OpenAPIHono<{ Variables: Variables }>
+import type { Logger } from './infrastructure/observability/logger.js'
+import { createRequestLoggerMiddleware } from './infrastructure/observability/request-middleware.js'
+import { registerHealthRoutes } from './modules/health/index.js'
+import { errorSchema } from './shared/http/error-contract.js'
+import type { App, AppVariables } from './shared/http/types.js'
 
 export type AppDependencies = {
   logger: Logger
   setRequestId: (requestId: string) => void
 }
-
-const healthRoute = createRoute({
-  method: 'get',
-  path: '/health',
-  responses: {
-    200: {
-      content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } },
-      description: 'API process health state',
-      headers: {
-        'X-Request-Id': {
-          description: 'Request identifier for this response',
-          schema: { type: 'string' },
-        },
-      },
-    },
-    500: {
-      content: { 'application/json': { schema: errorSchema } },
-      description: 'API processing error',
-    },
-  },
-})
 
 const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) => {
   if (result.success) {
@@ -55,7 +29,7 @@ export const createApp = (
   dependencies: AppDependencies,
   registerRoutes?: (app: App) => void,
 ): App => {
-  const app = new OpenAPIHono<{ Variables: Variables }>({
+  const app = new OpenAPIHono<{ Variables: AppVariables }>({
     defaultHook: validationErrorHook,
   })
   app.openAPIRegistry.register('Error', errorSchema)
@@ -83,7 +57,7 @@ export const createApp = (
     requestId: context.get('requestId'),
     retryable: false,
   }, 500))
-  app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
+  app.route('/', registerHealthRoutes())
   app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'walk / dog API', version: '0.1.0' },

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/config.js'
+import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
   POSTGRES_USER: 'walkdog',

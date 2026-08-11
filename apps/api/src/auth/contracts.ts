@@ -1,5 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import { errorSchema } from '../contracts/error.js'
+import { errorSchema } from '../shared/http/error-contract.js'
 
 export { errorSchema as authErrorSchema }
 

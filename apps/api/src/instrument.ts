@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/hono/node'
-import { loadObservabilityConfig } from './config.js'
+import { loadObservabilityConfig } from './infrastructure/config/index.js'
 
 const config = loadObservabilityConfig(process.env)
 

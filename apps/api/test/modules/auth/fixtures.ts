@@ -1,8 +1,8 @@
-import type { App } from '../../../src/app.js'
 import { createApp } from '../../../src/app.js'
 import type { CognitoClient } from '../../../src/auth/cognito.js'
 import type { DbInstance } from '../../../src/db/client.js'
-import { setRequestIdTag } from '../../../src/observability/sentry.js'
+import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
+import type { App } from '../../../src/shared/http/types.js'
 import { testLogger } from '../../support/test-logger.js'
 
 const appDependencies = { logger: testLogger, setRequestId: setRequestIdTag }

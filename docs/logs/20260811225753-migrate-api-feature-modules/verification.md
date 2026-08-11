@@ -106,3 +106,68 @@ Also asserted: OpenAPI `3.1.0`, component `Error`, email request required/nullab
 - Independent re-review returned `APPROVED` with no Critical or Important findings.
 - Task 1 is committed as `test: preserve API migration baseline`.
 - Task 2 begins after this commit.
+
+## Task 2: Shared HTTP, health, config, observability
+
+### Documentation review (Zod health schema)
+
+Reviewed before defining `healthResponseSchema`:
+
+- Objects: <https://zod.dev/api?id=objects>
+- Primitives: <https://zod.dev/api?id=primitives>
+- Metadata: <https://zod.dev/metadata>
+
+Decision: preserve the existing health response shape `{ status: z.literal('ok') }` with no added `.meta()` / `.describe()` metadata, matching the prior inline schema in `app.ts`.
+
+Also consulted Hono routing/OpenAPI/middleware guidance referenced by the Task 2 skills (child `app.route()` mount, OpenAPIHono route registration, shared error envelope).
+
+### TDD Step 1 (red)
+
+Updated imports to target paths and added health aggregate assertion. Targeted command failed with unresolved modules:
+
+- `src/modules/health/index.js`
+- `src/infrastructure/config/index.js`
+- `src/infrastructure/observability/logger.js`
+
+### Delivered layout
+
+- `src/shared/http/types.ts` — `AppVariables`, `App`
+- `src/shared/http/error-contract.ts` — `errorSchema` (moved from `contracts/error.ts`)
+- `src/modules/health/contracts.ts` — `healthResponseSchema`
+- `src/modules/health/routes/health.ts` — `healthRoute`, `registerHealthRoute`
+- `src/modules/health/index.ts` — `registerHealthRoutes()`, re-exports `healthRoute`
+- `src/infrastructure/config/index.ts` — config loaders (moved from `config.ts`)
+- `src/infrastructure/observability/{logger,request-middleware,sentry}.ts` (moved from `observability/`)
+
+Removed old paths: `src/config.ts`, `src/contracts/`, `src/observability/`.
+
+### App wiring
+
+- `createApp(dependencies, registerRoutes?)` mounts `registerHealthRoutes()` at `/` via `app.route('/', …)`.
+- Auth routes still register through optional `registerRoutes` on the root app (full public paths unchanged).
+- Feature routes and fixtures import `App` from `shared/http/types` (not `app.ts`).
+- `instrument.ts` / `index.ts` / `db/client.ts` / `auth/contracts.ts` import infrastructure or shared targets.
+
+### Dependency direction
+
+- `src/modules` and `src/shared` have no `infrastructure` imports.
+- Production health module depends inward on `shared/http` only.
+
+### Gates
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Targeted: `node --import tsx --test test/app.test.ts test/config.test.ts test/infrastructure/observability/request-middleware.test.ts` → pass 25
+- `npm test` → `tests 47`, `pass 47`, `fail 0`
+  - 45 baseline names preserved
+  - Task 1 OpenAPI characterization retained
+  - New: `registerHealthRoutes serves GET /health`
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+### Task 2 completion
+
+- Codex independently repeated the targeted 25-test suite, full 47-test suite, lint, jscpd, knip, typecheck, and `git diff --check`; every gate passed.
+- Moved config, error, logger, request-middleware, and Sentry files have the same Git blob hashes as their previous locations.
+- Independent review returned `APPROVED` with no Critical or Important findings.
+- Task 2 is committed as `refactor: extract API platform boundaries`.

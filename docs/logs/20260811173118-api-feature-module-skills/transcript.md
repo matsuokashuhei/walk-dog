@@ -104,3 +104,6 @@
 - `2026-08-11 22:33 JST`: Merge/retrospective artifact sync completed. `status: synced`; updated: transcript and retrospective; already current: specification review, design, plan, checklist, verification; baseline conflicts: none; next permitted action: awaiting skill-proposal approval.
 - `2026-08-11 22:36 JST`: User approved both retrospective skill proposals. Retrospective status advanced to `ready-to-implement`.
 - `2026-08-11 22:37 JST`: Approval artifact sync completed. `status: synced`; updated: transcript and retrospective; already current: specification review, design, plan, checklist, verification; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 22:38 JST`: Task 1 baseline confirmed that the existing design skill could reject incomplete coverage but did not explicitly require top-level Task traceability or a final affirmative-language audit.
+- `2026-08-11 22:39 JST`: Updated `explaining-specifications-and-design`. Its forward-test mapped every Task to design, deliverable, and acceptance condition, detected all missing links, and rewrote dependency constraints as affirmative ownership contracts.
+- `2026-08-11 22:40 JST`: Task 1 quick validation, skill-library sync/check, and `git diff --check` passed. Retrospective evidence was updated; next permitted action: continue.

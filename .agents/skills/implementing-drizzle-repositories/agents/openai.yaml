@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drizzle Repositories"
+  short_description: "Implement module repositories with Drizzle"
+  default_prompt: "Use $implementing-drizzle-repositories to implement a module repository with Drizzle PostgreSQL."

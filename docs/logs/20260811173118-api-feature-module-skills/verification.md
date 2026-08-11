@@ -58,6 +58,14 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: `backend/architecture/implementing-api-use-cases`; sync and check passed.
 
+### implementing-drizzle-repositories
+
+- Baseline prompt: design race-safe Owner find-or-create with exact placement, mapping, transaction, constraint, errors, and tests.
+- Baseline observation: the independent agent produced the target repository boundary from general Drizzle knowledge, establishing the forward-test minimum.
+- Forward-test observation: the new skill reproduced the module interface, infrastructure schema/repository placement, explicit row mapper, targeted `cognitoSubject` conflict, repository-owned transaction, unchanged existing row, unexpected failure propagation, and real-PostgreSQL concurrency tests.
+- Validator: `Skill is valid!`
+- Library: `data/drizzle/implementing-drizzle-repositories`; sync and check passed.
+
 ## Final checks
 
 Pending implementation.

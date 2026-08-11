@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Feature Modules"
+  short_description: "Design API feature module boundaries"
+  default_prompt: "Use $organizing-api-feature-modules to place a new API feature and define its dependency direction."

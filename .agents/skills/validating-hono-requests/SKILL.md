@@ -1,47 +1,80 @@
 ---
 name: validating-hono-requests
-description: Validate Hono request input with hono/validator, Zod, or @hono/zod-validator, including validator error handling. Use when changing request validation for json, query, param, header, cookie, or form. Do not use for OpenAPI document generation alone, route structure alone, middleware stacks alone, Node.js bootstrap, or tests alone.
+description: Hono APIのjson、query、param、header、cookie、form入力をZod、`@hono/zod-openapi`、validatorで検証するときに使用する。feature moduleのschema配置、検証済み値のuse case受け渡し、共通validation error response、field固有messageを追加または変更する。
 ---
 
-# Validating Hono Requests
+# Hono request のvalidation
 
-Read the current official Hono validation docs before changing request validators. Runtime is Node.js only.
+公開requestをroute境界で検証し、型付きの検証済み値だけをuse caseへ渡す。ランタイムはNode.jsとする。
 
-## Required documentation review
+## 必読資料
 
-1. Open <https://hono.dev/docs/guides/validation> and identify the validation target.
-2. Read <https://hono.dev/examples/validator-error-handling> when shaping validator failure responses.
-3. When the validated fields are part of the public API contract, also use `$hono:documenting-hono-openapi`.
-4. Record the documentation URLs read and the validation decision in the active session log, design, or pull request description.
+実装前に最新のHono Validation guideを読み、failure responseを変更するときはvalidator error handling exampleも読む。URL、validation target、schema owner、failure responseをsession log、設計書、またはPRへ記録する。
 
-## Project defaults
+- Validation: <https://hono.dev/d%6Fcs/guides/validation>
+- Error handling example: <https://hono.dev/examples/validator-error-handling>
 
-- OpenAPI / Zod schemas are the source of request validation for public endpoints.
-- Prefer `@hono/zod-openapi` route definitions when the endpoint is documented; use `@hono/zod-validator` or `hono/validator` only when that path is intentional.
-- Shape Zod schemas with `$zod:defining-zod-schemas`, refine or transform them with `$zod:transforming-zod-schemas`, and map Zod issue wording with `$zod:handling-zod-errors` when the schema itself changes.
-- Validation failures return the shared error JSON with HTTP status, `code`, `message`, `requestId`, and `retryable`.
-- JSON and form validators require a matching `Content-Type` header.
+## Schemaとtargetを決める
 
-## Workflow
+- 公開APIの機能固有schemaを`src/modules/<feature>/contracts.ts`へ置く。
+- `json`、`query`、`param`、`header`、`cookie`、`form`から対象targetを選ぶ。
+- 文書化されたendpointは`@hono/zod-openapi`のroute定義へ同じschemaを渡す。
+- JSONとformは対応する`Content-Type`をrequest条件として扱う。
+- fieldの形状とcheckは`$zod:defining-zod-schemas`、refinementとtransformは`$zod:transforming-zod-schemas`、issue messageは`$zod:handling-zod-errors`で変更する。
 
-| Phase | Provide |
+OpenAPI用とruntime用にschemaを複製しない。Drizzle schemaをrequest validationへ流用しない。
+
+## Route境界を保つ
+
+handlerは`c.req.valid('<target>')`から検証済み値を取得する。raw body、Zod result、Hono `Context`をuse caseへ渡さない。
+
+```ts
+const input = c.req.valid('json')
+const result = await createDog({
+  ownerId: c.get('ownerId'),
+  ...input,
+})
+```
+
+schemaのtransform後の値をuse case入力にする。認証済み主体やrequest IDのようなContext値は、検証済みinputと明示的に合成する。
+
+## Error責務を分ける
+
+- schemaはfield、許容値、正規化、field固有issue messageを持つ。
+- OpenAPIHonoの共通validation hookはZod issueを共有HTTP errorへ変換する。
+- 共有errorはHTTP 400、`code: "INVALID_INPUT"`、`message`、`requestId`、`retryable: false`を持つ。
+- 共通hookはfeature名、field名、endpoint path、個別use caseを条件分岐に持たない。
+- routeはvalidation成功後のHTTP変換を担当する。
+
+新しいfieldはmodule schemaとそのtestを追加して提供する。共通hookの変更は共有error contract自体が変わる場合に行う。
+
+## Validationと機能errorを区別する
+
+requestの形状、型、format、許容値はvalidationで表す。Owner境界、名前の一意性、状態遷移、外部provider結果はuse caseとrepository/providerの結果として扱う。
+
+| 状態 | 担当 |
 | --- | --- |
-| Documentation review | The validation target and official Hono docs read. |
-| Design | Target (`json` / `query` / `param` / etc.), schema, and failure response. |
-| Implementation | Focused validator changes that follow the reviewed documentation. |
-| Verification | Typecheck and invalid/valid request assertions via `$hono:testing-hono-apis`. |
+| 必須field、文字列長、enum、format | module Zod schema |
+| 複数field間の入力整合 | module Zod refinement |
+| 認証済みOwner | authentication middlewareとroute入力合成 |
+| Owner内一意性、現在状態 | use caseとrepository |
+| validation error envelope | 共通OpenAPIHono hook |
 
-## Common decisions
+## ワークフロー
 
-| Request | Read before implementation | Record |
-| --- | --- | --- |
-| JSON body validation | Validation guide | Schema fields and Content-Type requirement |
-| Query or path validation | Validation guide | Target key and schema |
-| Zod validator middleware | Validation guide Zod sections | Package choice and schema reuse |
-| Zod schema field or refine change | Zod defining / transforming skills | Schema owner and Hono target |
-| Custom validation error body | Validator error-handling example | Status, code, message, retryable |
-| Documented public input | OpenAPI skill | Schema owner in OpenAPI document |
+1. accepted inputとvalidation targetを仕様から抽出する。
+2. 公式資料を読み、package、target、Content-Type、failure responseを記録する。
+3. moduleのcontract schemaをtest-firstで追加または変更する。
+4. OpenAPI routeへ同じschemaを接続する。
+5. handlerで`c.req.valid()`を使い、検証済み値だけをuse caseへ渡す。
+6. 共通hookが共有error responseへ変換することを確認する。
+7. valid、各invalid class、Content-Type、use case未呼び出し、OpenAPIをtestする。
 
-## Completion check
+## 完了条件
 
-Before reporting a validation change complete, provide the documentation reviewed, the validators changed, and the verification results.
+- runtime validationとOpenAPIが同じmodule schemaを参照する。
+- use caseが検証済みのframework非依存inputを受け取る。
+- invalid requestが共有400 responseを返し、use caseを呼ばない。
+- field追加がmodule schemaとtestで完結する。
+- 共通hookがfeature固有の知識を持たない。
+- `$testing-hono-apis`の対象test、型検査、lintが成功する。

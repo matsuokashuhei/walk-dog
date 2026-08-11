@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Adapters"
+  short_description: "Integrate external services behind module ports"
+  default_prompt: "Use $integrating-api-adapters to implement an external service adapter behind a module interface."

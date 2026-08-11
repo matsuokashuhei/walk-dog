@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Dependency Composition"
+  short_description: "Compose API dependencies and resource lifecycles"
+  default_prompt: "Use $composing-api-dependencies to build the API composition root and lifecycle boundaries."

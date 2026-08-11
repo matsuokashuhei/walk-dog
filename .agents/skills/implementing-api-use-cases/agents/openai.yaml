@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Use Cases"
+  short_description: "Implement framework-independent API use cases"
+  default_prompt: "Use $implementing-api-use-cases to design and implement an API use case with explicit dependency interfaces."

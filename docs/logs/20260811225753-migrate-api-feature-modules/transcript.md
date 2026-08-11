@@ -15,6 +15,7 @@
 ## Artifact List
 
 - `docs/logs/20260811225753-migrate-api-feature-modules/transcript.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/specification-review.md`
 
 ## Conversation
 
@@ -25,3 +26,5 @@
 ## Session events
 
 - `2026-08-11 22:57 JST`: Created the dedicated worktree from `origin/main`, recorded the main-checkout baseline, and registered the worktree.
+- `2026-08-11 23:02 JST`: Specification review completed with `status: ready`. The migration is implementation-local, preserves the current R1 release contract and prerequisite table, and proceeds to design.
+- `2026-08-11 23:03 JST`: Initial artifact sync completed. `status: synced`; trigger: specification review creation; updated: transcript and specification review; already current: none; baseline conflicts: none; next permitted action: continue.

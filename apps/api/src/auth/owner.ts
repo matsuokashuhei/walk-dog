@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
-import type { DbInstance } from '../db/client.js'
-import { owners } from '../schema/owner.js'
+import { createDrizzleOwnerRepository } from '../infrastructure/database/repositories/drizzle-owner-repository.js'
+import type { DbInstance } from '../infrastructure/database/client.js'
+import type { Owner } from '../modules/owners/index.js'
 
 type JwtPayload = { sub: string }
 
@@ -17,21 +17,14 @@ export function decodeIdTokenSubject(idToken: string): string {
 export function ownerFromCognitoSubject(
   database: DbInstance,
   cognitoSubject: string,
-): Promise<{ ownerId: string; createdAt: Date; updatedAt: Date }> {
-  return database.transaction(async (trx) => {
-    const inserted = await trx.insert(owners).values({ cognitoSubject, displayName: null }).onConflictDoNothing().returning()
-    if (inserted.length > 0) {
-      return { ownerId: inserted[0].ownerId, createdAt: inserted[0].createdAt, updatedAt: inserted[0].updatedAt }
-    }
-    const existing = await trx.select().from(owners).where(eq(owners.cognitoSubject, cognitoSubject)).limit(1)
-    return { ownerId: existing[0].ownerId, createdAt: existing[0].createdAt, updatedAt: existing[0].updatedAt }
-  })
+): Promise<Owner> {
+  return createDrizzleOwnerRepository(database).resolveByCognitoSubject(cognitoSubject)
 }
 
 export function toAuthenticationResponse(
   requestId: string,
   tokens: { accessToken: string; idToken: string; refreshToken: string },
-  owner: { ownerId: string; createdAt: Date; updatedAt: Date },
+  owner: Owner,
 ) {
   return {
     requestId,
@@ -40,8 +33,8 @@ export function toAuthenticationResponse(
     refreshToken: tokens.refreshToken,
     owner: {
       ownerId: owner.ownerId,
-      displayName: null,
-      avatarUrl: null,
+      displayName: owner.displayName,
+      avatarUrl: owner.avatarUrl,
       createdAt: owner.createdAt.toISOString(),
       updatedAt: owner.updatedAt.toISOString(),
     },

@@ -1,7 +1,7 @@
 import { serve } from '@hono/node-server'
 import { createApp } from './app.js'
 import { createCognitoClient } from './auth/cognito.js'
-import { createDbClient } from './db/client.js'
+import { createDbClient } from './infrastructure/database/client.js'
 import { loadCognitoConfig, loadDatabaseConfig, loadObservabilityConfig } from './infrastructure/config/index.js'
 import { createLogger } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'

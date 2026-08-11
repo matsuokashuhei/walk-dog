@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { owners } from '../../../src/schema/owner.js'
+import { owners } from '../../../src/infrastructure/database/schema/owner.js'
 
 test('owners table has the expected columns', () => {
   const columns = Object.keys(owners)

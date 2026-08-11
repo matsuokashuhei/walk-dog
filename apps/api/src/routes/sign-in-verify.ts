@@ -3,7 +3,7 @@ import type { App } from '../shared/http/types.js'
 import type { CognitoClient } from '../auth/cognito.js'
 import { authenticationResponseSchema, authErrorSchema } from '../auth/contracts.js'
 import { decodeIdTokenSubject, ownerFromCognitoSubject, toAuthenticationResponse } from '../auth/owner.js'
-import type { DbInstance } from '../db/client.js'
+import type { DbInstance } from '../infrastructure/database/client.js'
 
 const signInVerifyRoute = createRoute({
   method: 'post',

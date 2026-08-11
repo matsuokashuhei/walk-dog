@@ -16,7 +16,17 @@
 - [x] Task 2: Targeted tests, `npm test` (47/47), `npm run check`, and `git diff --check` passed.
 - [x] Task 2: Independent review returned `APPROVED` with no Critical or Important findings.
 - [x] Task 2: Commit `refactor: extract API platform boundaries`.
-- [ ] Task 3: Owner repository boundary.
+- [x] Task 3: Wrote failing Owner repository unit tests (insert, conflict select, exact values, nullable mapping, unexpected error identity).
+- [x] Task 3: Moved Drizzle schema/client to `infrastructure/database` without DB shape changes; `db:generate` produced no migration; `git diff --exit-code -- drizzle` empty.
+- [x] Task 3: Added Owner module types/repository/index and `createDrizzleOwnerRepository` (one transaction, insert with `onConflictDoNothing({ target: owners.cognitoSubject })` returning, select-by-unique-subject limit 1, private row mapping).
+- [x] Task 3: Kept verification route signatures; temporary `ownerFromCognitoSubject` delegates to the repository; `toAuthenticationResponse` accepts module `Owner`.
+- [x] Task 3: Added real PostgreSQL concurrency integration test with unique subject and subject-only cleanup.
+- [x] Task 3: Updated `drizzle.config.ts` schema glob to `./src/infrastructure/database/schema/*.ts`.
+- [x] Task 3: Targeted tests, `npm test` (51/51), `npm run check`, and `git diff --check` passed; local postgres migrate + `test:integration` passed.
+- [x] Task 3: Codex finding fixed — targeted `owners.cognitoSubject` conflict; insert/conflict unit tests assert exact `onConflictDoNothing` config; gates re-run (repository unit 4, targeted 14, `npm test` 51/51, `npm run check`, `git diff --check`).
+- [x] Task 3: Independent Important finding fixed — integration cleanup nested try/finally so subject-only delete is attempted and `closeDbClient(pool)` always runs; gates re-run (integration 1, targeted 14, `npm test` 51/51, `npm run check`, `git diff --check`, no drizzle migration diff).
+- [x] Task 3: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 3: Commit `refactor: add Owner repository boundary`.
 - [ ] Task 4: Sign Up and Sign In start slices.
 - [ ] Task 5: OTP verification slices.
 - [ ] Task 6: Aggregation, composition, lifecycle, and migration verification.

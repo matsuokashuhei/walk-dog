@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import { closeDbClient } from './db/client.js'
+import { closeDbClient } from './infrastructure/database/client.js'
 
 export function createShutdownHandler(
   server: { close: (callback: (error?: Error) => void) => unknown },

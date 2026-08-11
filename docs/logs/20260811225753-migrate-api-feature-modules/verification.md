@@ -171,3 +171,105 @@ Commands from `apps/api` (temporary symlink to main checkout `node_modules`, rem
 - Moved config, error, logger, request-middleware, and Sentry files have the same Git blob hashes as their previous locations.
 - Independent review returned `APPROVED` with no Critical or Important findings.
 - Task 2 is committed as `refactor: extract API platform boundaries`.
+
+## Task 3: Owner module and Drizzle repository
+
+### Documentation review (Drizzle)
+
+Official docs already reviewed for this task (recorded for session evidence):
+
+- Schema organization / unchanged Owner table: <https://orm.drizzle.team/docs/sql-schema-declaration>, <https://orm.drizzle.team/docs/indexes-constraints>
+- Insert / select / transaction repository flow: <https://orm.drizzle.team/docs/insert>, <https://orm.drizzle.team/docs/select>, <https://orm.drizzle.team/docs/transactions>
+- Unchanged migration generation/config: <https://orm.drizzle.team/docs/drizzle-kit-generate>, <https://orm.drizzle.team/docs/drizzle-config-file>
+- Unchanged one-Pool client: <https://orm.drizzle.team/docs/get-started-postgresql>
+
+Decisions:
+
+- Keep the Owner table shape unchanged (same columns, uniqueness on `cognito_subject`, no new migration SQL).
+- Move schema source to `src/infrastructure/database/schema/*.ts` and point drizzle-kit `schema` glob there; `db:generate` must report no schema changes.
+- Keep one `pg.Pool` per process via relocated `createDbClient`.
+- `createDrizzleOwnerRepository` runs one `database.transaction()`: `insert…onConflictDoNothing({ target: owners.cognitoSubject }).returning()`, return mapped row when present, otherwise `select` by `owners.cognitoSubject` with `limit(1)`.
+- Map DB rows to module `Owner` privately (`avatarUrl: null`; `displayName` from the row).
+- Verification routes keep current signatures; temporary `ownerFromCognitoSubject` calls the repository; serialization accepts module `Owner`.
+
+### TDD Step 1 (red)
+
+`test/infrastructure/database/drizzle-owner-repository.test.ts` failed with unresolved `src/infrastructure/database/repositories/drizzle-owner-repository.js`.
+
+### Delivered layout
+
+- `src/modules/owners/{types,repository,index}.ts` — `Owner`, `OwnerRepository`
+- `src/infrastructure/database/schema/owner.ts` — moved from `src/schema/owner.ts` (unchanged table)
+- `src/infrastructure/database/client.ts` — moved from `src/db/client.ts` (schema import updated)
+- `src/infrastructure/database/repositories/drizzle-owner-repository.ts` — `createDrizzleOwnerRepository`
+- `src/auth/owner.ts` — temporary compatibility helper through the repository
+- `apps/api/drizzle.config.ts` — `schema: './src/infrastructure/database/schema/*.ts'`
+- Unit: `test/infrastructure/database/drizzle-owner-repository.test.ts` (4)
+- Integration: `test/infrastructure/database/drizzle-owner-repository.integration.ts` (1)
+- Updated imports: verify routes, fixtures, owner-schema test, `index.ts`, `server.ts`
+
+### Migration evidence
+
+From `apps/api`:
+
+- `npm run db:generate` → `No schema changes, nothing to migrate`
+- `git diff --exit-code -- drizzle` → exit 0 (empty)
+
+### Integration evidence
+
+Used main checkout env file in place (`/Users/matsuokashuhei/Development/walk-dog/apps/.env.local`) without copying or printing secrets. Started only the scoped postgres service (did not stop/remove user containers).
+
+- `docker compose --env-file …/apps/.env.local -f …/apps/compose.yml up -d postgres` → started
+- `POSTGRES_HOST=127.0.0.1 npm run migrate` → migrations applied successfully
+- `POSTGRES_HOST=127.0.0.1 npm run test:integration` → `tests 1`, `pass 1`, `fail 0` (`resolveByCognitoSubject is concurrent-safe for the same subject`)
+
+### Gates
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Targeted: `node --import tsx --test test/infrastructure/database/owner-schema.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts` → pass 14
+- `npm test` → `tests 51`, `pass 51`, `fail 0`
+  - 45 baseline names preserved
+  - Task 1 OpenAPI + Task 2 health aggregate retained
+  - New unit: 4 Owner repository tests
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+### Codex inspection
+
+- Finding: `createDrizzleOwnerRepository` called `onConflictDoNothing()` with no target, so any unique/primary-key conflict could enter the existing-subject select branch.
+- Fix: target the unique `owners.cognitoSubject` column via `onConflictDoNothing({ target: owners.cognitoSubject })`.
+- Unit tests: insert and conflict paths now assert the exact `onConflictDoNothing` config `{ target: owners.cognitoSubject }` in addition to call order and insert values.
+
+### Gates after Codex fix
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Repository unit: `node --import tsx --test test/infrastructure/database/drizzle-owner-repository.test.ts` → pass 4
+- Targeted: `node --import tsx --test test/infrastructure/database/owner-schema.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts` → pass 14
+- `npm test` → `tests 51`, `pass 51`, `fail 0`
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+### Independent Important finding (integration cleanup)
+
+- Finding: `drizzle-owner-repository.integration.ts` awaited subject-row delete and only afterward closed the pg Pool. If delete rejected, pool close was skipped and the test runner/CI could retain live handles.
+- Fix: outer `finally` uses nested `try/finally` so the subject-only delete remains attempted and `closeDbClient(pool)` always runs. Deletion scope unchanged (`eq(owners.cognitoSubject, cognitoSubject)` only).
+
+### Gates after integration cleanup fix
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish). Env loaded in place from main `apps/.env.local` without copying or printing secrets; `POSTGRES_HOST=127.0.0.1` for local postgres.
+
+- Integration: `npm run test:integration` → `tests 1`, `pass 1`, `fail 0` (`resolveByCognitoSubject is concurrent-safe for the same subject`)
+- Targeted: `node --import tsx --test test/infrastructure/database/owner-schema.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts` → pass 14
+- `npm test` → `tests 51`, `pass 51`, `fail 0`
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+- `npm run db:generate` → `No schema changes, nothing to migrate`; `git diff --exit-code -- drizzle` → exit 0
+
+### Task 3 status
+
+- Codex finding on untargeted `onConflictDoNothing` resolved; local gates re-run after the fix.
+- Independent Important finding on integration pool cleanup resolved; local gates re-run after the fix.
+- Independent re-review returned `APPROVED` with no Critical or Important findings.
+- Task 3 is committed as `refactor: add Owner repository boundary`.

@@ -1,6 +1,6 @@
 import { createApp } from '../../../src/app.js'
 import type { CognitoClient } from '../../../src/auth/cognito.js'
-import type { DbInstance } from '../../../src/db/client.js'
+import type { DbInstance } from '../../../src/infrastructure/database/client.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
 import type { App } from '../../../src/shared/http/types.js'
 import { testLogger } from '../../support/test-logger.js'

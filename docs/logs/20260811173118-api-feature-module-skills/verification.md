@@ -25,6 +25,15 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: `backend/architecture/organizing-api-feature-modules`; sync and check passed.
 
+### routing-hono-apis
+
+- Baseline prompt: plan `POST /v1/auth/sign-in/verify` with exact endpoint naming, aggregation, contract, use case boundary, Owner resolution, persistence, and tests.
+- Baseline observation: the existing skill defined method/path and Hono concerns but did not define feature-first placement, exact aggregation names, or use-case/repository boundaries. The independent agent had to infer `features/auth` and `createAuthRoutes` from the repository.
+- Forward-test observation: the integrated skill produced `modules/auth/routes/sign-in-verify.ts`, `signInVerifyRoute`, `registerSignInVerifyRoute`, `registerAuthRoutes`, module contracts and use case placement, infrastructure Cognito/Drizzle placement, one `app.route()` mount, and route/OpenAPI tests. It kept token parsing, Owner resolution, and persistence out of the handler.
+- Official review: Hono Application, Routing, Context, HonoRequest, HTTPException, Best Practices, and Testing guidance were checked before editing.
+- Validator: `Skill is valid!`
+- Library: the `backend/hono/organizing-hono-route-modules` link was removed; sync and check passed.
+
 ## Final checks
 
 Pending implementation.

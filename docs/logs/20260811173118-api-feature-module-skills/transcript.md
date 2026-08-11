@@ -54,3 +54,7 @@
 - `2026-08-11 18:02 JST`: Task 2 baseline showed feature-local infrastructure and alternative `features/domain/application` classifications. The new skill produced the approved `modules/infrastructure/shared` placement and dependency direction in an independent forward-test.
 - `2026-08-11 18:03 JST`: `organizing-api-feature-modules` passed quick validation, skill-library sync, and repository skill check.
 - `2026-08-11 18:04 JST`: Artifact sync completed. `status: synced`; updated: transcript, checklist, and verification; already current: design, plan, and specification review; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 18:10 JST`: Task 3 baseline confirmed that the existing routing skill left feature-first placement, aggregation naming, and use-case boundaries unspecified.
+- `2026-08-11 18:13 JST`: Integrated endpoint naming and aggregation rules into the Japanese `routing-hono-apis` canonical source, removed its duplicate Japanese file, and removed the absorbed `organizing-hono-route-modules` skill.
+- `2026-08-11 18:16 JST`: The routing forward-test reproduced exact feature-first route placement, contract/use-case boundaries, infrastructure placement, single mount, and contract tests. Quick validation, skill-library sync, and check passed.
+- `2026-08-11 18:17 JST`: Artifact sync completed. `status: synced`; updated: transcript, checklist, and verification; already current: design, plan, and specification review; baseline conflicts: none; next permitted action: continue.

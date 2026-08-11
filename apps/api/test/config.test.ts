@@ -32,17 +32,20 @@ test('loads an explicit DATABASE_POOL_MAX', () => {
 })
 
 test('rejects a missing POSTGRES_USER', () => {
-  const { POSTGRES_USER: _removed, ...env } = validPostgresEnv
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_USER?: string }).POSTGRES_USER
   assert.throws(() => loadDatabaseConfig(env), /POSTGRES_USER/)
 })
 
 test('rejects a missing POSTGRES_HOST', () => {
-  const { POSTGRES_HOST: _removed, ...env } = validPostgresEnv
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_HOST?: string }).POSTGRES_HOST
   assert.throws(() => loadDatabaseConfig(env), /POSTGRES_HOST/)
 })
 
 test('rejects a missing POSTGRES_PORT', () => {
-  const { POSTGRES_PORT: _removed, ...env } = validPostgresEnv
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_PORT?: string }).POSTGRES_PORT
   assert.throws(() => loadDatabaseConfig(env), /POSTGRES_PORT/)
 })
 

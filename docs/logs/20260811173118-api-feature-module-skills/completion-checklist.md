@@ -1,7 +1,7 @@
 # Completion checklist
 
 - [x] Architecture contract is complete.
-- [ ] `organizing-api-feature-modules` passed baseline, forward-test, and validator.
+- [x] `organizing-api-feature-modules` passed baseline, forward-test, and validator.
 - [ ] `routing-hono-apis` passed baseline, forward-test, and validator.
 - [ ] `documenting-hono-openapi` passed baseline, forward-test, and validator.
 - [ ] `validating-hono-requests` passed baseline, forward-test, and validator.

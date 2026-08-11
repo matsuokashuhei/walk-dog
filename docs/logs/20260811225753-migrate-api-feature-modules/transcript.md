@@ -24,6 +24,9 @@
 1. User asked what follows the merged API feature-module architecture and skill work.
 2. Assistant recommended PR2: migrate `apps/api` to the approved feature-first structure while preserving the public HTTP and OpenAPI contracts and the 45-test baseline.
 3. User approved starting that work.
+4. User selected endpoint-by-endpoint vertical slices.
+5. User approved the written design and implementation plan.
+6. User requested Cursor Agent with Grok 4.5 as implementer, with Codex monitoring and inspecting every deliverable.
 
 ## Session events
 
@@ -37,3 +40,5 @@
 - `2026-08-11 23:18 JST`: Created a six-Task implementation plan with exact files, interfaces, RED/GREEN steps, vertical-slice gates, Task-to-design traceability, review gates, and commits.
 - `2026-08-11 23:19 JST`: Plan self-review confirmed complete design coverage, balanced code fences, consistent interface names, concrete commands, affirmative constraints, and one independently testable deliverable per Task.
 - `2026-08-11 23:20 JST`: Plan artifact sync completed. `status: synced`; trigger: implementation plan creation; updated: transcript and migration plan; already current: specification review and migration design; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:24 JST`: Registered all six top-level Tasks in the live plan. Cursor Agent model `cursor-grok-4.5-high` is the implementation worker; Codex owns monitoring, diff inspection, fresh verification, review gates, and artifact synchronization.
+- `2026-08-11 23:25 JST`: Execution-choice artifact sync completed. `status: synced`; trigger: user-selected Cursor Agent execution; updated: transcript; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.

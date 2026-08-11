@@ -34,6 +34,14 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: the `backend/hono/organizing-hono-route-modules` link was removed; sync and check passed.
 
+### documenting-hono-openapi
+
+- Baseline prompt: define GET/POST Dogs OpenAPI contracts with exact placement, runtime linkage, shared errors, responses, and verification.
+- Baseline observation: the agent inferred the target feature-first placement from repository context and explicitly reported that the existing skill could not determine module placement or route naming by itself.
+- Forward-test observation: the updated skill directly produced `modules/dogs/contracts.ts`, endpoint route modules, `shared/http/error-contract.ts`, and `app.ts` metadata/security placement. It reused one schema for OpenAPI and runtime validation, declared only implemented statuses, preserved stable component names, and separated Zod shape, routing, middleware, persistence, and test responsibilities.
+- Official review: Hono Zod OpenAPI example and third-party OpenAPI integration guidance were checked before editing.
+- Validator: `Skill is valid!`; skill-library sync and check passed.
+
 ## Final checks
 
 Pending implementation.

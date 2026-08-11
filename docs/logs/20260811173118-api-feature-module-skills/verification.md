@@ -74,6 +74,15 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: `backend/architecture/integrating-api-adapters`; sync and check passed.
 
+### composing-api-dependencies
+
+- Baseline prompt: compose config, shared Cognito/DB resources, adapters, repository, use case, auth routes, app, server, and shutdown.
+- Baseline observation: the independent agent produced sound object-graph and lifecycle guidance but introduced `features/` and a separate `composition.ts`, differing from the approved first-level structure.
+- First forward-test observation: construction order and shutdown were correct, but it placed concrete infrastructure inside the auth module. The skill was tightened to preserve the top-level classification.
+- Final forward-test observation: all concrete Cognito/Drizzle/config code stayed under `src/infrastructure`, auth interfaces/use cases/routes stayed under `src/modules/auth`, `src/index.ts` became the sole production composition root, `app.ts` mounted the completed child once, and `server.ts` owned idempotent shutdown. Tests observed factory order, instance identity, import side effects, route uniqueness, and close order.
+- Validator: `Skill is valid!`
+- Library: `backend/architecture/composing-api-dependencies`; sync and check passed.
+
 ## Final checks
 
 Pending implementation.

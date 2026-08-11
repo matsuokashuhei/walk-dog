@@ -8,7 +8,7 @@
 - [x] `implementing-api-use-cases` passed baseline, forward-test, and validator.
 - [x] `implementing-drizzle-repositories` passed baseline, forward-test, and validator.
 - [x] `integrating-api-adapters` passed baseline, forward-test, and validator.
-- [ ] `composing-api-dependencies` passed baseline, forward-test, and validator.
+- [x] `composing-api-dependencies` passed baseline, forward-test, and validator.
 - [ ] `composing-hono-middleware` passed baseline, forward-test, and validator.
 - [ ] `testing-hono-apis` passed baseline, forward-test, and validator.
 - [ ] Absorbed skills and duplicate canonical files are removed.

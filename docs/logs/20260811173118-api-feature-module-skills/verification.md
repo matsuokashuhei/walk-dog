@@ -143,3 +143,9 @@ Each skill records its baseline observation, forward-test observation, and valid
 - GREEN scenario: A fresh independent agent received the updated skill and the same consolidation inputs. It was asked to map every item to the target rule or approved replacement and to a forward-test assertion.
 - GREEN observation: The agent created entries for trigger, literal, path, command, naming, default, reference, and validation. It mapped the exact 413 literal to an exact-match assertion, the integration glob to a nested-test scope assertion, and `register…Route` to a naming assertion. It required concrete source values for commands, defaults, references, and scenarios before deletion, concluding `現時点の判定は「削除不可」です` and requiring zero unaccounted inventory items.
 - Validator: `Skill is valid!`; skill-library sync/check and `git diff --check` passed.
+
+### Follow-up review
+
+- Initial review: Critical 0, Important 1, Minor 1. The verification record needed matched RED/GREEN scenarios, observed behavior, and verbatim baseline reasons; the design approval gate also needed affirmative wording.
+- Review response: recorded the complete evidence and changed the gate to `Continue to approval when every Task has all three links.`
+- Re-review: both findings resolved; no new Critical or Important findings; `APPROVED`.

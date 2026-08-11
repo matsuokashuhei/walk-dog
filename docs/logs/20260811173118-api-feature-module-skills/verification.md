@@ -92,6 +92,16 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Absorbed canonical skills removed: `layering-error-responsibilities`, `open-closed-validation`, `separating-cross-cutting-concerns`; duplicate `composing-hono-middleware/SKILL_ja.md` removed.
 - Skill-library sync and check passed.
 
+### testing-hono-apis
+
+- Baseline prompt: plan a behavior-preserving migration of the 45-test flat auth suite into feature-first boundaries.
+- Baseline observation: the existing skill preserved endpoint contract practices but proposed `features/` and `platform/` test classifications and did not assign all internal boundary suites.
+- Forward-test observation: the updated skill placed route/use-case tests under `test/modules/auth`, adapter/repository/observability tests under `test/infrastructure`, and app/OpenAPI/composition/server tests at their assembly boundaries. It used use-case doubles for routes, provider/repository fakes for use cases, recording SDK senders for adapters, and dedicated transaction/integration tests for repositories.
+- Discovery: default nested tests use a quoted recursive pattern; `.integration.ts` is reserved for the separate integration command so suites do not overlap.
+- Behavior migration: preserve all 45 baseline test names and assertions before adding boundary coverage, then record the expanded total and compare method/path/status/request/response/OpenAPI.
+- Official review: Hono Testing, Testing Helper, and Node.js Test Runner guidance were checked before editing.
+- Validator: `Skill is valid!`; skill-library sync and check passed.
+
 ## Final checks
 
 Pending implementation.

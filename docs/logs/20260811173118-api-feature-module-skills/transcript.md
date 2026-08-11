@@ -107,3 +107,6 @@
 - `2026-08-11 22:38 JST`: Task 1 baseline confirmed that the existing design skill could reject incomplete coverage but did not explicitly require top-level Task traceability or a final affirmative-language audit.
 - `2026-08-11 22:39 JST`: Updated `explaining-specifications-and-design`. Its forward-test mapped every Task to design, deliverable, and acceptance condition, detected all missing links, and rewrote dependency constraints as affirmative ownership contracts.
 - `2026-08-11 22:40 JST`: Task 1 quick validation, skill-library sync/check, and `git diff --check` passed. Retrospective evidence was updated; next permitted action: continue.
+- `2026-08-11 22:41 JST`: Task 2 baseline confirmed that the existing session skill required a forward-test but did not require an absorption inventory or item-by-item forward-test coverage before deleting source skills.
+- `2026-08-11 22:42 JST`: Updated `run-dev-session`. Its forward-test mapped every source category to a target rule and test assertion, retained the exact public literal, integration glob, and route naming rule, and kept deletion gated on unresolved source values.
+- `2026-08-11 22:43 JST`: Task 2 quick validation, skill-library sync/check, and `git diff --check` passed. Retrospective status advanced to `implemented`; next permitted action: continue.

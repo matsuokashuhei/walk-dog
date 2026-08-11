@@ -1,6 +1,6 @@
 # API feature module skills retrospective
 
-- status: `ready-to-implement`
+- status: `implemented`
 - merged PR: #45
 - merge commit: `ba1614c2f86c39ea5d23d8b09382562373d61712`
 - follow-up branch: `agent/api-feature-module-skills-retrospective-20260811222858`
@@ -64,4 +64,11 @@ The middleware-message and integration-pattern review findings share this consol
 - baseline: The current skill judged the synthetic design incomplete, while its completion check did not explicitly require a top-level Task traceability table or a final affirmative-language audit.
 - change: `Workflow` and `Completion check` now map every top-level Task to a design section, concrete deliverable, and acceptance condition, and audit final constraint wording under `docs/specs/` and `docs/development/`.
 - forward-test: A fresh agent identified missing design coverage for Task 1 and Task 3, identified the absent Task 2 acceptance condition, and rewrote both prohibition-based dependency statements as affirmative ownership and allowed-dependency contracts.
+- validation: quick validation, skill-library sync/check, and `git diff --check` passed.
+
+### Run development session
+
+- baseline: The current session skill required baseline, forward-test, validator, and approval order, while it did not require an inventory of values absorbed from merged or deleted skills.
+- change: Skill consolidation now inventories each source skill's trigger conditions, exact public literals, paths, commands, naming conventions, project defaults, references, and validation scenarios. Every item maps to a retained target rule or an approved replacement and to a forward-test assertion.
+- forward-test: A fresh agent accounted for every inventory category, preserved the exact 413 message, integration glob, and route registration naming rule, and withheld deletion while source-specific commands, defaults, references, or scenarios remained unresolved.
 - validation: quick validation, skill-library sync/check, and `git diff --check` passed.

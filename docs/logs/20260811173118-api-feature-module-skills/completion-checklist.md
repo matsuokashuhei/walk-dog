@@ -14,4 +14,4 @@
 - [x] Absorbed skills and duplicate canonical files are removed.
 - [x] Skill library sync and check pass.
 - [x] Diff and artifact review pass.
-- [ ] Branch is pushed and PR is open.
+- [x] Branch is pushed and PR is open.

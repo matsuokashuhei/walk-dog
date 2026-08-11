@@ -366,3 +366,132 @@ Dependency checks (positive): auth use-case boundary has no `@aws-sdk` / `infras
 - Implementation, Codex completion-gap fixes, and independent Important finding fixes are recorded; fresh gates passed (targeted 45, full 87, OpenAPI, check, diff --check).
 - Independent re-review returned `APPROVED` with no Critical or Important findings.
 - Task 4 is committed as `refactor: extract authentication start slices`.
+
+## Task 5: OTP verification slices
+
+### Documentation review (AWS Cognito)
+
+Official AWS Cognito User Pools API docs reviewed for verify adapter command inputs, authentication result tokens, and ID-token subject:
+
+- ConfirmSignUp: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ConfirmSignUp.html>
+- RespondToAuthChallenge: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_RespondToAuthChallenge.html>
+- AuthenticationResultType: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AuthenticationResultType.html>
+- Cognito ID token guide: <https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-id-token.html>
+- InitiateAuth (post-confirm follow-up): <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html>
+
+Decisions:
+
+- Sign-up verify: `ConfirmSignUpCommand` then `InitiateAuthCommand` (USER_AUTH / EMAIL_OTP), using confirm Session when present and falling back to the request session.
+- Sign-in verify: `RespondToAuthChallengeCommand` with ChallengeName `EMAIL_OTP` and `EMAIL_OTP_CODE`.
+- Require AccessToken, IdToken, and RefreshToken from `AuthenticationResult`; decode the ID-token payload and require a string `sub`; return camelCase `Authentication`. Missing tokens or a non-string `sub` map to `incomplete-authentication`.
+- Documented exception mapping:
+  - `ExpiredCodeException` → `code-expired`
+  - `CodeMismatchException` → `invalid-code`
+  - `AliasExistsException` → `code-already-used`
+  - `NotAuthorizedException` → `already-confirmed` (sign-up verify) / `authentication-failed` (sign-in verify)
+  - `TooManyRequestsException` / `LimitExceededException` → `rate-limited`
+  - All other errors propagate unchanged by identity.
+- Production Cognito client factory remains `createCognitoClient(config)` with optional recording sender for infrastructure tests.
+
+### Delivered layout
+
+- `src/modules/auth/provider.ts` — extended with `verifySignUp` / `verifySignIn` and provider result unions
+- `src/modules/auth/types.ts` — `Authentication`, `VerifySignUp` / `VerifySignIn`, verify result unions
+- `src/modules/auth/contracts.ts` — verify request schemas and `authenticationResponseSchema` (classic `zod`)
+- `src/modules/auth/authentication-response.ts` — `toAuthenticationResponse` (tokens + Owner ISO timestamps)
+- `src/modules/auth/use-cases/verify-sign-up.ts` — `createVerifySignUp(provider, owners)`
+- `src/modules/auth/use-cases/verify-sign-in.ts` — `createVerifySignIn(provider, owners)`
+- `src/modules/auth/routes/sign-up-verify.ts` — exported `signUpVerifyRoute` + `registerSignUpVerifyRoute`
+- `src/modules/auth/routes/sign-in-verify.ts` — exported `signInVerifyRoute` + `registerSignInVerifyRoute`
+- `src/infrastructure/cognito/cognito-auth-provider.ts` — verify adapter operations
+- Temporary aggregator: `src/routes/index.ts` re-exports start and verify registrars from modules
+- Composition: `src/index.ts` wires verify use cases with auth provider + Owner repository
+- Tests: verify use-case suites, `cognito-auth-provider-verify.test.ts`, shared `recording-provider.ts`, expanded verify-route contract tests, fixtures cleaned of transitional helpers
+
+Removed: `src/auth/contracts.ts`, `src/auth/owner.ts`, `src/routes/sign-up-verify.ts`, `src/routes/sign-in-verify.ts`, and the unused intermediate `src/modules/auth/use-cases/verify-auth.ts`.
+
+### Use-case boundaries
+
+- Each verify use case calls the matching provider method once.
+- Owner resolution runs only for `outcome: 'authenticated'`, keyed by `authentication.subject`.
+- Known provider failures return unchanged without Owner calls.
+- Unexpected provider or Owner errors propagate by identity.
+
+### Route contract matrix
+
+Preserved Japanese messages, status codes, error codes, and retryable flags:
+
+| Endpoint | Outcome | Status | Code | Retryable |
+| --- | --- | --- | --- | --- |
+| Sign-up verify | authenticated | 200 | (tokens+owner) | — |
+| Sign-up verify | code-expired | 400 | CODE_EXPIRED | false |
+| Sign-up verify | invalid-code | 400 | INVALID_CODE | false |
+| Sign-up verify | code-already-used | 400 | CODE_ALREADY_USED | false |
+| Sign-up verify | already-confirmed | 409 | AUTHENTICATION_FAILED | false |
+| Sign-up verify | rate-limited | 429 | RATE_LIMITED | true |
+| Sign-up verify | incomplete-authentication | 500 | INTERNAL_SERVER_ERROR | true |
+| Sign-in verify | authenticated | 200 | (tokens+owner) | — |
+| Sign-in verify | code-expired | 400 | CODE_EXPIRED | true |
+| Sign-in verify | invalid-code | 400 | INVALID_CODE | false |
+| Sign-in verify | code-already-used | 400 | CODE_ALREADY_USED | false |
+| Sign-in verify | authentication-failed | 409 | AUTHENTICATION_FAILED | true |
+| Sign-in verify | rate-limited | 429 | RATE_LIMITED | true |
+| Sign-in verify | incomplete-authentication | 500 | INTERNAL_SERVER_ERROR | true |
+
+Also covered: empty/invalid schema and malformed JSON → 400 `INVALID_INPUT` full envelope with empty use-case call log; unexpected use-case throw → global 500 `INTERNAL_ERROR`. Full public paths remain `/v1/auth/sign-up/verify` and `/v1/auth/sign-in/verify`. Sign-in-verify route contract tests cover every documented use-case outcome in the matrix above, including reachable `code-already-used` → 400 `CODE_ALREADY_USED` with the complete Japanese envelope (`code` / `message` / `requestId` / `retryable`) and exactly one use-case call with the validated input.
+
+### Dependency direction
+
+Positive checks:
+
+- Auth use cases (`verify-sign-up.ts`, `verify-sign-in.ts`) import only module provider/types and `OwnerRepository`; no Hono, `@aws-sdk`, Drizzle, or `infrastructure` imports.
+- Auth contracts import `z` from classic `zod`; route modules keep `@hono/zod-openapi` for OpenAPI wiring.
+- Cognito adapter owns AWS SDK commands/exception classes and token/`sub` conversion.
+- Production code has no remaining imports of deleted `src/auth/contracts`, `src/auth/owner`, or old `src/routes/sign-{up,in}-verify` paths.
+- `src/auth/` directory is gone; only the temporary `src/routes/index.ts` aggregator remains under `src/routes/`.
+
+### Codex unused intermediate file
+
+- Detection: `npm run check` / knip reported unused `src/modules/auth/use-cases/verify-auth.ts`.
+- Cause: duplicate intermediate that re-exported both verify factories; planned and imported files are `verify-sign-up.ts` and `verify-sign-in.ts`.
+- Fix: removed only `verify-auth.ts`; kept the individual use cases and their imports in `index.ts` / tests.
+- Diff inspection: no other unfinished intermediate production files or imports remain (`authentication-response.ts` and test `recording-provider.ts` are intentional shared helpers).
+
+### Independent Important finding (sign-in CODE_ALREADY_USED route contract)
+
+- Finding: `sign-in-verify` route contract suite omitted the reachable `code-already-used` use-case outcome while checklist/verification claimed every documented outcome; production already maps that outcome to 400 `CODE_ALREADY_USED`.
+- Fix: added `POST /v1/auth/sign-in/verify returns CODE_ALREADY_USED when the alias exists` asserting status 400, complete Japanese envelope (`CODE_ALREADY_USED`, message, `requestId`, `retryable: false`), and exactly one use-case call with the validated input. Production behavior unchanged.
+
+### Gates
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Targeted: `node --import tsx --test test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts test/modules/auth/use-cases/verify-sign-up.test.ts test/modules/auth/use-cases/verify-sign-in.test.ts test/infrastructure/cognito/cognito-auth-provider.test.ts test/infrastructure/cognito/cognito-auth-provider-verify.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts` → `tests 70`, `pass 70`, `fail 0` (pre-finding)
+- OpenAPI characterization: `node --import tsx --test test/openapi.test.ts` → `tests 1`, `pass 1`, `fail 0`
+- `npm test` → `tests 129`, `pass 129`, `fail 0` (pre-finding)
+  - 45 baseline names preserved
+  - Task 1 OpenAPI + Task 2 health aggregate + Task 3 Owner repository unit tests + Task 4 start slices retained
+  - New verify use-case, Cognito verify adapter, and verify-route contract coverage included
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+### Gates after Independent Important finding fix
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Targeted: `node --import tsx --test test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts test/modules/auth/use-cases/verify-sign-up.test.ts test/modules/auth/use-cases/verify-sign-in.test.ts test/infrastructure/cognito/cognito-auth-provider.test.ts test/infrastructure/cognito/cognito-auth-provider-verify.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts` → `tests 71`, `pass 71`, `fail 0`
+- OpenAPI characterization: `node --import tsx --test test/openapi.test.ts` → `tests 1`, `pass 1`, `fail 0`
+- `npm test` → `tests 130`, `pass 130`, `fail 0`
+  - 45 baseline names preserved
+  - Prior Task slices retained
+  - Added sign-in-verify `CODE_ALREADY_USED` route contract case
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+### Task 5 completion
+
+- Implementation complete; Codex unused-intermediate finding resolved; Independent Important sign-in `CODE_ALREADY_USED` route-contract gap closed.
+- Codex freshly re-ran targeted 71/71, OpenAPI 1/1, full 130/130, `npm run check`, and `git diff --check`; every gate passed.
+- Independent re-review returned `APPROVED` with no Critical or Important findings.
+- Task 5 is committed as `refactor: extract authentication verification slices`.
+- Task 6 not started.

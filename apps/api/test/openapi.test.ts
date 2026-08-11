@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { registerSignInRoute } from '../src/modules/auth/routes/sign-in.js'
+import { registerSignInVerifyRoute } from '../src/modules/auth/routes/sign-in-verify.js'
 import { registerSignUpRoute } from '../src/modules/auth/routes/sign-up.js'
-import type { StartSignIn, StartSignUp } from '../src/modules/auth/types.js'
-import { registerSignInVerifyRoute } from '../src/routes/sign-in-verify.js'
-import { registerSignUpVerifyRoute } from '../src/routes/sign-up-verify.js'
-import { createAuthApp, mockCognito, mockDb } from './modules/auth/fixtures.js'
+import { registerSignUpVerifyRoute } from '../src/modules/auth/routes/sign-up-verify.js'
+import type { StartSignIn, StartSignUp, VerifySignIn, VerifySignUp } from '../src/modules/auth/types.js'
+import { createAuthApp } from './modules/auth/fixtures.js'
 
 type PropertySchema = {
   nullable?: boolean
@@ -61,14 +61,20 @@ const unusedStartSignIn: StartSignIn = async () => {
   throw new Error('startSignIn should not run during OpenAPI characterization')
 }
 
+const unusedVerifySignUp: VerifySignUp = async () => {
+  throw new Error('verifySignUp should not run during OpenAPI characterization')
+}
+
+const unusedVerifySignIn: VerifySignIn = async () => {
+  throw new Error('verifySignIn should not run during OpenAPI characterization')
+}
+
 function createOpenApiApp() {
-  const cognito = mockCognito()
-  const database = mockDb()
   return createAuthApp((target) => {
     registerSignUpRoute(target, unusedStartSignUp)
-    registerSignUpVerifyRoute(target, database, cognito)
+    registerSignUpVerifyRoute(target, unusedVerifySignUp)
     registerSignInRoute(target, unusedStartSignIn)
-    registerSignInVerifyRoute(target, database, cognito)
+    registerSignInVerifyRoute(target, unusedVerifySignIn)
   })
 }
 

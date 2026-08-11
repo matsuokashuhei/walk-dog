@@ -30,6 +30,12 @@ function createProviderFake(handlers: Partial<AuthProvider>): {
       }
       return handlers.startSignIn(email, session)
     },
+    async verifySignUp() {
+      throw new Error('unexpected verifySignUp')
+    },
+    async verifySignIn() {
+      throw new Error('unexpected verifySignIn')
+    },
   }
   return { provider, calls }
 }

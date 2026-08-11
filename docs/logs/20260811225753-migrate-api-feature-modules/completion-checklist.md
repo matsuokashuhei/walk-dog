@@ -38,5 +38,15 @@
 - [x] Task 4: Independent Important findings fixed — optional Cognito sender default for production factory, malformed JSON route cases, classic `zod` import in auth contracts; gates re-run (targeted, `npm test`, `npm run check`, `git diff --check`, OpenAPI characterization).
 - [x] Task 4: Independent re-review returned `APPROVED` with no Critical or Important findings.
 - [x] Task 4: Commit `refactor: extract authentication start slices`.
-- [ ] Task 5: OTP verification slices.
+- [x] Task 5: Wrote failing verify Sign Up / Sign In use-case tests (authenticated tokens+Owner, subject-only Owner resolution, every known failure short-circuit, unexpected provider/Owner identity).
+- [x] Task 5: Extended AuthProvider/types with `Authentication`, verify provider/use-case results, and `createVerifySignUp` / `createVerifySignIn` (provider once; Owner only on authenticated).
+- [x] Task 5: Extended Cognito adapter for ConfirmSignUp→InitiateAuth and RespondToAuthChallenge; require AccessToken/IdToken/RefreshToken plus string ID-token `sub`; map documented exceptions; propagate unexpected errors.
+- [x] Task 5: Moved verify routes into `modules/auth/routes` with exported `signUpVerifyRoute` / `signInVerifyRoute`, injected verify use cases, preserved Japanese messages/status/code/retryable, classic `zod` contracts.
+- [x] Task 5: Removed transitional `src/auth/contracts.ts`, `src/auth/owner.ts`, and old `src/routes/sign-{up,in}-verify.ts`; temporary aggregator re-exports module verify registrars.
+- [x] Task 5: Route contract tests cover schema/malformed JSON (no use-case calls), every documented outcome including sign-in `code-already-used` → 400 `CODE_ALREADY_USED` full envelope, unexpected global 500, full envelopes/call counts; OpenAPI characterization retained.
+- [x] Task 5: Codex found unused intermediate `use-cases/verify-auth.ts` via knip; removed it and kept authoritative `verify-sign-up.ts` / `verify-sign-in.ts`.
+- [x] Task 5: Targeted suite (70), OpenAPI (1), `npm test` (129), `npm run check`, and `git diff --check` passed after the unused-file removal.
+- [x] Task 5: Independent Important finding fixed — added sign-in-verify route contract for reachable `code-already-used` (status 400, complete Japanese `CODE_ALREADY_USED` envelope with `requestId`/`retryable`, exactly one use-case call); gates re-run (targeted 71, OpenAPI 1, `npm test` 130, `npm run check`, `git diff --check`).
+- [x] Task 5: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 5: Commit `refactor: extract authentication verification slices`.
 - [ ] Task 6: Aggregation, composition, lifecycle, and migration verification.

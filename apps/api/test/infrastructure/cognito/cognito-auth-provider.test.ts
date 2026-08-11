@@ -12,28 +12,7 @@ import {
   UserNotConfirmedException,
   UserNotFoundException,
 } from '@aws-sdk/client-cognito-identity-provider'
-import { createCognitoClient } from '../../../src/infrastructure/cognito/client.js'
-import { createCognitoAuthProvider } from '../../../src/infrastructure/cognito/cognito-auth-provider.js'
-
-const config = {
-  region: 'ap-northeast-1',
-  userPoolId: 'pool-id',
-  clientId: 'client-id',
-}
-
-function createRecordingProvider(handler: (command: unknown) => Promise<unknown>) {
-  const commands: unknown[] = []
-  const cognito = createCognitoClient(config, {
-    send: async (command: unknown) => {
-      commands.push(command)
-      return handler(command)
-    },
-  })
-  return {
-    provider: createCognitoAuthProvider(cognito),
-    commands,
-  }
-}
+import { createRecordingProvider } from './recording-provider.js'
 
 test('signUp sends SignUpCommand and converts PascalCase output', async () => {
   const { provider, commands } = createRecordingProvider(async () => ({

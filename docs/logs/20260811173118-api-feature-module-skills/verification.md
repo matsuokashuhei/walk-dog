@@ -50,6 +50,14 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Official review: Hono Validation and validator error-handling guidance were checked before editing.
 - Validator: `Skill is valid!`; skill-library sync and check passed.
 
+### implementing-api-use-cases
+
+- Baseline prompt: design verify-sign-in orchestration across Cognito, ID-token parsing, and Owner persistence.
+- Baseline observation: the independent agent produced a strong boundary from general design knowledge, so the baseline established the expected minimum rather than a failure. It kept the transaction in the repository and excluded Hono/AWS/Drizzle from the use case.
+- Forward-test observation: the new skill reproduced module-local input/result/error types, small provider/parser/repository interfaces, dependency order and short-circuit behavior, repository-owned transaction, route-owned HTTP mapping, and explicit import-boundary tests.
+- Validator: `Skill is valid!`
+- Library: `backend/architecture/implementing-api-use-cases`; sync and check passed.
+
 ## Final checks
 
 Pending implementation.

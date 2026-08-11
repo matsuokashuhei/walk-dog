@@ -27,6 +27,16 @@
 - [x] Task 3: Independent Important finding fixed — integration cleanup nested try/finally so subject-only delete is attempted and `closeDbClient(pool)` always runs; gates re-run (integration 1, targeted 14, `npm test` 51/51, `npm run check`, `git diff --check`, no drizzle migration diff).
 - [x] Task 3: Independent re-review returned `APPROVED` with no Critical or Important findings.
 - [x] Task 3: Commit `refactor: add Owner repository boundary`.
-- [ ] Task 4: Sign Up and Sign In start slices.
+- [x] Task 4: Wrote failing start Sign Up / Sign In use-case tests (challenge, username-exists→resend, already-confirmed, invalid-input, rate-limited, incomplete-challenge, unexpected identity).
+- [x] Task 4: Defined auth contracts/types/errors/provider and `createStartSignUp` / `createStartSignIn` use cases returning discriminated module results.
+- [x] Task 4: Wrote failing Cognito adapter tests for SignUp, ResendConfirmationCode, and InitiateAuth command inputs, PascalCase conversion, documented exceptions, and unexpected error identity.
+- [x] Task 4: Moved Cognito client to `infrastructure/cognito/client.ts`; production factory is `createCognitoClient(config)` with optional recording sender for infrastructure tests; added `createCognitoAuthProvider` for start operations only.
+- [x] Task 4: Moved Sign Up / Sign In start routes into `modules/auth/routes`, exported `signUpRoute` / `signInRoute`, inject use cases once, keep full public paths via temporary `routes/index.ts` aggregator.
+- [x] Task 4: Route contract tests cover documented start outcomes including Sign Up 429 and global 500; Sign In 409, incomplete-challenge 500, and global 500; malformed JSON 400 full envelope with empty use-case call log; baseline start-route names preserved.
+- [x] Task 4: `modules/auth/contracts.ts` imports `z` from classic `zod`; route OpenAPI wiring remains via `@hono/zod-openapi`.
+- [x] Task 4: Targeted suite, `npm test`, `npm run check`, and `git diff --check` passed after Codex completion-gap fixes.
+- [x] Task 4: Independent Important findings fixed — optional Cognito sender default for production factory, malformed JSON route cases, classic `zod` import in auth contracts; gates re-run (targeted, `npm test`, `npm run check`, `git diff --check`, OpenAPI characterization).
+- [x] Task 4: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 4: Commit `refactor: extract authentication start slices`.
 - [ ] Task 5: OTP verification slices.
 - [ ] Task 6: Aggregation, composition, lifecycle, and migration verification.

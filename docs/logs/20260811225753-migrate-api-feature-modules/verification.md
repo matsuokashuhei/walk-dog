@@ -273,3 +273,96 @@ Commands from `apps/api` (temporary symlink to main checkout `node_modules`, rem
 - Independent Important finding on integration pool cleanup resolved; local gates re-run after the fix.
 - Independent re-review returned `APPROVED` with no Critical or Important findings.
 - Task 3 is committed as `refactor: add Owner repository boundary`.
+
+## Task 4: Sign Up and Sign In start slices
+
+### Documentation review (AWS Cognito)
+
+Official AWS Cognito User Pools API docs reviewed for adapter command inputs and documented exceptions:
+
+- SignUp: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_SignUp.html>
+- ResendConfirmationCode: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ResendConfirmationCode.html>
+- InitiateAuth: <https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html>
+
+Decisions: adapter builds `SignUpCommand`, `ResendConfirmationCodeCommand`, and `InitiateAuthCommand` inputs; maps documented Cognito exceptions to module outcomes (`username-exists`, `already-confirmed`, `invalid-input`, `rate-limited`, `authentication-failed`, `incomplete-challenge`); propagates unexpected errors unchanged.
+
+### Documentation review (Zod)
+
+Reviewed before placing start-route schemas in `modules/auth/contracts.ts`:
+
+- Objects: <https://zod.dev/api?id=objects>
+- String formats: <https://zod.dev/api?id=string-formats>
+- Metadata: <https://zod.dev/metadata>
+
+Decision: preserve existing request/response shapes with `z.email()` for email, nested `codeDelivery` objects, and nullable session/codeDelivery on Sign Up; no added `.meta()` / `.describe()` beyond the prior OpenAPI wiring. Re-export shared `errorSchema` as `authErrorSchema`.
+
+### Documentation review (Hono routing)
+
+Reviewed for endpoint module placement and registration:
+
+- Routing: <https://hono.dev/docs/api/routing>
+- Context / request validation used via existing OpenAPIHono `c.req.valid('json')` and `app.openapi(route, handler)`
+- Testing: listener-less `app.request()` per Hono Testing Guide
+
+Decisions: one endpoint module per method/path; export `signUpRoute` / `signInRoute` and `registerSignUpRoute` / `registerSignInRoute`; keep full public paths `/v1/auth/sign-up` and `/v1/auth/sign-in` during Task 4; temporary root aggregator in `routes/index.ts` re-exports start registrars with verify routes; handlers call the injected use case once and map outcomes to existing HTTP envelopes; unexpected use-case throws flow through global `onError` (`INTERNAL_ERROR` 500).
+
+### Delivered layout
+
+- `src/modules/auth/{types,errors,provider,contracts}.ts`
+- `src/modules/auth/use-cases/{start-sign-up,start-sign-in}.ts`
+- `src/modules/auth/routes/{sign-up,sign-in}.ts` — exported `signUpRoute` / `signInRoute` plus registrars
+- `src/infrastructure/cognito/client.ts` — moved from `src/auth/cognito.ts`; production factory is `createCognitoClient(config)` with optional sender defaulting to `new CognitoIdentityProviderClient({ region: config.region })`; infrastructure tests may pass a recording sender
+- `src/infrastructure/cognito/cognito-auth-provider.ts` — start operations only
+- Temporary aggregator: `src/routes/index.ts` registers start routes from modules and verify routes from `src/routes/`
+- Composition: `src/index.ts` calls `createCognitoClient(cognitoConfig)` (no direct AWS SDK construction/import) → auth provider → start use cases → route registrars
+- Tests: `test/modules/auth/use-cases/start-sign-{up,in}.test.ts`, `test/infrastructure/cognito/cognito-auth-provider.test.ts`, updated start-route tests and fixtures
+
+Removed old paths: `src/auth/cognito.ts`, `src/routes/sign-up.ts`, `src/routes/sign-in.ts`. Verify routes remain under `src/routes/`.
+
+### Dependency direction
+
+- Auth use cases / types / errors / provider have no `infrastructure`, `@aws-sdk`, or Hono imports.
+- Auth contracts import `z` from classic `zod`; route modules keep `@hono/zod-openapi` for OpenAPI wiring.
+- Cognito adapter and client own AWS SDK commands and exception classes.
+- Start routes depend on module contracts/types and shared `App` only.
+- Production modules do not import deleted `src/auth/cognito` or old start-route paths.
+
+### Codex completion-gap fixes
+
+After Codex inspection of the uncommitted Task 4 work (targeted 38 / full 80 already green):
+
+1. Export `signUpRoute` and `signInRoute` from endpoint modules (names, paths, contracts, behavior unchanged).
+2. Add missing route contract coverage with full error envelope (`code` / `message` / `requestId` / `retryable`) and exactly one use-case call for valid input:
+   - Sign Up `rate-limited` → 429
+   - Sign Up unexpected use-case throw → global 500 `INTERNAL_ERROR`
+   - Sign In `authentication-failed` → 409
+   - Sign In `incomplete-challenge` → explicit 500 `INTERNAL_SERVER_ERROR`
+   - Sign In unexpected use-case throw → global 500 `INTERNAL_ERROR`
+3. Preserve existing baseline start-route test names.
+
+### Independent Important findings and fixes
+
+1. Production factory: restore `createCognitoClient(config)` with optional sender defaulting to `new CognitoIdentityProviderClient({ region: config.region })`; preserve returned `client` and all methods; `index.ts` calls `createCognitoClient(cognitoConfig)` and drops direct AWS SDK construction/import. Infrastructure tests may still inject a recording sender.
+2. Start-route tests: add malformed JSON body cases (syntactically invalid JSON) to both Sign Up and Sign In suites; assert shared 400 `INVALID_INPUT` full envelope and empty use-case call log; keep existing invalid-email cases and baseline names. Hono surfaces malformed JSON as `HTTPException` status 400; `app.onError` maps that status to the same shared `INVALID_INPUT` envelope as the Zod `defaultHook`.
+3. Contracts: `modules/auth/contracts.ts` imports `z` from classic `zod` (not `@hono/zod-openapi`); schemas and OpenAPI/runtime behavior unchanged; route wiring remains with `@hono/zod-openapi`.
+
+### Gates
+
+Commands from `apps/api` (temporary symlink to main checkout `node_modules`, removed before finish):
+
+- Targeted: `node --import tsx --test test/modules/auth/routes/sign-up.test.ts test/modules/auth/routes/sign-in.test.ts test/modules/auth/use-cases/start-sign-up.test.ts test/modules/auth/use-cases/start-sign-in.test.ts test/infrastructure/cognito/client.test.ts test/infrastructure/cognito/cognito-auth-provider.test.ts` → `tests 45`, `pass 45`, `fail 0`
+- `npm test` → `tests 87`, `pass 87`, `fail 0`
+  - 45 baseline names preserved
+  - Task 1 OpenAPI + Task 2 health aggregate + Task 3 Owner repository unit tests retained
+  - New start use-case, Cognito adapter, start-route contract cases, and two malformed-JSON cases included
+- OpenAPI characterization: `node --import tsx --test test/openapi.test.ts` → pass
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `git diff --check` → exit 0
+
+Dependency checks (positive): auth use-case boundary has no `@aws-sdk` / `infrastructure` / Hono imports; production code has no remaining `auth/cognito` imports; `index.ts` has no `@aws-sdk/client-cognito-identity-provider` import.
+
+### Task 4 status
+
+- Implementation, Codex completion-gap fixes, and independent Important finding fixes are recorded; fresh gates passed (targeted 45, full 87, OpenAPI, check, diff --check).
+- Independent re-review returned `APPROVED` with no Critical or Important findings.
+- Task 4 is committed as `refactor: extract authentication start slices`.

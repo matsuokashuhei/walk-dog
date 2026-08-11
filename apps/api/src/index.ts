@@ -1,10 +1,13 @@
 import { serve } from '@hono/node-server'
 import { createApp } from './app.js'
-import { createCognitoClient } from './auth/cognito.js'
+import { createCognitoClient } from './infrastructure/cognito/client.js'
+import { createCognitoAuthProvider } from './infrastructure/cognito/cognito-auth-provider.js'
 import { createDbClient } from './infrastructure/database/client.js'
 import { loadCognitoConfig, loadDatabaseConfig, loadObservabilityConfig } from './infrastructure/config/index.js'
 import { createLogger } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
+import { createStartSignIn } from './modules/auth/use-cases/start-sign-in.js'
+import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { registerSignInRoute, registerSignInVerifyRoute, registerSignUpRoute, registerSignUpVerifyRoute } from './routes/index.js'
 import { createShutdownHandler } from './server.js'
 
@@ -17,9 +20,12 @@ const app = createApp(
   { logger, setRequestId: setRequestIdTag },
   (application) => {
     const cognito = createCognitoClient(cognitoConfig)
-    registerSignUpRoute(application, cognito)
+    const authProvider = createCognitoAuthProvider(cognito)
+    const startSignUp = createStartSignUp(authProvider)
+    const startSignIn = createStartSignIn(authProvider)
+    registerSignUpRoute(application, startSignUp)
     registerSignUpVerifyRoute(application, db, cognito)
-    registerSignInRoute(application, cognito)
+    registerSignInRoute(application, startSignIn)
     registerSignInVerifyRoute(application, db, cognito)
   },
 )

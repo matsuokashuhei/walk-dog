@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { registerSignInRoute } from '../src/routes/sign-in.js'
+import { registerSignInRoute } from '../src/modules/auth/routes/sign-in.js'
+import { registerSignUpRoute } from '../src/modules/auth/routes/sign-up.js'
+import type { StartSignIn, StartSignUp } from '../src/modules/auth/types.js'
 import { registerSignInVerifyRoute } from '../src/routes/sign-in-verify.js'
-import { registerSignUpRoute } from '../src/routes/sign-up.js'
 import { registerSignUpVerifyRoute } from '../src/routes/sign-up-verify.js'
 import { createAuthApp, mockCognito, mockDb } from './modules/auth/fixtures.js'
 
@@ -52,13 +53,21 @@ const expectedPathMethods = {
   '/v1/auth/sign-in/verify': ['post'],
 } as const
 
+const unusedStartSignUp: StartSignUp = async () => {
+  throw new Error('startSignUp should not run during OpenAPI characterization')
+}
+
+const unusedStartSignIn: StartSignIn = async () => {
+  throw new Error('startSignIn should not run during OpenAPI characterization')
+}
+
 function createOpenApiApp() {
   const cognito = mockCognito()
   const database = mockDb()
   return createAuthApp((target) => {
-    registerSignUpRoute(target, cognito)
+    registerSignUpRoute(target, unusedStartSignUp)
     registerSignUpVerifyRoute(target, database, cognito)
-    registerSignInRoute(target, cognito)
+    registerSignInRoute(target, unusedStartSignIn)
     registerSignInVerifyRoute(target, database, cognito)
   })
 }

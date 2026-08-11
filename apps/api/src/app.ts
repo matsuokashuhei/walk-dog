@@ -1,6 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import * as Sentry from '@sentry/hono/node'
 import { sentry } from '@sentry/hono/node'
+import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import type { Logger } from './infrastructure/observability/logger.js'
 import { createRequestLoggerMiddleware } from './infrastructure/observability/request-middleware.js'
@@ -13,16 +14,18 @@ export type AppDependencies = {
   setRequestId: (requestId: string) => void
 }
 
+const invalidInputBody = (requestId: string) => ({
+  code: 'INVALID_INPUT' as const,
+  message: '入力内容を確認してください。',
+  requestId,
+  retryable: false as const,
+})
+
 const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) => {
   if (result.success) {
     return
   }
-  return context.json({
-    code: 'INVALID_INPUT',
-    message: '入力内容を確認してください。',
-    requestId: context.get('requestId'),
-    retryable: false,
-  }, 400)
+  return context.json(invalidInputBody(context.get('requestId')), 400)
 }
 
 export const createApp = (
@@ -51,12 +54,17 @@ export const createApp = (
     requestId: context.get('requestId'),
     retryable: false,
   }, 404))
-  app.onError((_error, context) => context.json({
-    code: 'INTERNAL_ERROR',
-    message: 'An unexpected error occurred.',
-    requestId: context.get('requestId'),
-    retryable: false,
-  }, 500))
+  app.onError((error, context) => {
+    if (error instanceof HTTPException && error.status === 400) {
+      return context.json(invalidInputBody(context.get('requestId')), 400)
+    }
+    return context.json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId: context.get('requestId'),
+      retryable: false,
+    }, 500)
+  })
   app.route('/', registerHealthRoutes())
   app.doc('/openapi.json', {
     openapi: '3.1.0',

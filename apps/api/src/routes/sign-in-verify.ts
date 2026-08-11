@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import type { App } from '../shared/http/types.js'
-import type { CognitoClient } from '../auth/cognito.js'
+import type { CognitoClient } from '../infrastructure/cognito/client.js'
 import { authenticationResponseSchema, authErrorSchema } from '../auth/contracts.js'
 import { decodeIdTokenSubject, ownerFromCognitoSubject, toAuthenticationResponse } from '../auth/owner.js'
 import type { DbInstance } from '../infrastructure/database/client.js'

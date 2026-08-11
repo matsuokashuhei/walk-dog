@@ -12,6 +12,6 @@
 - [x] `composing-hono-middleware` passed baseline, forward-test, and validator.
 - [x] `testing-hono-apis` passed baseline, forward-test, and validator.
 - [x] Absorbed skills and duplicate canonical files are removed.
-- [ ] Skill library sync and check pass.
+- [x] Skill library sync and check pass.
 - [ ] Diff and artifact review pass.
 - [ ] Branch is pushed and PR is open.

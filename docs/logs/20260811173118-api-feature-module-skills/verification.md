@@ -104,4 +104,11 @@ Each skill records its baseline observation, forward-test observation, and valid
 
 ## Final checks
 
-Pending implementation.
+- All ten target skill directories passed `quick_validate.py`.
+- `scripts/agent-skills.sh sync` and `scripts/agent-skills.sh check` passed.
+- The four absorbed skill directories and four duplicate `SKILL_ja.md` files are absent.
+- `git diff --check origin/main...HEAD` passed.
+- `apps/api npm test` passed: 45 tests, 45 passed, 0 failed.
+- `apps/api npm run check` passed: ESLint, jscpd, knip, and TypeScript completed successfully. jscpd reported the existing two route clones and the command exited successfully.
+- Net skill-library changes are limited to five additions and four absorbed-skill deletions.
+- The worktree is clean after removing the temporary ignored `node_modules` link used to reuse the baseline dependencies.

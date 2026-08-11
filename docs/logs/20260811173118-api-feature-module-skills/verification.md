@@ -125,3 +125,17 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Post-fix verification: all ten quick validators, skill sync/check, `git diff --check`, API tests 45/45, and `npm run check` passed.
 - Re-review: all prior findings resolved; no new Critical or Important findings; `Ready to merge: Yes`; `APPROVED`.
 - Publish: branch `agent/api-feature-module-skills-20260811173118` pushed; PR #45 opened against `main`.
+
+## Retrospective follow-up
+
+### explaining-specifications-and-design
+
+- Baseline: the prior skill could reject the incomplete synthetic design, while its required completion audit did not explicitly map every top-level Task or audit final affirmative wording.
+- Forward-test: the updated skill mapped all three Tasks to design section, deliverable, and acceptance condition; reported every missing link; and rewrote both dependency prohibitions as affirmative ownership contracts.
+- Validator: `Skill is valid!`; skill-library sync/check and `git diff --check` passed.
+
+### run-dev-session
+
+- Baseline: the prior skill required a named forward-test but did not require an absorption inventory for merged or deleted skills.
+- Forward-test: the updated skill accounted for every source category, retained the exact 413 public message, integration glob, and route registration naming rule, and gated deletion while source-specific values remained unresolved.
+- Validator: `Skill is valid!`; skill-library sync/check and `git diff --check` passed.

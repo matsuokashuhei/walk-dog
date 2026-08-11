@@ -1,6 +1,6 @@
 # API feature module skills retrospective
 
-- status: `awaiting-approval`
+- status: `ready-to-implement`
 - merged PR: #45
 - merge commit: `ba1614c2f86c39ea5d23d8b09382562373d61712`
 - follow-up branch: `agent/api-feature-module-skills-retrospective-20260811222858`
@@ -53,3 +53,6 @@ The middleware-message and integration-pattern review findings share this consol
 4. Open a follow-up PR against `main` containing the retrospective, transcript, and approved skill updates.
 5. After the follow-up PR merges, remove both session-owned worktrees and prune the worktree registry.
 
+## Approval
+
+- `2026-08-11`: User approved both proposed skill updates.

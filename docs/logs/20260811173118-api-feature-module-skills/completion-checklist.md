@@ -9,9 +9,9 @@
 - [x] `implementing-drizzle-repositories` passed baseline, forward-test, and validator.
 - [x] `integrating-api-adapters` passed baseline, forward-test, and validator.
 - [x] `composing-api-dependencies` passed baseline, forward-test, and validator.
-- [ ] `composing-hono-middleware` passed baseline, forward-test, and validator.
+- [x] `composing-hono-middleware` passed baseline, forward-test, and validator.
 - [ ] `testing-hono-apis` passed baseline, forward-test, and validator.
-- [ ] Absorbed skills and duplicate canonical files are removed.
+- [x] Absorbed skills and duplicate canonical files are removed.
 - [ ] Skill library sync and check pass.
 - [ ] Diff and artifact review pass.
 - [ ] Branch is pushed and PR is open.

@@ -83,6 +83,15 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: `backend/architecture/composing-api-dependencies`; sync and check passed.
 
+### composing-hono-middleware
+
+- Baseline prompt: design request ID, body limit, logging, Sentry, validation, auth, not-found, and global-error composition with extension scenarios.
+- Baseline observation: the existing skill produced a sound stack and general feature separation, while the three separate process skills held the explicit open/closed and error-layer rules.
+- Forward-test observation: the integrated skill produced the complete order, typed request/logger/principal context, public/protected route split, fixed shared failure contracts, Sentry/logging behavior, and feature-extension scenarios that require no shared middleware edits. It placed Dog fields in the Dogs contract and auth outcomes in adapter/use case/route layers.
+- Validator: `Skill is valid!`
+- Absorbed canonical skills removed: `layering-error-responsibilities`, `open-closed-validation`, `separating-cross-cutting-concerns`; duplicate `composing-hono-middleware/SKILL_ja.md` removed.
+- Skill-library sync and check passed.
+
 ## Final checks
 
 Pending implementation.

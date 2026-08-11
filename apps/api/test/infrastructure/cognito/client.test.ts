@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createCognitoClient } from '../src/auth/cognito.js'
+import { createCognitoClient } from '../../../src/auth/cognito.js'
 
 test('creates a Cognito client with provided config', () => {
   const cognito = createCognitoClient({

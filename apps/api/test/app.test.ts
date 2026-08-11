@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
 import { setRequestIdTag } from '../src/observability/sentry.js'
-import { testLogger } from './test-logger.js'
+import { testLogger } from './support/test-logger.js'
 
 const appDependencies = {
   logger: testLogger,

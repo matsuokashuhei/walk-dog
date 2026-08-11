@@ -16,6 +16,8 @@
 
 - `docs/logs/20260811225753-migrate-api-feature-modules/transcript.md`
 - `docs/logs/20260811225753-migrate-api-feature-modules/specification-review.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/completion-checklist.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/verification.md`
 - `docs/specs/2026-08-11-api-feature-module-migration-design.md`
 - `docs/development/2026-08-11-api-feature-module-migration-plan.md`
 
@@ -42,3 +44,7 @@
 - `2026-08-11 23:20 JST`: Plan artifact sync completed. `status: synced`; trigger: implementation plan creation; updated: transcript and migration plan; already current: specification review and migration design; baseline conflicts: none; next permitted action: continue.
 - `2026-08-11 23:24 JST`: Registered all six top-level Tasks in the live plan. Cursor Agent model `cursor-grok-4.5-high` is the implementation worker; Codex owns monitoring, diff inspection, fresh verification, review gates, and artifact synchronization.
 - `2026-08-11 23:25 JST`: Execution-choice artifact sync completed. `status: synced`; trigger: user-selected Cursor Agent execution; updated: transcript; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:51 JST`: Cursor Agent completed Task 1 by recording the 45-test baseline, enabling recursive unit and separate integration-test discovery, moving tests into feature-first locations, and adding an OpenAPI characterization test.
+- `2026-08-11 23:51 JST`: Codex inspection confirmed production source remained unchanged and all 45 baseline test names and assertions were preserved. Fresh verification passed 46/46 tests, lint, jscpd, knip, typecheck, and `git diff --check`.
+- `2026-08-11 23:51 JST`: Independent review identified that the OpenAPI characterization needed an exact path-to-method map and complete verify-request nullable assertions. Cursor Agent applied the focused fix; Codex repeated all gates; independent re-review returned `APPROVED` with no Critical or Important findings.
+- `2026-08-11 23:51 JST`: Task 1 artifact sync completed. `status: synced`; trigger: Task 1 review fix and completion; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { registerSignInRoute } from '../src/routes/sign-in.js'
-import { cognitoError, createAuthApp, mockCognito } from './auth-fixtures.js'
+import { registerSignInRoute } from '../../../../src/routes/sign-in.js'
+import { cognitoError, createAuthApp, mockCognito } from '../fixtures.js'
 
 const request = (app: ReturnType<typeof createAuthApp>) => app.request('/v1/auth/sign-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com' }) })
 

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { Writable } from 'node:stream'
 import test from 'node:test'
-import { createApp } from '../src/app.js'
-import { createLogger, type Logger } from '../src/observability/logger.js'
-import { setRequestIdTag } from '../src/observability/sentry.js'
-import { testLogger } from './test-logger.js'
+import { createApp } from '../../../src/app.js'
+import { createLogger, type Logger } from '../../../src/observability/logger.js'
+import { setRequestIdTag } from '../../../src/observability/sentry.js'
+import { testLogger } from '../../support/test-logger.js'
 
 function createCapturingLogger() {
   const lines: Array<Record<string, unknown>> = []

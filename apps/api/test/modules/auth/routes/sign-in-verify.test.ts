@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { registerSignInVerifyRoute } from '../src/routes/sign-in-verify.js'
-import { cognitoError, createAuthApp, mockCognito, mockDb } from './auth-fixtures.js'
+import { registerSignInVerifyRoute } from '../../../../src/routes/sign-in-verify.js'
+import { cognitoError, createAuthApp, mockCognito, mockDb } from '../fixtures.js'
 
 const request = (app: ReturnType<typeof createAuthApp>) => app.request('/v1/auth/sign-in/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'test@example.com', session: 'sign-in-session', code: '12345678' }) })
 

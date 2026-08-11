@@ -1,5 +1,5 @@
 import pino from 'pino'
-import type { Logger } from '../src/observability/logger.js'
+import type { Logger } from '../../src/observability/logger.js'
 
 export const testLogger: Logger = pino({
   level: 'silent',

@@ -16,6 +16,7 @@
 
 - `docs/logs/20260811225753-migrate-api-feature-modules/transcript.md`
 - `docs/logs/20260811225753-migrate-api-feature-modules/specification-review.md`
+- `docs/specs/2026-08-11-api-feature-module-migration-design.md`
 
 ## Conversation
 
@@ -28,3 +29,6 @@
 - `2026-08-11 22:57 JST`: Created the dedicated worktree from `origin/main`, recorded the main-checkout baseline, and registered the worktree.
 - `2026-08-11 23:02 JST`: Specification review completed with `status: ready`. The migration is implementation-local, preserves the current R1 release contract and prerequisite table, and proceeds to design.
 - `2026-08-11 23:03 JST`: Initial artifact sync completed. `status: synced`; trigger: specification review creation; updated: transcript and specification review; already current: none; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:06 JST`: User selected endpoint-by-endpoint vertical slices and approved the presented WHAT/HOW/WHY design.
+- `2026-08-11 23:08 JST`: Wrote the migration design with public-contract gates, source layout, dependency flow, vertical sequence, error ownership, test boundaries, and official Hono/Node guidance.
+- `2026-08-11 23:09 JST`: Design artifact sync completed. `status: synced`; trigger: migration design creation; updated: transcript and migration design; already current: specification review; baseline conflicts: none; next permitted action: continue.

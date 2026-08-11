@@ -15,3 +15,8 @@
 - [x] Skill library sync and check pass.
 - [x] Diff and artifact review pass.
 - [x] Branch is pushed and PR is open.
+- [x] Retrospective proposals received explicit user approval.
+- [x] `explaining-specifications-and-design` passed retrospective baseline, forward-test, and validator.
+- [x] `run-dev-session` passed retrospective baseline, forward-test, and validator.
+- [x] Retrospective status is `implemented` and the follow-up evidence is recorded.
+- [x] Retrospective follow-up review is `APPROVED` with no Critical or Important findings.

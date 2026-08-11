@@ -125,3 +125,27 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Post-fix verification: all ten quick validators, skill sync/check, `git diff --check`, API tests 45/45, and `npm run check` passed.
 - Re-review: all prior findings resolved; no new Critical or Important findings; `Ready to merge: Yes`; `APPROVED`.
 - Publish: branch `agent/api-feature-module-skills-20260811173118` pushed; PR #45 opened against `main`.
+
+## Retrospective follow-up
+
+### explaining-specifications-and-design
+
+- RED scenario: An independent agent received only the prior skill and a synthetic approval surface. The design covered PR2 database migration and stated `use caseはHonoをimportしない` and `moduleはinfrastructureを参照しない`; the plan contained Task 1 architecture, Task 2 PR2 migration, and Task 3 PR3 skill alignment. The agent was asked for the completion audit required by that skill.
+- RED observation: The agent rejected approval through the general WHAT/HOW/WHY check, while it did not perform either new audit as a required operation. Its verbatim reasons were `現行スキルにはその対応表を作る明示的な工程・完了条件がありません` and `現行スキルの完了監査項目には含まれていません`.
+- GREEN scenario: A fresh independent agent received the updated skill and the same design and plan. It was asked for an explicit Task-to-design traceability audit and affirmative-language audit.
+- GREEN observation: The agent mapped Task 1 to missing design/deliverable/acceptance, Task 2 to the PR2 section and deliverable with a missing acceptance condition, and Task 3 to missing design/deliverable/acceptance. It produced affirmative replacements assigning HTTP adaptation to presentation/router, use-case dependencies to domain types and ports, adapter implementation to infrastructure, and injection to the composition root. Its approval result was `Not ready for approval.`
+- Validator: `Skill is valid!`; skill-library sync/check and `git diff --check` passed.
+
+### run-dev-session
+
+- RED scenario: An independent agent received only the prior skill and a request to merge and delete two source skills. The supplied source material included trigger conditions, exact literal `Request body exceeds the allowed size.`, `test/**/*.integration.ts`, `register…Route`, project defaults, official references, and validation scenarios. It was asked for the required pre-deletion plan and whether every item had to appear in an absorption inventory and forward-test.
+- RED observation: The plan named baseline, forward-test, and validator, while it did not account for the supplied source values. The agent's verbatim reason was `The current skill does not require an absorption inventory mapping source content into target-skill.` It also reported that a passing forward-test could silently omit source categories.
+- GREEN scenario: A fresh independent agent received the updated skill and the same consolidation inputs. It was asked to map every item to the target rule or approved replacement and to a forward-test assertion.
+- GREEN observation: The agent created entries for trigger, literal, path, command, naming, default, reference, and validation. It mapped the exact 413 literal to an exact-match assertion, the integration glob to a nested-test scope assertion, and `register…Route` to a naming assertion. It required concrete source values for commands, defaults, references, and scenarios before deletion, concluding `現時点の判定は「削除不可」です` and requiring zero unaccounted inventory items.
+- Validator: `Skill is valid!`; skill-library sync/check and `git diff --check` passed.
+
+### Follow-up review
+
+- Initial review: Critical 0, Important 1, Minor 1. The verification record needed matched RED/GREEN scenarios, observed behavior, and verbatim baseline reasons; the design approval gate also needed affirmative wording.
+- Review response: recorded the complete evidence and changed the gate to `Continue to approval when every Task has all three links.`
+- Re-review: both findings resolved; no new Critical or Important findings; `APPROVED`.

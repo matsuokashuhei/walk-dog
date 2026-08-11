@@ -97,7 +97,7 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Baseline prompt: plan a behavior-preserving migration of the 45-test flat auth suite into feature-first boundaries.
 - Baseline observation: the existing skill preserved endpoint contract practices but proposed `features/` and `platform/` test classifications and did not assign all internal boundary suites.
 - Forward-test observation: the updated skill placed route/use-case tests under `test/modules/auth`, adapter/repository/observability tests under `test/infrastructure`, and app/OpenAPI/composition/server tests at their assembly boundaries. It used use-case doubles for routes, provider/repository fakes for use cases, recording SDK senders for adapters, and dedicated transaction/integration tests for repositories.
-- Discovery: default nested tests use a quoted recursive pattern; `.integration.ts` is reserved for the separate integration command so suites do not overlap.
+- Discovery: default nested tests use the quoted `test/**/*.test.ts` pattern; integration tests use `test/**/*.integration.ts` in the separate integration command.
 - Behavior migration: preserve all 45 baseline test names and assertions before adding boundary coverage, then record the expanded total and compare method/path/status/request/response/OpenAPI.
 - Official review: Hono Testing, Testing Helper, and Node.js Test Runner guidance were checked before editing.
 - Validator: `Skill is valid!`; skill-library sync and check passed.
@@ -112,3 +112,15 @@ Each skill records its baseline observation, forward-test observation, and valid
 - `apps/api npm run check` passed: ESLint, jscpd, knip, and TypeScript completed successfully. jscpd reported the existing two route clones and the command exited successfully.
 - Net skill-library changes are limited to five additions and four absorbed-skill deletions.
 - The worktree is clean after removing the temporary ignored `node_modules` link used to reuse the baseline dependencies.
+
+## Independent review
+
+- The required `crit` executable was unavailable in the environment. The repository's independent reviewer workflow was used as the review gate.
+- Initial review: Critical 0, Important 3, Minor 1, verdict `CHANGES REQUESTED`.
+- Important fixes:
+  - Added PR3 technical-skill alignment conditions to the architecture contract.
+  - Rewrote central specification dependencies as affirmative ownership statements.
+  - Restored exact 400/401/404/413/500 shared middleware messages.
+- Minor fix: added the `*.integration.ts` naming convention and separate integration command to `testing-hono-apis`.
+- Post-fix verification: all ten quick validators, skill sync/check, `git diff --check`, API tests 45/45, and `npm run check` passed.
+- Re-review: pending.

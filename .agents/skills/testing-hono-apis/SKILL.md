@@ -84,10 +84,13 @@ SDKまたはquery builderの巨大な部分mockを作らず、module interface�
 feature-firstのnested fileを全て実行するrecursive patternをpackage scriptへ設定する。shellがglobを事前展開しないようpatternをquoteし、Node/tsx test runnerへ渡す。
 
 ```json
-"test": "node --import tsx --test \"test/**/*.test.ts\""
+{
+  "test": "node --import tsx --test \"test/**/*.test.ts\"",
+  "test:integration": "node --import tsx --test \"test/**/*.integration.ts\""
+}
 ```
 
-実DBなどのintegration suiteを別commandにする場合、default patternとintegration patternの重複を避ける。終了codeだけでなくTAP summaryとtest名一覧でdiscoveryを確認する。
+実DBなどのintegration suiteは`*.integration.ts`で命名し、defaultの`*.test.ts`と分ける。終了codeに加えてTAP summaryとtest名一覧でdiscoveryを確認する。
 
 ## 挙動維持migration
 

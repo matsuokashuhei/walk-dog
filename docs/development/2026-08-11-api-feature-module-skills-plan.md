@@ -79,4 +79,4 @@
 - 吸収対象4 skillと変更対象の`SKILL_ja.md`が正本から除かれる。
 - `scripts/agent-skills.sh sync`と`scripts/agent-skills.sh check`が成功する。
 - `git diff --check`が成功する。
-- session artifact reviewに未解決指摘がない。
+- session artifact reviewが全コメントの解決を確認する。

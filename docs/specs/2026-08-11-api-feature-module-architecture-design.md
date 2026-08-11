@@ -67,11 +67,11 @@ HTTP route -> use case -> module interface <- infrastructure adapter
 composition root -> all concrete dependencies
 ```
 
-- use caseはHono、AWS SDK、Drizzle、`infrastructure`をimportしない。
+- use caseのimportはmoduleの型、error、provider/repository interfaceで構成する。
 - module contractはAPIのZod/OpenAPI schemaを保持する。
 - database infrastructureのschemaはDrizzle table定義を保持する。
-- infrastructureはmodule interfaceを実装し、moduleはinfrastructureの具象型を参照しない。
-- appとcomposition rootは組み立てを担当し、機能処理を保持しない。
+- infrastructureはmodule interfaceを実装し、具象型をinfrastructureとcomposition rootで扱う。
+- use caseは機能処理を担当し、appとcomposition rootは依存の組み立てを担当する。
 
 ## Route module
 
@@ -106,6 +106,16 @@ apps/api/test/
 - 現在の45件のAPIテストを移行後の機能・infrastructure構成へ対応付ける。
 - `drizzle.config.ts`は移行後のdatabase schemaを参照する。
 - `npm test`、`npm run check`、OpenAPI契約検証が成功する。
+
+## PR3 技術skill整合条件
+
+- Honoのbootstrap、routing、OpenAPI、validation、middleware、testing skillは、feature routeを`modules`、具象接続を`infrastructure`、組み立てを`app.ts`と`index.ts`へ配置する。
+- Zod skillはAPI schemaをmodule contractとして扱い、OpenAPIとruntime validationへ同じ定義を接続する。
+- Drizzle skillはtable schema、query、migration、repository実装を`infrastructure/database`で扱い、module repository interfaceへmodule型を返す。
+- Cognito skillはSDK command、response、exception、client設定を`infrastructure/cognito`で扱い、auth moduleのprovider interfaceを実装する。
+- adapter、composition、testing skillは、module interfaceを境界として具象依存、resource lifecycle、test doubleを接続する。
+- 変更対象の技術skillは日本語`SKILL.md`を正本とし、関連referenceとtrigger descriptionを同じ責務へ揃える。
+- 各skillの適用scenario、quick validator、`scripts/agent-skills.sh sync`、`scripts/agent-skills.sh check`が整合を検証する。
 
 ## 参照資料
 

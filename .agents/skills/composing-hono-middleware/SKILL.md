@@ -54,11 +54,11 @@ featureのOwner、Dog、Walk、request body fieldを横断Contextへ追加しな
 
 ## 共通failure response
 
-- body limit: HTTP 413、`PAYLOAD_TOO_LARGE`、規定message、request ID、`retryable: false`
-- authentication gate: HTTP 401、`UNAUTHENTICATED`、規定message、request ID、`retryable: false`
-- validation hook: HTTP 400、`INVALID_INPUT`、field非依存message、request ID、`retryable: false`
-- not found: HTTP 404、`NOT_FOUND`の共有error
-- unexpected error: HTTP 500、`INTERNAL_ERROR`の共有error
+- body limit: HTTP 413、`PAYLOAD_TOO_LARGE`、`Request body exceeds the allowed size.`、request ID、`retryable: false`
+- authentication gate: HTTP 401、`UNAUTHENTICATED`、`Authentication is required.`、request ID、`retryable: false`
+- validation hook: HTTP 400、`INVALID_INPUT`、`入力内容を確認してください。`、request ID、`retryable: false`
+- not found: HTTP 404、`NOT_FOUND`、`The requested resource was not found.`、request ID、`retryable: false`
+- unexpected error: HTTP 500、`INTERNAL_ERROR`、`An unexpected error occurred.`、request ID、`retryable: false`
 
 予期しないerrorをlog/Sentryへ渡し、公開responseへ内部messageやstackを含めない。期待される4xxは通常のHTTP結果として記録する。
 

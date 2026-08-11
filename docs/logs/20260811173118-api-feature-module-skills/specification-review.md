@@ -35,11 +35,11 @@
 
 ### Outside the staged plan
 
-- `.agents/skills`の責務別再編と日本語正本化は、エージェント開発手順の改善であり、製品の提供能力とリリース順序を変更しない。
+- `.agents/skills`の責務別再編と日本語正本化はエージェント開発手順を改善し、既存の製品提供能力とリリース順序を維持する。
 
 ### Plan-level
 
-- 追加のplan-level decisionはない。公開HTTP契約、提供機能、検証条件を維持する。
+- plan-level decisionは、既存の公開HTTP契約、提供機能、検証条件を維持する。
 
 ### Deferred release decisions
 
@@ -55,8 +55,8 @@
 
 ## Gaps checked
 
-- R1とR2/R3の境界を確認し、今回の変更がR1の機能追加や順序変更を含まないことを確認した。
+- R1とR2/R3の境界を確認し、今回の変更を既存のR1機能とリリース順序を維持する作業として分類した。
 - Hono R0仕様の認証、エラー、OpenAPI、Owner、PostgreSQL、観測性の前提を確認した。
 - 導入済み基盤を`apps/api/src`、`apps/api/test`、Drizzle設定とpackage scriptsで照合した。
-- staged planの前提表を変更しないため、表セルの更新は発生しない。
+- staged planの前提表は現在のrelease前提を引き続き表し、全セルを維持する。
 - 既存routing設計と未追跡planは、ユーザー承認済みの包括設計・計画に吸収される。

@@ -16,6 +16,7 @@
 ## Artifact List
 
 - `docs/logs/20260811173118-api-feature-module-skills/transcript.md`
+- `docs/logs/20260811173118-api-feature-module-skills/specification-review.md`
 
 ## Conversation
 
@@ -40,3 +41,5 @@
 
 - `2026-08-11 17:31 JST`: Created the isolated worktree from `origin/main` and fast-forwarded it to the existing local design commit `3680d1e`.
 - `2026-08-11 17:34 JST`: Initial artifact sync completed. `status: synced`; updated: transcript; already current: none; baseline conflicts: none in the worktree; next permitted action: continue.
+- `2026-08-11 17:38 JST`: Specification review completed with `status: ready`. The architecture and skill organization are implementation-local or outside the staged product plan; the public API and R1 release decisions remain unchanged.
+- `2026-08-11 17:39 JST`: Artifact sync completed. `status: synced`; updated: transcript and specification review; already current: none; baseline conflicts: none; next permitted action: continue.

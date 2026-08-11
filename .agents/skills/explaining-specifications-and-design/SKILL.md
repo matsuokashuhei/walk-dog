@@ -29,7 +29,7 @@ Structure every user-facing specification or design explanation as WHAT, then HO
 2. Draft WHAT from sources (specs, staged plan, package scripts, confirmed purpose).
 3. Draft HOW only after WHAT is complete enough to judge.
 4. Draft WHY as the shortest link from WHAT/HOW to acceptance or release fit.
-5. When a plan is part of the approval surface, map every top-level Task to its design section, concrete deliverable, and acceptance condition. Complete the design before approval when any Task lacks one of these links.
+5. When a plan is part of the approval surface, map every top-level Task to its design section, concrete deliverable, and acceptance condition. Continue to approval when every Task has all three links.
 6. For documents under `docs/specs/` and `docs/development/`, audit constraint wording in its final form. State ownership, allowed dependencies, accepted inputs or states, data sources, and acceptance conditions affirmatively.
 7. Present to the user in WHAT → HOW → WHY order. Put the same order at the top of design and plan documents when those documents are the approval surface.
 8. After the WHAT/HOW/WHY explanation is complete, if the user must approve an effect, switch to `run-dev-session` Decision Questions. Do not use Decision Questions as a substitute for the explanation.

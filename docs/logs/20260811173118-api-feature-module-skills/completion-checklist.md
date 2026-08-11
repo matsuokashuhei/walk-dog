@@ -4,7 +4,7 @@
 - [x] `organizing-api-feature-modules` passed baseline, forward-test, and validator.
 - [x] `routing-hono-apis` passed baseline, forward-test, and validator.
 - [x] `documenting-hono-openapi` passed baseline, forward-test, and validator.
-- [ ] `validating-hono-requests` passed baseline, forward-test, and validator.
+- [x] `validating-hono-requests` passed baseline, forward-test, and validator.
 - [ ] `implementing-api-use-cases` passed baseline, forward-test, and validator.
 - [ ] `implementing-drizzle-repositories` passed baseline, forward-test, and validator.
 - [ ] `integrating-api-adapters` passed baseline, forward-test, and validator.

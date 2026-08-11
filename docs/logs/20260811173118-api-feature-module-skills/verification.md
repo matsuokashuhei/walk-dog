@@ -42,6 +42,14 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Official review: Hono Zod OpenAPI example and third-party OpenAPI integration guidance were checked before editing.
 - Validator: `Skill is valid!`; skill-library sync and check passed.
 
+### validating-hono-requests
+
+- Baseline prompt: plan Dogs JSON validation, schema/hook placement, use-case input, extension behavior, and tests.
+- Baseline observation: the existing skill led the independent agent to a route-local validation hook, leaving room for endpoint-specific hook growth and duplicated response behavior.
+- Forward-test observation: the updated skill placed field rules and messages in `modules/dogs/contracts.ts`, reused the schema in the route, passed only normalized values plus Owner identity to the use case, and kept a field-agnostic shared validation hook in `app.ts`. Adding a field changed only the module schema and tests.
+- Official review: Hono Validation and validator error-handling guidance were checked before editing.
+- Validator: `Skill is valid!`; skill-library sync and check passed.
+
 ## Final checks
 
 Pending implementation.

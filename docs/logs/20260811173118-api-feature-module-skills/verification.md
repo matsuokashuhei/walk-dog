@@ -66,6 +66,14 @@ Each skill records its baseline observation, forward-test observation, and valid
 - Validator: `Skill is valid!`
 - Library: `data/drizzle/implementing-drizzle-repositories`; sync and check passed.
 
+### integrating-api-adapters
+
+- Baseline prompt: design a Cognito SignInProvider adapter with command/result/error conversion, injection, lifecycle, and tests.
+- Baseline observation: the independent agent produced the target adapter boundary and also exposed current route-level AWS responsibilities, establishing a strong minimum.
+- Forward-test observation: the new skill produced an AWS-free module port, exact command conversion, required-token validation, documented SDK exception mapping with `instanceof`, unknown-error identity propagation, injected long-lived client/config, composition-owned shutdown, and adapter-focused tests. It kept JWT subject parsing as a separate capability and route/use-case responsibilities outside the adapter.
+- Validator: `Skill is valid!`
+- Library: `backend/architecture/integrating-api-adapters`; sync and check passed.
+
 ## Final checks
 
 Pending implementation.

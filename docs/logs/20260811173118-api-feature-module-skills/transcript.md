@@ -17,6 +17,10 @@
 
 - `docs/logs/20260811173118-api-feature-module-skills/transcript.md`
 - `docs/logs/20260811173118-api-feature-module-skills/specification-review.md`
+- `docs/logs/20260811173118-api-feature-module-skills/completion-checklist.md`
+- `docs/logs/20260811173118-api-feature-module-skills/verification.md`
+- `docs/specs/2026-08-11-api-feature-module-architecture-design.md`
+- `docs/development/2026-08-11-api-feature-module-skills-plan.md`
 
 ## Conversation
 
@@ -43,3 +47,7 @@
 - `2026-08-11 17:34 JST`: Initial artifact sync completed. `status: synced`; updated: transcript; already current: none; baseline conflicts: none in the worktree; next permitted action: continue.
 - `2026-08-11 17:38 JST`: Specification review completed with `status: ready`. The architecture and skill organization are implementation-local or outside the staged product plan; the public API and R1 release decisions remain unchanged.
 - `2026-08-11 17:39 JST`: Artifact sync completed. `status: synced`; updated: transcript and specification review; already current: none; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 17:47 JST`: Replaced the routing-only design with the approved feature-first architecture contract and comprehensive eleven-task PR1 plan. The untracked routing plan's baseline/forward-test and canonical-source requirements are retained in Task 3.
+- `2026-08-11 17:48 JST`: Artifact sync completed. `status: synced`; updated: transcript, checklist, verification, architecture design, and implementation plan; already current: specification review; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 17:51 JST`: Task 1 architecture contract passed content checks and `git diff --check`.
+- `2026-08-11 17:52 JST`: Artifact sync completed. `status: synced`; updated: transcript, checklist, and verification; already current: design, plan, and specification review; baseline conflicts: none; next permitted action: continue.

@@ -7,15 +7,11 @@ const cognitoConfigSchema = z.object({
 })
 
 const databaseConfigSchema = z.object({
-  DATABASE_URL: z
-    .url({
-      error: (issue) => issue.input === undefined
-        ? 'DATABASE_URL is required'
-        : 'DATABASE_URL must be a valid URL',
-    })
-    .refine((value) => value.startsWith('postgresql://'), {
-      error: 'DATABASE_URL must be a PostgreSQL URL',
-    }),
+  POSTGRES_USER: z.string().nonempty({ error: 'POSTGRES_USER must be a non-empty string' }),
+  POSTGRES_PASSWORD: z.string().nonempty({ error: 'POSTGRES_PASSWORD must be a non-empty string' }),
+  POSTGRES_DB: z.string().nonempty({ error: 'POSTGRES_DB must be a non-empty string' }),
+  POSTGRES_HOST: z.string().nonempty({ error: 'POSTGRES_HOST must be a non-empty string' }),
+  POSTGRES_PORT: z.coerce.number().int().positive({ error: 'POSTGRES_PORT must be a positive integer' }),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 })
 
@@ -33,11 +29,24 @@ const observabilityConfigSchema = z.object({
   SENTRY_DSN: z.string().optional(),
 })
 
-export function loadDatabaseConfig(env: NodeJS.ProcessEnv): { databaseUrl: string; poolMax: number } {
+export type DatabaseConfig = {
+  user: string
+  password: string
+  database: string
+  host: string
+  port: number
+  poolMax: number
+}
+
+export function loadDatabaseConfig(env: NodeJS.ProcessEnv): DatabaseConfig {
   const config = databaseConfigSchema.parse(env)
 
   return {
-    databaseUrl: config.DATABASE_URL,
+    user: config.POSTGRES_USER,
+    password: config.POSTGRES_PASSWORD,
+    database: config.POSTGRES_DB,
+    host: config.POSTGRES_HOST,
+    port: config.POSTGRES_PORT,
     poolMax: config.DATABASE_POOL_MAX,
   }
 }

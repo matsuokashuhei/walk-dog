@@ -2,9 +2,21 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/config.js'
 
-test('loads DATABASE_URL and defaults DATABASE_POOL_MAX to 10', () => {
-  assert.deepEqual(loadDatabaseConfig({ DATABASE_URL: 'postgresql://walk:dog@localhost/walkdog' }), {
-    databaseUrl: 'postgresql://walk:dog@localhost/walkdog',
+const validPostgresEnv = {
+  POSTGRES_USER: 'walkdog',
+  POSTGRES_PASSWORD: 'walkdog',
+  POSTGRES_DB: 'walkdog',
+  POSTGRES_HOST: 'postgres',
+  POSTGRES_PORT: '5432',
+}
+
+test('loads POSTGRES_* and defaults DATABASE_POOL_MAX to 10', () => {
+  assert.deepEqual(loadDatabaseConfig(validPostgresEnv), {
+    user: 'walkdog',
+    password: 'walkdog',
+    database: 'walkdog',
+    host: 'postgres',
+    port: 5432,
     poolMax: 10,
   })
 })
@@ -12,27 +24,36 @@ test('loads DATABASE_URL and defaults DATABASE_POOL_MAX to 10', () => {
 test('loads an explicit DATABASE_POOL_MAX', () => {
   assert.equal(
     loadDatabaseConfig({
-      DATABASE_URL: 'postgresql://walk:dog@localhost/walkdog',
+      ...validPostgresEnv,
       DATABASE_POOL_MAX: '4',
     }).poolMax,
     4,
   )
 })
 
-test('rejects a missing DATABASE_URL', () => {
-  assert.throws(() => loadDatabaseConfig({}), /DATABASE_URL is required/)
+test('rejects a missing POSTGRES_USER', () => {
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_USER?: string }).POSTGRES_USER
+  assert.throws(() => loadDatabaseConfig(env), /POSTGRES_USER/)
 })
 
-test('rejects an empty DATABASE_URL', () => {
-  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: '' }), /DATABASE_URL must be a valid URL/)
+test('rejects a missing POSTGRES_HOST', () => {
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_HOST?: string }).POSTGRES_HOST
+  assert.throws(() => loadDatabaseConfig(env), /POSTGRES_HOST/)
 })
 
-test('rejects a non-PostgreSQL DATABASE_URL', () => {
-  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: 'https://example.com/database' }), /DATABASE_URL must be a PostgreSQL URL/)
+test('rejects a missing POSTGRES_PORT', () => {
+  const env = { ...validPostgresEnv }
+  delete (env as { POSTGRES_PORT?: string }).POSTGRES_PORT
+  assert.throws(() => loadDatabaseConfig(env), /POSTGRES_PORT/)
 })
 
-test('rejects an invalid DATABASE_URL', () => {
-  assert.throws(() => loadDatabaseConfig({ DATABASE_URL: 'not-a-url' }), /DATABASE_URL must be a valid URL/)
+test('rejects a non-positive POSTGRES_PORT', () => {
+  assert.throws(
+    () => loadDatabaseConfig({ ...validPostgresEnv, POSTGRES_PORT: '0' }),
+    /POSTGRES_PORT/,
+  )
 })
 
 test('loads ENVIRONMENT, RELEASE, and an empty SENTRY_DSN as disabled', () => {

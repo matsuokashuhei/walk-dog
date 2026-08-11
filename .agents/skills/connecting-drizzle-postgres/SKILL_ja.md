@@ -1,6 +1,6 @@
 ---
 name: connecting-drizzle-postgres
-description: Drizzle PostgreSQL クライアントを node-postgres Pool、接続設定、シャットダウンとともに作成・構成する。DATABASE_URL、pg.Pool、drizzle()、接続ライフサイクルの配線時に使用する。テーブルスキーマ定義、SQL CRUD、リレーショナルクエリ、マイグレーション生成のみには使用しない。
+description: Drizzle PostgreSQL クライアントを node-postgres Pool、接続設定、シャットダウンとともに作成・構成する。POSTGRES_*、DATABASE_POOL_MAX、pg.Pool、drizzle()、接続ライフサイクルの配線時に使用する。テーブルスキーマ定義、SQL CRUD、リレーショナルクエリ、マイグレーション生成のみには使用しない。
 ---
 
 # Drizzle Postgres の接続
@@ -18,7 +18,9 @@ description: Drizzle PostgreSQL クライアントを node-postgres Pool、接�
 ## プロジェクトのデフォルト
 
 - プロセス（API またはワーカー）ごとに 1 つの `pg.Pool` を作成し、Drizzle に渡す。
-- 接続 URL と `DATABASE_POOL_MAX`（デフォルト 10）には検証済み環境変数を使用する。
+- `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_HOST` / `POSTGRES_PORT` と `DATABASE_POOL_MAX`（デフォルト 10）には検証済み環境変数を使用する。
+- Pool には個別パラメータ（`host` / `port` / `user` / `password` / `database` / `max`）を渡す。別環境変数 `DATABASE_URL` は置かない。
+- drizzle-kit では、同じ `POSTGRES_*` から必要に応じて `dbCredentials.url` を組み立てる。
 - シャットダウン時に Pool をクローズし、接続を PostgreSQL に返す。
 - リレーショナルクエリで `db.query` が必要な場合は、スキーマモジュールを `drizzle()` に渡す。
 

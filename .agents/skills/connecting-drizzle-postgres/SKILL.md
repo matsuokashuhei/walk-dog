@@ -1,6 +1,6 @@
 ---
 name: connecting-drizzle-postgres
-description: Create and configure the Drizzle PostgreSQL client with node-postgres Pool, connection settings, and shutdown. Use when wiring DATABASE_URL, pg.Pool, drizzle(), or connection lifecycle. Do not use for table schema definitions, SQL CRUD, relational queries, or migration generation alone.
+description: Create and configure the Drizzle PostgreSQL client with node-postgres Pool, connection settings, and shutdown. Use when wiring POSTGRES_* credentials, DATABASE_POOL_MAX, pg.Pool, drizzle(), or connection lifecycle. Do not use for table schema definitions, SQL CRUD, relational queries, or migration generation alone.
 ---
 
 # Connecting Drizzle Postgres
@@ -18,7 +18,9 @@ Read the current official Drizzle PostgreSQL connection docs before changing dat
 ## Project defaults
 
 - Create one `pg.Pool` per process (API or worker) and pass it to Drizzle.
-- Use validated env for the connection URL and `DATABASE_POOL_MAX` (default 10).
+- Use validated env for `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT`, and `DATABASE_POOL_MAX` (default 10).
+- Pass discrete Pool options (`host`, `port`, `user`, `password`, `database`, `max`); do not store a separate `DATABASE_URL` env var.
+- For drizzle-kit, derive `dbCredentials.url` from the same `POSTGRES_*` values when needed.
 - On shutdown, close the Pool so connections return to PostgreSQL.
 - Pass schema modules into `drizzle()` when relational queries need `db.query`.
 

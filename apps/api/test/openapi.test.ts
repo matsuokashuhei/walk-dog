@@ -1,18 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createApp } from '../src/app.js'
-import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
-import type { AccessTokenVerifier } from '../src/infrastructure/cognito/access-token-verifier.js'
-import { registerAuthRoutes } from '../src/modules/auth/index.js'
-import type {
-  SignOut,
-  StartSignIn,
-  StartSignUp,
-  VerifySignIn,
-  VerifySignUp,
-} from '../src/modules/auth/types.js'
-import { registerHealthRoutes } from '../src/modules/health/index.js'
-import { testLogger } from './support/test-logger.js'
+import { createRegisteredAuthApp } from './modules/auth/fixtures.js'
 
 type PropertySchema = {
   nullable?: boolean
@@ -28,6 +16,7 @@ type JsonSchema = {
 
 type OpenApiOperation = {
   responses: Record<string, unknown>
+  security?: Array<Record<string, string[]>>
   requestBody?: {
     content: {
       'application/json': {
@@ -40,7 +29,10 @@ type OpenApiOperation = {
 type OpenApiDocument = {
   openapi: string
   paths: Record<string, Record<string, OpenApiOperation>>
-  components: { schemas: Record<string, unknown> }
+  components: {
+    schemas: Record<string, unknown>
+    securitySchemes?: Record<string, unknown>
+  }
 }
 
 const expectedOperations = {
@@ -62,50 +54,15 @@ const expectedPathMethods = {
   '/v1/auth/sign-out': ['post'],
 } as const
 
-const unusedStartSignUp: StartSignUp = async () => {
-  throw new Error('startSignUp should not run during OpenAPI characterization')
-}
-
-const unusedStartSignIn: StartSignIn = async () => {
-  throw new Error('startSignIn should not run during OpenAPI characterization')
-}
-
-const unusedVerifySignUp: VerifySignUp = async () => {
-  throw new Error('verifySignUp should not run during OpenAPI characterization')
-}
-
-const unusedVerifySignIn: VerifySignIn = async () => {
-  throw new Error('verifySignIn should not run during OpenAPI characterization')
-}
-
-const unusedSignOut: SignOut = async () => {
-  throw new Error('signOut should not run during OpenAPI characterization')
-}
-
-const unusedAccessTokenVerifier: AccessTokenVerifier = {
-  async verify() {
-    throw new Error('accessTokenVerifier should not run during OpenAPI characterization')
-  },
-}
+const publicAuthPaths = [
+  '/v1/auth/sign-up',
+  '/v1/auth/sign-up/verify',
+  '/v1/auth/sign-in',
+  '/v1/auth/sign-in/verify',
+] as const
 
 function createOpenApiApp() {
-  return createApp(
-    { logger: testLogger, setRequestId: setRequestIdTag },
-    [
-      { path: '/', app: registerHealthRoutes() },
-      {
-        path: '/v1/auth',
-        app: registerAuthRoutes({
-          startSignUp: unusedStartSignUp,
-          verifySignUp: unusedVerifySignUp,
-          startSignIn: unusedStartSignIn,
-          verifySignIn: unusedVerifySignIn,
-          signOut: unusedSignOut,
-          accessTokenVerifier: unusedAccessTokenVerifier,
-        }),
-      },
-    ],
-  )
+  return createRegisteredAuthApp()
 }
 
 function operationAt(document: OpenApiDocument, path: string, method: string): OpenApiOperation {
@@ -160,6 +117,11 @@ test('GET /openapi.json characterizes health and auth operations', async () => {
   assert.equal(response.status, 200)
   assert.equal(document.openapi, '3.1.0')
   assert.ok('Error' in document.components.schemas)
+  assert.deepEqual(document.components.securitySchemes?.BearerAuth, {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT',
+  })
   assert.deepEqual(pathMethodMap(document), expectedPathMethods)
 
   assertOperationStatuses(document, '/health', 'get', expectedOperations['/health'].get)
@@ -168,6 +130,14 @@ test('GET /openapi.json characterizes health and auth operations', async () => {
   assertOperationStatuses(document, '/v1/auth/sign-in', 'post', expectedOperations['/v1/auth/sign-in'].post)
   assertOperationStatuses(document, '/v1/auth/sign-in/verify', 'post', expectedOperations['/v1/auth/sign-in/verify'].post)
   assertOperationStatuses(document, '/v1/auth/sign-out', 'post', expectedOperations['/v1/auth/sign-out'].post)
+
+  assert.deepEqual(
+    operationAt(document, '/v1/auth/sign-out', 'post').security,
+    [{ BearerAuth: [] }],
+  )
+  for (const path of publicAuthPaths) {
+    assert.equal(operationAt(document, path, 'post').security, undefined)
+  }
 
   assertEmailRequestSchema(requestSchema(document, '/v1/auth/sign-up'))
   assertEmailRequestSchema(requestSchema(document, '/v1/auth/sign-in'))

@@ -1,51 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AccessTokenVerifier } from '../../../src/infrastructure/cognito/access-token-verifier.js'
 import { registerAuthRoutes } from '../../../src/modules/auth/index.js'
-import type {
-  SignOut,
-  StartSignIn,
-  StartSignUp,
-  VerifySignIn,
-  VerifySignUp,
-} from '../../../src/modules/auth/types.js'
 import type { AppVariables } from '../../../src/shared/http/types.js'
-
-const unusedStartSignUp: StartSignUp = async () => {
-  throw new Error('startSignUp should not run during auth aggregate OpenAPI checks')
-}
-
-const unusedStartSignIn: StartSignIn = async () => {
-  throw new Error('startSignIn should not run during auth aggregate OpenAPI checks')
-}
-
-const unusedVerifySignUp: VerifySignUp = async () => {
-  throw new Error('verifySignUp should not run during auth aggregate OpenAPI checks')
-}
-
-const unusedVerifySignIn: VerifySignIn = async () => {
-  throw new Error('verifySignIn should not run during auth aggregate OpenAPI checks')
-}
-
-const unusedSignOut: SignOut = async () => {
-  throw new Error('signOut should not run during auth aggregate OpenAPI checks')
-}
-
-const unusedAccessTokenVerifier: AccessTokenVerifier = {
-  async verify() {
-    throw new Error('accessTokenVerifier should not run during auth aggregate OpenAPI checks')
-  },
-}
-
-const authRouteDependencies = {
-  startSignUp: unusedStartSignUp,
-  verifySignUp: unusedVerifySignUp,
-  startSignIn: unusedStartSignIn,
-  verifySignIn: unusedVerifySignIn,
-  signOut: unusedSignOut,
-  accessTokenVerifier: unusedAccessTokenVerifier,
-}
+import { unusedAuthRouteDependencies } from './fixtures.js'
 
 const expectedRelativePathMethods = {
   '/sign-up': ['post'],
@@ -70,7 +28,7 @@ function pathMethodMap(paths: Record<string, Record<string, unknown>>): Record<s
 }
 
 test('registerAuthRoutes exposes each auth endpoint once on relative paths', async () => {
-  const authRoutes = registerAuthRoutes(authRouteDependencies)
+  const authRoutes = registerAuthRoutes(unusedAuthRouteDependencies)
   const response = await authRoutes.request('/openapi.json')
   assert.equal(response.status, 404)
 
@@ -88,7 +46,7 @@ test('registerAuthRoutes exposes each auth endpoint once on relative paths', asy
 })
 
 test('registerAuthRoutes child OpenAPI registry lists relative method-path pairs once', () => {
-  const authRoutes = registerAuthRoutes(authRouteDependencies)
+  const authRoutes = registerAuthRoutes(unusedAuthRouteDependencies)
   const relativePathMethods: Record<string, string[]> = {}
   let routeCount = 0
   for (const definition of authRoutes.openAPIRegistry.definitions) {

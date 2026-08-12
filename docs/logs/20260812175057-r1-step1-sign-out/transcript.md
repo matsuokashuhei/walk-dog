@@ -15,6 +15,8 @@
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-spec-mockups.html`
   - `docs/development/staged-development.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/design.md`
+  - `docs/development/2026-08-12-r1-step1-sign-out-plan.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/plan.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
 
 ## Messages
@@ -130,3 +132,26 @@ OK
   - next permitted action: await design approval
 - baseline conflicts: none
 - next permitted action: await design approval
+
+### User
+
+ok
+
+### Assistant
+
+設計承認後、writing-plans で Sign Out 実装計画（Task 1–6）を作成し、承認と実行方式の選択を求めた。
+
+## Sync
+
+- status: synced
+- trigger: implementation plan created
+- artifacts updated: transcript, plan.md, docs/development/2026-08-12-r1-step1-sign-out-plan.md, specification-review.md
+- artifacts already current: design.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: plan approval
+  - review state: ready
+  - commit state: plan pending commit
+  - publication state: not published
+  - next permitted action: await plan approval
+- baseline conflicts: none
+- next permitted action: await plan approval

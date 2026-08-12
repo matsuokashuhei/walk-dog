@@ -14,6 +14,7 @@
   - `docs/logs/20260812175057-r1-step1-sign-out/specification-review.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-spec-mockups.html`
   - `docs/development/staged-development.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/design.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
 
 ## Messages
@@ -106,3 +107,26 @@ Sign Out 仕様を再作成した。Active Walk ありは確認ダイアログ�
   - next permitted action: await Settings placement confirmation
 - baseline conflicts: none
 - next permitted action: await Settings placement confirmation
+
+### User
+
+OK
+
+### Assistant
+
+`/settings`（Sign Out + 法務）を確定。specification-review を ready にし、Sign Out 設計を WHAT/HOW/WHY で作成して承認待ちにした。
+
+## Sync
+
+- status: synced
+- trigger: Settings placement confirmed; design drafted
+- artifacts updated: transcript, specification-review.md, design.md
+- artifacts already current: sign-out-specification.md, sign-out-spec-mockups.html, staged-development.md
+- cross-artifact matrix:
+  - task phase: design approval
+  - review state: ready
+  - commit state: design pending commit
+  - publication state: not published
+  - next permitted action: await design approval
+- baseline conflicts: none
+- next permitted action: await design approval

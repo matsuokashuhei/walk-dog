@@ -70,7 +70,15 @@ export type VerifySignInResult =
   }
   | { outcome: 'incomplete-authentication' }
 
+export type SignOutResult =
+  | { outcome: 'signed-out' }
+  | { outcome: Extract<AuthFailure, 'authentication-failed' | 'rate-limited'> }
+
 export type StartSignUp = (input: { email: string }) => Promise<StartSignUpResult>
 export type StartSignIn = (input: { email: string }) => Promise<StartSignInResult>
 export type VerifySignUp = (input: VerifySignUpInput) => Promise<VerifySignUpResult>
 export type VerifySignIn = (input: VerifySignInInput) => Promise<VerifySignInResult>
+export type SignOut = (input: {
+  cognitoSubject: string
+  accessToken: string
+}) => Promise<SignOutResult>

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import type { AccessTokenVerifier } from '../../../src/infrastructure/cognito/access-token-verifier.js'
 import { registerAuthRoutes } from '../../../src/modules/auth/index.js'
 import type {
+  SignOut,
   StartSignIn,
   StartSignUp,
   VerifySignIn,
@@ -26,11 +28,31 @@ const unusedVerifySignIn: VerifySignIn = async () => {
   throw new Error('verifySignIn should not run during auth aggregate OpenAPI checks')
 }
 
+const unusedSignOut: SignOut = async () => {
+  throw new Error('signOut should not run during auth aggregate OpenAPI checks')
+}
+
+const unusedAccessTokenVerifier: AccessTokenVerifier = {
+  async verify() {
+    throw new Error('accessTokenVerifier should not run during auth aggregate OpenAPI checks')
+  },
+}
+
+const authRouteDependencies = {
+  startSignUp: unusedStartSignUp,
+  verifySignUp: unusedVerifySignUp,
+  startSignIn: unusedStartSignIn,
+  verifySignIn: unusedVerifySignIn,
+  signOut: unusedSignOut,
+  accessTokenVerifier: unusedAccessTokenVerifier,
+}
+
 const expectedRelativePathMethods = {
   '/sign-up': ['post'],
   '/sign-up/verify': ['post'],
   '/sign-in': ['post'],
   '/sign-in/verify': ['post'],
+  '/sign-out': ['post'],
 } as const
 
 const expectedPublicPathMethods = {
@@ -38,6 +60,7 @@ const expectedPublicPathMethods = {
   '/v1/auth/sign-up/verify': ['post'],
   '/v1/auth/sign-in': ['post'],
   '/v1/auth/sign-in/verify': ['post'],
+  '/v1/auth/sign-out': ['post'],
 } as const
 
 function pathMethodMap(paths: Record<string, Record<string, unknown>>): Record<string, string[]> {
@@ -47,12 +70,7 @@ function pathMethodMap(paths: Record<string, Record<string, unknown>>): Record<s
 }
 
 test('registerAuthRoutes exposes each auth endpoint once on relative paths', async () => {
-  const authRoutes = registerAuthRoutes({
-    startSignUp: unusedStartSignUp,
-    verifySignUp: unusedVerifySignUp,
-    startSignIn: unusedStartSignIn,
-    verifySignIn: unusedVerifySignIn,
-  })
+  const authRoutes = registerAuthRoutes(authRouteDependencies)
   const response = await authRoutes.request('/openapi.json')
   assert.equal(response.status, 404)
 
@@ -70,12 +88,7 @@ test('registerAuthRoutes exposes each auth endpoint once on relative paths', asy
 })
 
 test('registerAuthRoutes child OpenAPI registry lists relative method-path pairs once', () => {
-  const authRoutes = registerAuthRoutes({
-    startSignUp: unusedStartSignUp,
-    verifySignUp: unusedVerifySignUp,
-    startSignIn: unusedStartSignIn,
-    verifySignIn: unusedVerifySignIn,
-  })
+  const authRoutes = registerAuthRoutes(authRouteDependencies)
   const relativePathMethods: Record<string, string[]> = {}
   let routeCount = 0
   for (const definition of authRoutes.openAPIRegistry.definitions) {
@@ -87,5 +100,5 @@ test('registerAuthRoutes child OpenAPI registry lists relative method-path pairs
   }
 
   assert.deepEqual(relativePathMethods, expectedRelativePathMethods)
-  assert.equal(routeCount, 4)
+  assert.equal(routeCount, 5)
 })

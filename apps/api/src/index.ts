@@ -26,11 +26,13 @@ import {
   type Logger,
 } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
+import { createAbsentActiveWalkCommands } from './infrastructure/walks/absent-active-walk-commands.js'
 import {
   registerAuthRoutes,
   type AuthRouteDependencies,
 } from './modules/auth/index.js'
 import type { AuthProvider } from './modules/auth/provider.js'
+import { createSignOut } from './modules/auth/use-cases/sign-out.js'
 import { createStartSignIn } from './modules/auth/use-cases/start-sign-in.js'
 import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { createVerifySignIn } from './modules/auth/use-cases/verify-sign-in.js'
@@ -100,6 +102,12 @@ const defaultFactories: ApplicationFactories = {
       verifySignUp: createVerifySignUp(authProvider, ownerRepository),
       startSignIn: createStartSignIn(authProvider),
       verifySignIn: createVerifySignIn(authProvider, ownerRepository),
+      signOut: createSignOut(ownerRepository, createAbsentActiveWalkCommands(), authProvider),
+      accessTokenVerifier: {
+        verify() {
+          return Promise.reject(new Error('access token verifier is not composed'))
+        },
+      },
     }
   },
   createAuthRoutes(dependencies) {

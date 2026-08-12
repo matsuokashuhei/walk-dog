@@ -2,8 +2,15 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
 import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
+import type { AccessTokenVerifier } from '../src/infrastructure/cognito/access-token-verifier.js'
 import { registerAuthRoutes } from '../src/modules/auth/index.js'
-import type { StartSignIn, StartSignUp, VerifySignIn, VerifySignUp } from '../src/modules/auth/types.js'
+import type {
+  SignOut,
+  StartSignIn,
+  StartSignUp,
+  VerifySignIn,
+  VerifySignUp,
+} from '../src/modules/auth/types.js'
 import { registerHealthRoutes } from '../src/modules/health/index.js'
 import { testLogger } from './support/test-logger.js'
 
@@ -42,6 +49,7 @@ const expectedOperations = {
   '/v1/auth/sign-up/verify': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-in': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-in/verify': { post: ['200', '400', '409', '429', '500'] },
+  '/v1/auth/sign-out': { post: ['204', '400', '401', '429', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -51,6 +59,7 @@ const expectedPathMethods = {
   '/v1/auth/sign-up/verify': ['post'],
   '/v1/auth/sign-in': ['post'],
   '/v1/auth/sign-in/verify': ['post'],
+  '/v1/auth/sign-out': ['post'],
 } as const
 
 const unusedStartSignUp: StartSignUp = async () => {
@@ -69,6 +78,16 @@ const unusedVerifySignIn: VerifySignIn = async () => {
   throw new Error('verifySignIn should not run during OpenAPI characterization')
 }
 
+const unusedSignOut: SignOut = async () => {
+  throw new Error('signOut should not run during OpenAPI characterization')
+}
+
+const unusedAccessTokenVerifier: AccessTokenVerifier = {
+  async verify() {
+    throw new Error('accessTokenVerifier should not run during OpenAPI characterization')
+  },
+}
+
 function createOpenApiApp() {
   return createApp(
     { logger: testLogger, setRequestId: setRequestIdTag },
@@ -81,6 +100,8 @@ function createOpenApiApp() {
           verifySignUp: unusedVerifySignUp,
           startSignIn: unusedStartSignIn,
           verifySignIn: unusedVerifySignIn,
+          signOut: unusedSignOut,
+          accessTokenVerifier: unusedAccessTokenVerifier,
         }),
       },
     ],
@@ -146,6 +167,7 @@ test('GET /openapi.json characterizes health and auth operations', async () => {
   assertOperationStatuses(document, '/v1/auth/sign-up/verify', 'post', expectedOperations['/v1/auth/sign-up/verify'].post)
   assertOperationStatuses(document, '/v1/auth/sign-in', 'post', expectedOperations['/v1/auth/sign-in'].post)
   assertOperationStatuses(document, '/v1/auth/sign-in/verify', 'post', expectedOperations['/v1/auth/sign-in/verify'].post)
+  assertOperationStatuses(document, '/v1/auth/sign-out', 'post', expectedOperations['/v1/auth/sign-out'].post)
 
   assertEmailRequestSchema(requestSchema(document, '/v1/auth/sign-up'))
   assertEmailRequestSchema(requestSchema(document, '/v1/auth/sign-in'))

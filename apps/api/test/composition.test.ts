@@ -68,6 +68,14 @@ test('createApplication shares one database and Cognito client through the objec
     verifySignIn: async () => {
       throw new Error('unused')
     },
+    signOut: async () => {
+      throw new Error('unused')
+    },
+    accessTokenVerifier: {
+      async verify() {
+        throw new Error('unused')
+      },
+    },
   } satisfies AuthRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const healthRoutes = new OpenAPIHono<{ Variables: AppVariables }>()

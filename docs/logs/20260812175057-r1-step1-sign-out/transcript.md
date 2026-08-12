@@ -240,3 +240,19 @@ Chose push + PR. Ran pre-crit sync and session Crit (CHANGES_REQUESTED). Applied
   - next permitted action: crit
 - baseline conflicts: none
 - next permitted action: crit
+
+## Sync
+
+- status: synced
+- trigger: pre-publish after Crit APPROVED
+- artifacts updated: transcript, crit-review.md, specification-review.md
+- artifacts already current: design.md, plan.md, sign-out-specification.md, e2e-report.md, staged-development.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass
+  - review state: Crit APPROVED
+  - commit state: Crit response committed; pre-publish sync pending
+  - publication state: publishing
+  - next permitted action: publish
+- baseline conflicts: none
+- next permitted action: publish

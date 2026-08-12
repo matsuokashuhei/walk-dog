@@ -16,6 +16,9 @@
   - `docs/development/staged-development.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/design.md`
   - `docs/development/2026-08-12-r1-step1-sign-out-plan.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/screenshots/ios-sign-out-sign-in.png`
+  - `docs/logs/20260812175057-r1-step1-sign-out/screenshots/ios-settings-idle.png`
+  - `docs/logs/20260812175057-r1-step1-sign-out/e2e-report.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/plan.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
 
@@ -174,3 +177,26 @@ ok
   - next permitted action: commit evidence
 - baseline conflicts: none
 - next permitted action: commit evidence
+
+### User
+
+1でOK
+
+### Assistant
+
+Subagent-Driven で Task 1–6 を実装・レビュー完了。最終ブランチレビューは Critical/Important なしで merge-ready。
+
+## Sync
+
+- status: synced
+- trigger: implementation complete; whole-branch review clean
+- artifacts updated: transcript, specification-review.md, e2e-report.md, screenshots
+- artifacts already current: design.md, plan.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - review state: whole-branch approved (Critical/Important none)
+  - commit state: implementation commits on branch through f6f3063
+  - publication state: not published
+  - next permitted action: crit
+- baseline conflicts: none
+- next permitted action: crit

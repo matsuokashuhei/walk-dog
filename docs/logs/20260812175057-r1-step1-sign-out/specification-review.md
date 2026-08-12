@@ -3,7 +3,7 @@
 - status: ready
 - Purpose: R1 Step 1 Sign Out across API and Mobile
 - Active release: R1
-- next permitted action: await plan approval
+- next permitted action: crit
 
 ## Sources
 

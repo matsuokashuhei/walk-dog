@@ -256,3 +256,19 @@ Chose push + PR. Ran pre-crit sync and session Crit (CHANGES_REQUESTED). Applied
   - next permitted action: publish
 - baseline conflicts: none
 - next permitted action: publish
+
+## Sync
+
+- status: synced
+- trigger: publish — PR opened
+- artifacts updated: transcript
+- artifacts already current: Crit APPROVED session docs
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - review state: Crit APPROVED
+  - commit state: branch pushed
+  - publication state: PR open https://github.com/matsuokashuhei/walk-dog/pull/49
+  - next permitted action: continue
+- baseline conflicts: none
+- next permitted action: continue
+- pull request: https://github.com/matsuokashuhei/walk-dog/pull/49

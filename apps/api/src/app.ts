@@ -5,13 +5,17 @@ import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import type { Logger } from './infrastructure/observability/logger.js'
 import { createRequestLoggerMiddleware } from './infrastructure/observability/request-middleware.js'
-import { registerHealthRoutes } from './modules/health/index.js'
 import { errorSchema } from './shared/http/error-contract.js'
 import type { App, AppVariables } from './shared/http/types.js'
 
 export type AppDependencies = {
   logger: Logger
   setRequestId: (requestId: string) => void
+}
+
+export type ModuleRoute = {
+  path: string
+  app: App
 }
 
 const invalidInputBody = (requestId: string) => ({
@@ -30,7 +34,7 @@ const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) =
 
 export const createApp = (
   dependencies: AppDependencies,
-  registerRoutes?: (app: App) => void,
+  routes: ModuleRoute[],
 ): App => {
   const app = new OpenAPIHono<{ Variables: AppVariables }>({
     defaultHook: validationErrorHook,
@@ -65,11 +69,12 @@ export const createApp = (
       retryable: false,
     }, 500)
   })
-  app.route('/', registerHealthRoutes())
+  for (const route of routes) {
+    app.route(route.path, route.app)
+  }
   app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'walk / dog API', version: '0.1.0' },
   })
-  registerRoutes?.(app)
   return app
 }

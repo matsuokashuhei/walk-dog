@@ -2,9 +2,9 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --import ./src/instrument.ts src/index.ts",
+    "dev": "tsx watch --import ./src/instrument.ts src/server.ts",
     "build": "tsc",
-    "start": "node --import ./dist/instrument.js dist/index.js",
+    "start": "node --import ./dist/instrument.js dist/server.js",
     "lint": "eslint .",
     "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
     "knip": "knip",

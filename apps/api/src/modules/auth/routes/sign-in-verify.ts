@@ -10,7 +10,7 @@ import type { VerifySignIn, VerifySignInResult } from '../types.js'
 
 export const signInVerifyRoute = createRoute({
   method: 'post',
-  path: '/v1/auth/sign-in/verify',
+  path: '/sign-in/verify',
   tags: ['auth'],
   request: { body: { content: { 'application/json': { schema: signInVerifyRequestSchema } } } },
   responses: {

@@ -5,7 +5,7 @@ import type { StartSignUp, StartSignUpResult } from '../../../../src/modules/aut
 import { createAuthApp } from '../fixtures.js'
 
 assert.equal(signUpRoute.method, 'post')
-assert.equal(signUpRoute.path, '/v1/auth/sign-up')
+assert.equal(signUpRoute.path, '/sign-up')
 
 function createStartSignUpFake(result: StartSignUpResult | ((input: { email: string }) => Promise<StartSignUpResult>)): {
   startSignUp: StartSignUp

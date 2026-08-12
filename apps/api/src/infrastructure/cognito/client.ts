@@ -16,6 +16,7 @@ export type CognitoConfig = {
 
 export type CognitoSender = {
   send: CognitoIdentityProviderClient['send']
+  destroy: () => void
 }
 
 export type CognitoClient = ReturnType<typeof createCognitoClient>
@@ -26,6 +27,9 @@ export function createCognitoClient(
 ) {
   return {
     client: sender,
+    destroy() {
+      sender.destroy()
+    },
     signUp(email: string) {
       return sender.send(new SignUpCommand({
         ClientId: config.clientId, Username: email,

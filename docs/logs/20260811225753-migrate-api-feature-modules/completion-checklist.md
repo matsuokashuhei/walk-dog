@@ -49,4 +49,21 @@
 - [x] Task 5: Independent Important finding fixed — added sign-in-verify route contract for reachable `code-already-used` (status 400, complete Japanese `CODE_ALREADY_USED` envelope with `requestId`/`retryable`, exactly one use-case call); gates re-run (targeted 71, OpenAPI 1, `npm test` 130, `npm run check`, `git diff --check`).
 - [x] Task 5: Independent re-review returned `APPROVED` with no Critical or Important findings.
 - [x] Task 5: Commit `refactor: extract authentication verification slices`.
-- [ ] Task 6: Aggregation, composition, lifecycle, and migration verification.
+- [x] Task 6A: Wrote failing `auth-routes.test.ts` and `composition.test.ts` (aggregate OpenAPI relative/public paths; factory order/identity; import-safe empty call log).
+- [x] Task 6A: Created `modules/auth/routes/index.ts` and `modules/auth/index.ts`; `registerAuthRoutes` registers all four endpoints before returning the child.
+- [x] Task 6A: Changed auth endpoint paths to child-relative `/sign-up`, `/sign-up/verify`, `/sign-in`, `/sign-in/verify`; kept health at `/health`.
+- [x] Task 6A: Changed `createApp` to accept `ModuleRoute[]`, mount each completed child once, apply middleware/hooks once, register OpenAPI after mounts.
+- [x] Task 6A: Rewrote `index.ts` as import-safe `createApplication(env, factories?)` returning `{ app, resources }`; importing causes no config/listener/DB/AWS construction.
+- [x] Task 6A: Updated app/openapi/request-middleware tests and auth fixtures; removed transitional `src/routes`.
+- [x] Task 6A: Targeted 47/47 (auth aggregate + composition + app + OpenAPI + four auth route suites), full 134/134 (45 baseline names once), `npm run check`, `npm run build`, import-boundary, and `git diff --check` passed under one temporary `node_modules` symlink (removed after).
+- [x] Task 6A: Inspected implementation/tests — no unfinished TODO/FIXME/placeholder production or test code; no production changes for the dual-Hono dependency-layout issue.
+- [x] Task 6B: Rewrote `server.test.ts` (TDD) preserving the two baseline shutdown names exactly once; covered import-safe wiring, start/signal injection, close order listener→Pool→Cognito→Sentry, once-only closes, idempotent concurrent/repeated shutdown, and listener-error downstream closes.
+- [x] Task 6B: Implemented `server.ts` as serve/signal/idempotent-shutdown owner with injectable `createApplication`/`start`/`process`; `index.ts` remains import-safe `createApplication`.
+- [x] Task 6B: Added Cognito `destroy()` resource boundary in infrastructure (`CognitoSender.destroy` required; production `CognitoIdentityProviderClient.destroy()`); package `dev`/`start` and `knip.json` entry point to `server.ts` / `dist/server.js`.
+- [x] Task 6B: Confirmed transitional first-level `src/{auth,routes,db,contracts,observability,schema}` remain removed; `instrument.ts` remains Sentry preload using relocated config only.
+- [x] Task 6B: Initial implementation gates passed under one temporary `node_modules` symlink (removed after): targeted 54/54, full 140/140 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no drizzle diff, import-boundary classification, and `git diff --check`.
+- [x] Task 6: Independent Important findings fixed — shutdown attempts every close in listener→Pool→Cognito→Sentry order while preserving the first error and the same idempotent promise; Pool-failure and Cognito-failure close-order tests; subprocess import-safety and direct-source startup coverage; package `dev`/`start` source/dist scripts with `isDirectRun` source/dist checks.
+- [x] Task 6: Codex fresh final gates after finding fixes: targeted 26/26, full 145/145 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no migration / empty drizzle diff, `scripts/agent-skills.sh check`, import-boundary classification, and `git diff --check`.
+- [x] Task 6: Both independent re-reviews returned exactly `APPROVED` with no Critical or Important findings.
+- [x] Task 6: Codex cleaned and verified both temporary dependency links absent — worktree `apps/api/node_modules` and main-checkout nested `apps/api/node_modules/node_modules` self-link; main-checkout user-owned changes remain untouched.
+- [x] Task 6: Commit `refactor: compose feature-first API`.

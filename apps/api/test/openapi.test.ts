@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { registerSignInRoute } from '../src/modules/auth/routes/sign-in.js'
-import { registerSignInVerifyRoute } from '../src/modules/auth/routes/sign-in-verify.js'
-import { registerSignUpRoute } from '../src/modules/auth/routes/sign-up.js'
-import { registerSignUpVerifyRoute } from '../src/modules/auth/routes/sign-up-verify.js'
+import { createApp } from '../src/app.js'
+import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
+import { registerAuthRoutes } from '../src/modules/auth/index.js'
 import type { StartSignIn, StartSignUp, VerifySignIn, VerifySignUp } from '../src/modules/auth/types.js'
-import { createAuthApp } from './modules/auth/fixtures.js'
+import { registerHealthRoutes } from '../src/modules/health/index.js'
+import { testLogger } from './support/test-logger.js'
 
 type PropertySchema = {
   nullable?: boolean
@@ -70,12 +70,21 @@ const unusedVerifySignIn: VerifySignIn = async () => {
 }
 
 function createOpenApiApp() {
-  return createAuthApp((target) => {
-    registerSignUpRoute(target, unusedStartSignUp)
-    registerSignUpVerifyRoute(target, unusedVerifySignUp)
-    registerSignInRoute(target, unusedStartSignIn)
-    registerSignInVerifyRoute(target, unusedVerifySignIn)
-  })
+  return createApp(
+    { logger: testLogger, setRequestId: setRequestIdTag },
+    [
+      { path: '/', app: registerHealthRoutes() },
+      {
+        path: '/v1/auth',
+        app: registerAuthRoutes({
+          startSignUp: unusedStartSignUp,
+          verifySignUp: unusedVerifySignUp,
+          startSignIn: unusedStartSignIn,
+          verifySignIn: unusedVerifySignIn,
+        }),
+      },
+    ],
+  )
 }
 
 function operationAt(document: OpenApiDocument, path: string, method: string): OpenApiOperation {

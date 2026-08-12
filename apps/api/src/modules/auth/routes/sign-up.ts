@@ -9,7 +9,7 @@ import type { StartSignUp } from '../types.js'
 
 export const signUpRoute = createRoute({
   method: 'post',
-  path: '/v1/auth/sign-up',
+  path: '/sign-up',
   tags: ['auth'],
   request: { body: { content: { 'application/json': { schema: signUpRequestSchema } } } },
   responses: {

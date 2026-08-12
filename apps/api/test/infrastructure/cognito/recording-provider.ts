@@ -14,6 +14,7 @@ export function createRecordingProvider(handler: (command: unknown) => Promise<u
       commands.push(command)
       return handler(command)
     },
+    destroy() {},
   })
   return {
     provider: createCognitoAuthProvider(cognito),

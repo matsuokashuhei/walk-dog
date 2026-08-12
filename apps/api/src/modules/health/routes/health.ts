@@ -25,5 +25,5 @@ export const healthRoute = createRoute({
 })
 
 export function registerHealthRoute(app: App): void {
-  app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
+  app.openapi(healthRoute, (context) => context.json({ status: 'ok' as const }, 200))
 }

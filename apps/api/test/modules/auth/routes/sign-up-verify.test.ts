@@ -5,7 +5,7 @@ import type { VerifySignUp, VerifySignUpResult } from '../../../../src/modules/a
 import { createAuthApp } from '../fixtures.js'
 
 assert.equal(signUpVerifyRoute.method, 'post')
-assert.equal(signUpVerifyRoute.path, '/v1/auth/sign-up/verify')
+assert.equal(signUpVerifyRoute.path, '/sign-up/verify')
 
 const owner = {
   ownerId: '019fc312-f7eb-73c4-9351-2a6ea25e4fcb',

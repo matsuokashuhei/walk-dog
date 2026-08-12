@@ -1,46 +1,145 @@
-import { serve } from '@hono/node-server'
-import { createApp } from './app.js'
-import { createCognitoClient } from './infrastructure/cognito/client.js'
+import type { Pool } from 'pg'
+import {
+  createApp as createHonoApp,
+  type AppDependencies,
+  type ModuleRoute,
+} from './app.js'
+import {
+  createCognitoClient as createProductionCognitoClient,
+  type CognitoClient,
+  type CognitoConfig,
+} from './infrastructure/cognito/client.js'
 import { createCognitoAuthProvider } from './infrastructure/cognito/cognito-auth-provider.js'
-import { createDbClient } from './infrastructure/database/client.js'
+import {
+  loadCognitoConfig,
+  loadDatabaseConfig,
+  loadObservabilityConfig,
+  type DatabaseConfig,
+} from './infrastructure/config/index.js'
+import {
+  createDbClient,
+  type DbInstance,
+} from './infrastructure/database/client.js'
 import { createDrizzleOwnerRepository } from './infrastructure/database/repositories/drizzle-owner-repository.js'
-import { loadCognitoConfig, loadDatabaseConfig, loadObservabilityConfig } from './infrastructure/config/index.js'
-import { createLogger } from './infrastructure/observability/logger.js'
+import {
+  createLogger as createProductionLogger,
+  type Logger,
+} from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
+import {
+  registerAuthRoutes,
+  type AuthRouteDependencies,
+} from './modules/auth/index.js'
+import type { AuthProvider } from './modules/auth/provider.js'
 import { createStartSignIn } from './modules/auth/use-cases/start-sign-in.js'
 import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { createVerifySignIn } from './modules/auth/use-cases/verify-sign-in.js'
 import { createVerifySignUp } from './modules/auth/use-cases/verify-sign-up.js'
-import { registerSignInRoute, registerSignInVerifyRoute, registerSignUpRoute, registerSignUpVerifyRoute } from './routes/index.js'
-import { createShutdownHandler } from './server.js'
+import { registerHealthRoutes } from './modules/health/index.js'
+import type { OwnerRepository } from './modules/owners/index.js'
+import type { App } from './shared/http/types.js'
 
-const databaseConfig = loadDatabaseConfig(process.env)
-const cognitoConfig = loadCognitoConfig(process.env)
-const observabilityConfig = loadObservabilityConfig(process.env)
-const logger = createLogger(observabilityConfig)
-const { db, pool } = createDbClient(databaseConfig)
-const app = createApp(
-  { logger, setRequestId: setRequestIdTag },
-  (application) => {
-    const cognito = createCognitoClient(cognitoConfig)
-    const authProvider = createCognitoAuthProvider(cognito)
-    const ownerRepository = createDrizzleOwnerRepository(db)
-    const startSignUp = createStartSignUp(authProvider)
-    const startSignIn = createStartSignIn(authProvider)
-    const verifySignUp = createVerifySignUp(authProvider, ownerRepository)
-    const verifySignIn = createVerifySignIn(authProvider, ownerRepository)
-    registerSignUpRoute(application, startSignUp)
-    registerSignUpVerifyRoute(application, verifySignUp)
-    registerSignInRoute(application, startSignIn)
-    registerSignInVerifyRoute(application, verifySignIn)
+export type ApplicationConfigs = {
+  database: DatabaseConfig
+  cognito: CognitoConfig
+  observability: {
+    environment: string
+    release: string
+    sentryDsn: string | undefined
+  }
+}
+
+export type ApplicationResources = {
+  pool: Pool
+  cognitoClient: CognitoClient
+  closeSentry: () => Promise<void>
+}
+
+export type ApplicationFactories = {
+  loadConfigs: (env: NodeJS.ProcessEnv) => ApplicationConfigs
+  createLogger: (config: ApplicationConfigs['observability']) => Logger
+  createDatabase: (config: DatabaseConfig) => { db: DbInstance; pool: Pool }
+  createCognitoClient: (config: CognitoConfig) => CognitoClient
+  createAuthProvider: (client: CognitoClient) => AuthProvider
+  createOwnerRepository: (db: DbInstance) => OwnerRepository
+  createUseCases: (dependencies: {
+    authProvider: AuthProvider
+    ownerRepository: OwnerRepository
+  }) => AuthRouteDependencies
+  createAuthRoutes: (dependencies: AuthRouteDependencies) => App
+  createHealthRoutes: () => App
+  createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
+}
+
+const defaultFactories: ApplicationFactories = {
+  loadConfigs(env) {
+    return {
+      database: loadDatabaseConfig(env),
+      cognito: loadCognitoConfig(env),
+      observability: loadObservabilityConfig(env),
+    }
   },
-)
-const server = serve({ fetch: app.fetch, port: 3000 })
-const shutdown = createShutdownHandler(server, pool, { close: closeSentry })
+  createLogger(config) {
+    return createProductionLogger(config)
+  },
+  createDatabase(config) {
+    return createDbClient(config)
+  },
+  createCognitoClient(config) {
+    return createProductionCognitoClient(config)
+  },
+  createAuthProvider(client) {
+    return createCognitoAuthProvider(client)
+  },
+  createOwnerRepository(database) {
+    return createDrizzleOwnerRepository(database)
+  },
+  createUseCases({ authProvider, ownerRepository }) {
+    return {
+      startSignUp: createStartSignUp(authProvider),
+      verifySignUp: createVerifySignUp(authProvider, ownerRepository),
+      startSignIn: createStartSignIn(authProvider),
+      verifySignIn: createVerifySignIn(authProvider, ownerRepository),
+    }
+  },
+  createAuthRoutes(dependencies) {
+    return registerAuthRoutes(dependencies)
+  },
+  createHealthRoutes() {
+    return registerHealthRoutes()
+  },
+  createApp(dependencies, routes) {
+    return createHonoApp(dependencies, routes)
+  },
+}
 
-process.once('SIGINT', () => {
-  void shutdown()
-})
-process.once('SIGTERM', () => {
-  void shutdown()
-})
+export function createApplication(
+  env: NodeJS.ProcessEnv,
+  factories: ApplicationFactories = defaultFactories,
+): { app: App; resources: ApplicationResources } {
+  const configs = factories.loadConfigs(env)
+  const logger = factories.createLogger(configs.observability)
+  const { db: database, pool } = factories.createDatabase(configs.database)
+  const cognitoClient = factories.createCognitoClient(configs.cognito)
+  const authProvider = factories.createAuthProvider(cognitoClient)
+  const ownerRepository = factories.createOwnerRepository(database)
+  const useCases = factories.createUseCases({ authProvider, ownerRepository })
+  const authRoutes = factories.createAuthRoutes(useCases)
+  const healthRoutes = factories.createHealthRoutes()
+  const app = factories.createApp(
+    { logger, setRequestId: setRequestIdTag },
+    [
+      { path: '/', app: healthRoutes },
+      { path: '/v1/auth', app: authRoutes },
+    ],
+  )
+
+  return {
+    app,
+    resources: {
+      pool,
+      cognitoClient,
+      closeSentry,
+    },
+  }
+}

@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 import { Writable } from 'node:stream'
 import test from 'node:test'
+import { OpenAPIHono } from '@hono/zod-openapi'
 import { createApp } from '../../../src/app.js'
 import { createLogger, type Logger } from '../../../src/infrastructure/observability/logger.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
+import { registerHealthRoutes } from '../../../src/modules/health/index.js'
+import type { AppVariables } from '../../../src/shared/http/types.js'
 import { testLogger } from '../../support/test-logger.js'
 
 function createCapturingLogger() {
@@ -21,10 +24,14 @@ function createCapturingLogger() {
   }
 }
 
+function withHealth(dependencies: { logger: Logger; setRequestId: (requestId: string) => void }) {
+  return createApp(dependencies, [{ path: '/', app: registerHealthRoutes() }])
+}
+
 test('writes a structured HTTP completion log with requestId correlation', async () => {
   const { logger, lines } = createCapturingLogger()
 
-  await createApp({ logger, setRequestId: setRequestIdTag }).request('/health', {
+  await withHealth({ logger, setRequestId: setRequestIdTag }).request('/health', {
     headers: { 'X-Request-Id': 'log-request-1' },
   })
 
@@ -44,14 +51,17 @@ test('writes a structured HTTP completion log with requestId correlation', async
 test('exposes a request-scoped child logger on the Hono context', async () => {
   const { logger, lines } = createCapturingLogger()
   let requestLogger: Logger | undefined
+  const logChild = new OpenAPIHono<{ Variables: AppVariables }>()
+  logChild.get('/log-check', (context) => {
+    requestLogger = context.get('logger')
+    context.get('logger').info({ step: 'handler' }, 'handler log')
+    return context.json({ ok: true })
+  })
 
-  await createApp({ logger, setRequestId: setRequestIdTag }, (app) => {
-    app.get('/log-check', (context) => {
-      requestLogger = context.get('logger')
-      context.get('logger').info({ step: 'handler' }, 'handler log')
-      return context.json({ ok: true })
-    })
-  }).request('/log-check', {
+  await createApp({ logger, setRequestId: setRequestIdTag }, [
+    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: logChild },
+  ]).request('/log-check', {
     headers: { 'X-Request-Id': 'child-logger-1' },
   })
 
@@ -62,17 +72,20 @@ test('exposes a request-scoped child logger on the Hono context', async () => {
 
 test('binds requestId on the Sentry isolation path', async () => {
   const requestIds: string[] = []
+  const errorChild = new OpenAPIHono<{ Variables: AppVariables }>()
+  errorChild.get('/test-error', () => {
+    throw new Error('expected observability error')
+  })
 
   const response = await createApp({
     logger: testLogger,
     setRequestId: (requestId) => {
       requestIds.push(requestId)
     },
-  }, (app) => {
-    app.get('/test-error', () => {
-      throw new Error('expected observability error')
-    })
-  }).request('/test-error', {
+  }, [
+    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: errorChild },
+  ]).request('/test-error', {
     headers: { 'X-Request-Id': 'sentry-request-1' },
   })
 
@@ -81,7 +94,7 @@ test('binds requestId on the Sentry isolation path', async () => {
 })
 
 test('responses include secure headers', async () => {
-  const response = await createApp({
+  const response = await withHealth({
     logger: testLogger,
     setRequestId: setRequestIdTag,
   }).request('/health')

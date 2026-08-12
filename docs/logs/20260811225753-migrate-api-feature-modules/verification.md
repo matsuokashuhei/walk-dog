@@ -495,3 +495,115 @@ Commands from `apps/api` (temporary symlink to main checkout `node_modules`, rem
 - Independent re-review returned `APPROVED` with no Critical or Important findings.
 - Task 5 is committed as `refactor: extract authentication verification slices`.
 - Task 6 not started.
+
+## Task 6A: Route aggregation and pure application composition
+
+Scope: Task 6 Steps 1–4 (auth aggregate, `ModuleRoute[]` app mount, import-safe `createApplication`). Task 6B delivers server lifecycle, package entry, and Cognito resource boundary on top of this slice.
+
+### Deliverables
+
+- Created `apps/api/src/modules/auth/routes/index.ts` with `registerAuthRoutes` registering all four endpoints before returning the child.
+- Created `apps/api/src/modules/auth/index.ts` exporting `registerAuthRoutes` and `AuthRouteDependencies`.
+- Changed auth endpoint OpenAPI paths to child-relative `/sign-up`, `/sign-up/verify`, `/sign-in`, `/sign-in/verify`.
+- Kept health child at `/health`; production mounts `{ path: '/', app: healthRoutes }` and `{ path: '/v1/auth', app: authRoutes }`.
+- Changed `createApp(dependencies, routes: ModuleRoute[])` to apply middleware/global hooks once, mount each completed child exactly once, then register OpenAPI doc so `/openapi.json` sees all operations.
+- Rewrote `apps/api/src/index.ts` as import-safe `createApplication(env, factories?)`: loads configs once, creates one logger/DB/Cognito, shares identity through auth provider/Owner repository/four use cases, creates auth and health children, creates app, returns `{ app, resources }`. Importing `index.ts` performs no config/listener/DB/AWS construction.
+- Removed transitional `apps/api/src/routes/`.
+- Added `test/modules/auth/auth-routes.test.ts` and `test/composition.test.ts`; updated app/openapi/request-middleware tests and auth fixtures/route path assertions.
+- Health handler uses `{ status: 'ok' as const }` so OpenAPI typed response matches the literal schema (typecheck gate).
+
+### Inspection
+
+- Searched Task 6A production and test sources for unfinished markers (`TODO`/`FIXME`/`XXX`/`HACK`/placeholder unfinished comments): none.
+- Codex diagnosed earlier intermittent HTTP 500s as a temporary dependency-layout issue: a real worktree `apps/api/node_modules` directory that contained a nested `node_modules` symlink loaded two Hono copies and broke `routePath`. That nested layout was removed; production code was not changed to compensate.
+
+### Gates
+
+Commands from `apps/api` using exactly one temporary symlink `apps/api/node_modules` → main checkout `apps/api/node_modules` (no nested symlink). After gates, the symlink was unlinked; `apps/api/node_modules` is absent.
+
+- Targeted Task 6A: `node --import tsx --test test/modules/auth/auth-routes.test.ts test/composition.test.ts test/app.test.ts test/openapi.test.ts test/modules/auth/routes/sign-up.test.ts test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in.test.ts test/modules/auth/routes/sign-in-verify.test.ts` → `tests 47`, `pass 47`, `fail 0`
+- Full suite: `npm run test` / `node --import tsx --test "test/**/*.test.ts"` → `tests 134`, `pass 134`, `fail 0`
+  - All 45 baseline names appear exactly once
+  - +2 auth aggregate +2 composition over Task 5’s 130
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `npm run build` → exit 0
+- Import-boundary classification: top-level transitional directories `src/{auth,routes,db,contracts,observability,schema}` remain removed; remaining `routes`/`contracts`/`schema` imports resolve under `modules/` or `infrastructure/database/schema`.
+- `git diff --check` → exit 0
+
+## Task 6B: Server lifecycle, package entry, Cognito resource boundary
+
+### Documentation review (official skills)
+
+Task 6B and the finding fixes recorded these official URLs from the already-read local skills:
+
+- Hono Node: <https://hono.dev/docs/getting-started/nodejs>
+- Hono App: <https://hono.dev/d%6Fcs/api/hono>
+- Hono Routing: <https://hono.dev/d%6Fcs/api/routing>
+- Hono Testing: <https://hono.dev/d%6Fcs/guides/testing>
+- Node.js Test Runner: <https://nodejs.org/api/test.html>
+
+Decisions: `src/index.ts` remains import-safe `createApplication`; `src/server.ts` owns `@hono/node-server` serve, signal registration, and idempotent shutdown; package `dev`/`start` point at `src/server.ts` / `dist/server.js`; lifecycle and entry-boundary tests use the Node.js test runner with listener-less doubles and short-lived subprocesses.
+
+### Deliverables
+
+- `src/server.ts` is the serve/signal/idempotent-shutdown owner with injectable `createApplication` / `start` / `process`.
+- Shutdown close order is listener → Pool → Cognito → Sentry; concurrent and repeated shutdown share one promise; each resource closes once.
+- Cognito infrastructure exposes required `destroy()` (`CognitoSender.destroy`; production sender uses `CognitoIdentityProviderClient.destroy()`).
+- Package scripts: `dev` → `tsx watch --import ./src/instrument.ts src/server.ts`; `start` → `node --import ./dist/instrument.js dist/server.js`; `knip.json` entry points to `server.ts` / `dist/server.js`.
+- `instrument.ts` remains the Sentry preload that loads relocated infrastructure config only.
+- Transitional first-level `src/{auth,routes,db,contracts,observability,schema}` remain removed.
+
+### Initial implementation gates
+
+Commands from `apps/api` under one temporary `node_modules` symlink (removed after):
+
+- Targeted composition/server/auth aggregate/app/OpenAPI suite → `tests 54`, `pass 54`, `fail 0`
+- `npm test` → `tests 140`, `pass 140`, `fail 0` (45 baseline names once)
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `npm run build` → exit 0
+- `npm run test:integration` → `tests 1`, `pass 1`, `fail 0`
+- `npm run db:generate` → `No schema changes, nothing to migrate`; `git diff --exit-code -- drizzle` → exit 0
+- Import-boundary classification completed for transitional top-level paths versus canonical module/infrastructure imports
+- `git diff --check` → exit 0
+
+### Independent Important findings
+
+1. Downstream cleanup skipped: when an earlier close rejected or threw, later resources in the listener→Pool→Cognito→Sentry sequence were left unattempted.
+2. Vacuous entry tests: import-safety and direct-run coverage asserted types/strings without proving isolated import behavior or direct source startup.
+3. Artifact mismatch: session records still described Task 6B as pending while server lifecycle, package entry, and Cognito `destroy()` were already delivered.
+
+### Focused fixes
+
+1. `createShutdownHandler` attempts every close exactly once in listener→Pool→Cognito→Sentry order when an earlier close rejects or throws; preserves the first failure in that order; concurrent and repeated calls keep the same idempotent promise.
+2. Added Pool-failure and Cognito-failure tests that assert once/order/error identity while the remaining closes still run; the two baseline shutdown names remain exactly once.
+3. Replaced vacuous entry assertions with subprocess coverage: importing `src/index.ts` under a sanitized incomplete env completes without constructing config/DB/AWS/listener; direct source server execution demonstrably invokes startup.
+4. Package `dev`/`start` scripts target source and dist server entries; `isDirectRun` checks cover both source and dist entry paths.
+
+### Codex fresh final results (after finding fixes)
+
+Commands from `apps/api` under one temporary `node_modules` symlink (removed after):
+
+- Targeted Task 6 entry/lifecycle/composition suite → `tests 26`, `pass 26`, `fail 0`
+- `npm test` → `tests 145`, `pass 145`, `fail 0` (45 baseline names once)
+- `npm run check` → lint, jscpd, knip, typecheck exit 0
+- `npm run build` → exit 0
+- `npm run test:integration` → `tests 1`, `pass 1`, `fail 0`
+- `npm run db:generate` → `No schema changes, nothing to migrate`; `git diff --exit-code -- drizzle` → exit 0
+- `scripts/agent-skills.sh check` → exit 0
+- Import-boundary classification completed for transitional top-level paths versus canonical module/infrastructure imports
+- `git diff --check` → exit 0
+
+### Dependency-link cleanup
+
+Codex cleaned and verified both temporary dependency links absent:
+
+- Worktree `apps/api/node_modules` is absent.
+- Main-checkout nested `apps/api/node_modules/node_modules` self-link is absent.
+- Main-checkout user-owned changes remain untouched.
+
+### Task 6 completion
+
+- Task 6A and Task 6B implementation are complete.
+- Independent Important finding fixes are complete; Codex fresh final gates passed (targeted 26/26, full 145/145, check, build, integration 1/1, db:generate/drizzle diff, agent-skills check, import-boundary classification, `git diff --check`).
+- Both independent re-reviews returned exactly `APPROVED` with no Critical or Important findings.
+- Task 6 is committed as `refactor: compose feature-first API`.

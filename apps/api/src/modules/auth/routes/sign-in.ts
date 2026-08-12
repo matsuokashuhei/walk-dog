@@ -9,7 +9,7 @@ import type { StartSignIn } from '../types.js'
 
 export const signInRoute = createRoute({
   method: 'post',
-  path: '/v1/auth/sign-in',
+  path: '/sign-in',
   tags: ['auth'],
   request: { body: { content: { 'application/json': { schema: signInRequestSchema } } } },
   responses: {

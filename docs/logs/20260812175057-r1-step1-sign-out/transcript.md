@@ -200,3 +200,19 @@ Subagent-Driven で Task 1–6 を実装・レビュー完了。最終ブラン�
   - next permitted action: crit
 - baseline conflicts: none
 - next permitted action: crit
+
+## Sync
+
+- status: synced
+- trigger: pre-crit gate before session Crit
+- artifacts updated: transcript
+- artifacts already current: design.md, plan.md, specification-review.md, sign-out-specification.md, sign-out-spec-mockups.html, e2e-report.md, screenshots, staged-development.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass
+  - review state: whole-branch approved; session Crit pending
+  - commit state: branch tip includes sync commit
+  - publication state: not published
+  - next permitted action: crit
+- baseline conflicts: none
+- next permitted action: crit

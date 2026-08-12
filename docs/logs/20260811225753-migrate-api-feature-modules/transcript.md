@@ -41,6 +41,7 @@
 14. User approved the published pull request and requested its merge.
 15. User approved all five retrospective skill proposals.
 16. User requested that the skills in PR #48 be written in Japanese.
+17. User requested deleting `SKILL_ja.md` when the canonical `SKILL.md` is already Japanese.
 
 ## Session events
 
@@ -108,3 +109,5 @@
 - `2026-08-12 13:15 JST`: User requested Japanese skill bodies in PR #48. Cursor Agent translated the complete canonical bodies for `bootstrapping-hono-nodejs`, `querying-drizzle-sql`, `run-dev-session`, and `syncing-session-artifacts`; `testing-hono-apis` was already Japanese. Existing Japanese sibling files were synchronized byte-for-byte.
 - `2026-08-12 13:25 JST`: Translation review found six Important semantic differences in trigger scope and process wording. Cursor Agent fixed all six; skill-library sync/check, five quick validations, pair equality, and `git diff --check` passed. Independent semantic re-review returned `APPROVED`.
 - `2026-08-12 13:27 JST`: PR feedback artifact sync completed. `status: synced`; trigger: user-requested Japanese skill bodies and review fixes; updated: retrospective, transcript, verification, and four canonical skill bodies plus their siblings; already current: specification review, completion checklist, migration design, and migration plan; cross-artifact matrix: task phase complete, tests 145 unit plus one integration, review approved, PR #48 open with feedback fix pending push, next permitted action publish; baseline conflicts: none; next permitted action: publish.
+- `2026-08-12 13:35 JST`: Deleted the four redundant Japanese sibling files whose canonical `SKILL.md` bodies are Japanese. `testing-hono-apis` had no sibling and was unchanged. `scripts/agent-skills.sh sync`, `scripts/agent-skills.sh check`, and `git diff --check` passed.
+- `2026-08-12 13:37 JST`: Deletion artifact sync completed. `status: synced`; trigger: user-requested removal of redundant `SKILL_ja.md` files; updated: retrospective and transcript; already current: verification, specification review, completion checklist, migration design, and migration plan; cross-artifact matrix: task phase complete, tests 145 unit plus one integration, review approved, PR #48 open with deletion fix pending push, next permitted action publish/update-PR; baseline conflicts: none; next permitted action: publish.

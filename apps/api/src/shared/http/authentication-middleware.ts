@@ -1,5 +1,8 @@
 import type { MiddlewareHandler } from 'hono'
-import type { AccessTokenVerifier } from '../../infrastructure/cognito/access-token-verifier.js'
+import type {
+  AccessTokenVerifier,
+  Principal,
+} from '../../infrastructure/cognito/access-token-verifier.js'
 import type { AppVariables } from './types.js'
 
 const unauthenticated = (requestId: string) => ({
@@ -26,13 +29,14 @@ export function createAuthenticationMiddleware(
       return context.json(unauthenticated(context.get('requestId')), 401)
     }
 
+    let principal: Principal
     try {
-      const principal = await verifier.verify(accessToken)
-      context.set('principal', principal)
-      await next()
-      return
+      principal = await verifier.verify(accessToken)
     } catch {
       return context.json(unauthenticated(context.get('requestId')), 401)
     }
+
+    context.set('principal', principal)
+    await next()
   }
 }

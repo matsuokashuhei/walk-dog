@@ -82,3 +82,32 @@ test('sets principal and continues when access token verification succeeds', asy
     cognitoSubject: 'sub-1',
   })
 })
+
+test('does not convert downstream handler throws into 401 UNAUTHENTICATED', async () => {
+  const app = new OpenAPIHono<{ Variables: AppVariables }>()
+  app.use('*', async (context, next) => {
+    context.set('requestId', 'req-1')
+    await next()
+  })
+  app.use('*', createAuthenticationMiddleware({
+    verify: async () => ({ cognitoSubject: 'sub-1' }),
+  }))
+  app.get('/protected', () => {
+    throw new Error('handler failed')
+  })
+  app.onError((error, context) => context.json({
+    code: 'INTERNAL',
+    message: error.message,
+    requestId: context.get('requestId'),
+  }, 500))
+
+  const response = await app.request('/protected', {
+    headers: { Authorization: 'Bearer good-token' },
+  })
+  assert.equal(response.status, 500)
+  assert.deepEqual(await response.json(), {
+    code: 'INTERNAL',
+    message: 'handler failed',
+    requestId: 'req-1',
+  })
+})

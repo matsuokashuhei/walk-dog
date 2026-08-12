@@ -18,8 +18,9 @@ R1 Step 1 の Sign Out を API とモバイルで提供する。
 - 有効 token で `204`
 - 無効 / 欠落 token で `401` `UNAUTHENTICATED`
 - Active Walk なし: 確認なしで Sign Out → Sign In
-- Active Walk あり: 確認 → 承諾で Sign Out / キャンセルで維持
-- Preferences / Email Change / `discardActiveWalk` リクエスト項目は持たない
+- Active Walk あり: 確認 → 承諾で Sign Out（Active Walk は Failed）/ キャンセルで維持
+- Settings が提供する操作は法務リンクと Sign Out
+- Sign Out リクエスト body の許容値は `{}` または省略
 
 ## HOW
 

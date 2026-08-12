@@ -24,14 +24,14 @@
 ## Current release deliverables
 
 1. JIT R0 Cognito access-token verification and OpenAPI `BearerAuth`
-2. `POST /v1/auth/sign-out` → optional Active Walk Failed → Cognito sign-out → `204`
+2. `POST /v1/auth/sign-out` → fail Active Walk when present → Cognito sign-out → `204`
 3. Mobile `/settings` with legal links, Sign Out, Active Walk confirmation, loading/error, success → Sign In
 4. Contract tests and iOS evidence for the no-Active-Walk path
 
 ## Decisions
 
-- Plan-level (confirmed): Active Walk on confirmed Sign Out is always Failed. Confirmation dialog when Active Walk exists. No `discardActiveWalk` request field.
-- Plan-level (confirmed): Mobile entry is `/settings` with Sign Out and legal links. Preferences and Email Change remain R3.
+- Plan-level (confirmed): Active Walk on confirmed Sign Out is always Failed. Confirmation dialog when Active Walk exists. Request body allows `{}` or omission only.
+- Plan-level (confirmed): Mobile entry is `/settings` with Sign Out and legal links. R3 adds Preferences and Email Change to Settings.
 - Implementation-local: `ActiveWalkCommands.failIfPresent` port with a current no-Active-Walk implementation; Walk slice replaces it later.
 - Note: auth gate uses `UNAUTHENTICATED` per R0 design.
 

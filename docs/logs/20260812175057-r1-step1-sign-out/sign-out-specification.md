@@ -20,7 +20,7 @@
 | SETTINGS-04 | Error | `/settings` | 失敗メッセージと再試行可能な Sign Out |
 | AUTH-01 | After Sign Out | `/sign-in` | 未認証の Sign In |
 
-Preferences と Email Change はこの仕様の提供対象外。Settings は Sign Out と法務リンクを提供する。
+Settings は Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
 
 #### コンポーネント
 
@@ -75,14 +75,14 @@ Settings (Idle)
 type SignOutRequest = Record<string, never> | undefined
 ```
 
-`discardActiveWalk` リクエスト項目は持たない。Active Walk の破棄はサーバーが常に行う。
+リクエスト body の許容値は空オブジェクト `{}` または body 省略のみとする。Active Walk がある場合の Failed 化はサーバーが Sign Out 成立時に行う。
 
 ##### 成功レスポンス
 
 | 項目 | 値 |
 | --- | --- |
 | Status | `204 No Content` |
-| Body | なし |
+| Body | 空 |
 
 ##### 失敗レスポンス
 
@@ -130,4 +130,4 @@ Active Walk がない場合、手順 3 をスキップして手順 4 へ進む�
 - Owner が記録中の散歩を黙って失わないよう、Active Walk があるときは確認する。
 - 確認後の Sign Out では Active Walk を常に Failed にし、途中記録のまま session だけ消える状態を作らない。
 - R1 アカウント縦切りの Sign Out と、AC-AUTH-05（破棄承諾 → Failed → Sign In）に整合する。
-- 任意の `discardActiveWalk` フラグは持たず、Sign Out 成立時の Active Walk 扱いは Failed に一意化する。
+- Sign Out 成立時の Active Walk 扱いは Failed に一意化する。

@@ -1,6 +1,6 @@
 # R1 Step 1 Sign Out Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 認証済み Owner が `/settings` から Sign Out でき、API が Cognito session を無効化し、Active Walk がある場合は Failed にしたうえで `204` を返す。
 
@@ -11,9 +11,9 @@
 ## Global Constraints
 
 - 公開契約は `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md` に従う。
-- `POST /v1/auth/sign-out` は Access Token 必須、body に `discardActiveWalk` を持たない、成功は `204 No Content`。
+- `POST /v1/auth/sign-out` は Access Token 必須、body の許容値は `{}` または省略、成功は `204 No Content`。
 - Active Walk がある Sign Out は確認後に常に Failed。キャンセルは Walk と session を維持する。
-- Settings は `/settings` で Sign Out と法務リンクのみ。Preferences / Email Change は含めない。
+- Settings は `/settings` で Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
 - 認証ゲート失敗は HTTP `401`、`code: "UNAUTHENTICATED"`、`message: "Authentication is required."`、`retryable: false`。
 - feature-first 配置と命名: `sign-out.ts`、`signOutRoute`、`registerSignOutRoute`、`registerAuthRoutes`。
 - use case は Hono / Zod / AWS SDK / Drizzle を import しない。
@@ -64,7 +64,7 @@
   ```
   `AppVariables` に `principal: Principal` を追加する。
 
-- [ ] **Step 1: Write failing middleware test**
+- [x] **Step 1: Write failing middleware test**
 
 ```ts
 test('returns 401 UNAUTHENTICATED when Authorization is missing', async () => {
@@ -90,24 +90,24 @@ test('returns 401 UNAUTHENTICATED when Authorization is missing', async () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm test -- test/shared/http/authentication-middleware.test.ts`  
 Expected: FAIL (module missing)
 
-- [ ] **Step 3: Implement verifier + middleware**
+- [x] **Step 3: Implement verifier + middleware**
 
 - `Authorization: Bearer <token>` を読み、verifier に渡す。
 - 欠落・非 Bearer・verify 失敗はすべて同じ `401 UNAUTHENTICATED`。
 - 成功時 `c.set('principal', principal)` して `next()`。
 - OpenAPI registry に `BearerAuth` (`type: http`, `scheme: bearer`, `bearerFormat: JWT`) を登録する。
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm test -- test/shared/http/authentication-middleware.test.ts test/infrastructure/cognito/access-token-verifier.test.ts`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/package.json apps/api/package-lock.json \
@@ -158,7 +158,7 @@ EOF
   function createAbsentActiveWalkCommands(): ActiveWalkCommands
   ```
 
-- [ ] **Step 1: Write failing provider and absent-commands tests**
+- [x] **Step 1: Write failing provider and absent-commands tests**
 
 ```ts
 test('signOut returns signed-out when Cognito GlobalSignOut succeeds', async () => {
@@ -177,23 +177,23 @@ test('absent ActiveWalkCommands.failIfPresent resolves without work', async () =
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm test -- test/infrastructure/cognito/cognito-auth-provider-sign-out.test.ts test/infrastructure/walks/absent-active-walk-commands.test.ts`  
 Expected: FAIL
 
-- [ ] **Step 3: Implement client method, provider mapping, absent commands**
+- [x] **Step 3: Implement client method, provider mapping, absent commands**
 
 - Cognito: `GlobalSignOutCommand({ AccessToken })`
 - Map `NotAuthorizedException` → `authentication-failed`
 - Map rate-limit exceptions → `rate-limited`
 - `createAbsentActiveWalkCommands().failIfPresent` は即座に resolve（Walk 未導入時の明示実装）
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -243,7 +243,7 @@ EOF
   - success `204` empty
   - auth middleware を `/sign-out` にだけ適用（公開 sign-up/sign-in は非保護のまま）
 
-- [ ] **Step 1: Write failing use-case and route tests**
+- [x] **Step 1: Write failing use-case and route tests**
 
 Use-case order assertion:
 
@@ -289,11 +289,11 @@ test('POST /v1/auth/sign-out returns 204', async () => {
 
 Also cover missing bearer → `401` without calling use case.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Expected: FAIL
 
-- [ ] **Step 3: Implement use case and route**
+- [x] **Step 3: Implement use case and route**
 
 Required skills before editing:
 - `implementing-api-use-cases`
@@ -304,12 +304,12 @@ Required skills before editing:
 
 `registerAuthRoutes` は verifier を required で受け取り、`app.use('/sign-out', createAuthenticationMiddleware(verifier))` の後に `registerSignOutRoute` する。
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm test -- test/modules/auth/use-cases/sign-out.test.ts test/modules/auth/routes/sign-out.test.ts`  
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -343,7 +343,7 @@ EOF
   ```
   Composition は `createAbsentActiveWalkCommands()` と `createAccessTokenVerifier(cognitoConfig)` を明示生成して渡す。
 
-- [ ] **Step 1: Extend OpenAPI expected maps**
+- [x] **Step 1: Extend OpenAPI expected maps**
 
 ```ts
 '/v1/auth/sign-out': { post: ['204', '400', '401', '429', '500'] }
@@ -351,15 +351,15 @@ EOF
 
 Assert `security` includes BearerAuth on sign-out and remains absent on public auth routes.
 
-- [ ] **Step 2: Run OpenAPI test to verify it fails**
+- [x] **Step 2: Run OpenAPI test to verify it fails**
 
 Expected: FAIL (path missing)
 
-- [ ] **Step 3: Wire composition and fixtures**
+- [x] **Step 3: Wire composition and fixtures**
 
 Update every `registerAuthRoutes(...)` call site to pass verifier + `signOut`.
 
-- [ ] **Step 4: Run full API tests and check**
+- [x] **Step 4: Run full API tests and check**
 
 ```bash
 npm test
@@ -368,7 +368,7 @@ npm run check
 
 Expected: all pass; OpenAPI includes `/v1/auth/sign-out`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -397,7 +397,7 @@ EOF
   function hasActiveWalk(): boolean // current implementation returns false
   ```
 
-- [ ] **Step 1: Fix api client for 204**
+- [x] **Step 1: Fix api client for 204**
 
 ```ts
 if (response.status === 204) {
@@ -407,7 +407,7 @@ if (response.status === 204) {
 
 Do this before JSON parse.
 
-- [ ] **Step 2: Implement Settings screen**
+- [x] **Step 2: Implement Settings screen**
 
 States: idle / confirm / loading / error.  
 Events from specification:
@@ -419,16 +419,16 @@ Events from specification:
 - success → `clearSession()`
 - failure → error message, retryable Sign Out
 
-- [ ] **Step 3: Add home navigation to Settings**
+- [x] **Step 3: Add home navigation to Settings**
 
 Authenticated home shows a control that routes to `/settings`.
 
-- [ ] **Step 4: Verify mobile typecheck / lint if available**
+- [x] **Step 4: Verify mobile typecheck / lint if available**
 
 Run from `apps/mobile`: package scripts for typecheck/lint that exist.  
 Expected: pass for changed files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -451,15 +451,15 @@ EOF
 - Consumes: local API + Cognito + signed-in mobile session
 - Produces: screenshots and short e2e report
 
-- [ ] **Step 1: Sign in on simulator/device against local API**
+- [x] **Step 1: Sign in on simulator/device against local API**
 
-- [ ] **Step 2: Open Settings, capture SETTINGS-01**
+- [x] **Step 2: Open Settings, capture SETTINGS-01**
 
-- [ ] **Step 3: Sign Out, capture AUTH-01 after success**
+- [x] **Step 3: Sign Out, capture AUTH-01 after success**
 
-- [ ] **Step 4: Write e2e-report.md with commands, result, screenshot paths**
+- [x] **Step 4: Write e2e-report.md with commands, result, screenshot paths**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'

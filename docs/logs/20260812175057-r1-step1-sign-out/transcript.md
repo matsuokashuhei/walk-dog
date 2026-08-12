@@ -19,6 +19,7 @@
   - `docs/logs/20260812175057-r1-step1-sign-out/screenshots/ios-sign-out-sign-in.png`
   - `docs/logs/20260812175057-r1-step1-sign-out/screenshots/ios-settings-idle.png`
   - `docs/logs/20260812175057-r1-step1-sign-out/e2e-report.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/crit-review.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/plan.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
 
@@ -212,6 +213,29 @@ Subagent-Driven で Task 1–6 を実装・レビュー完了。最終ブラン�
   - test totals: API 172 pass
   - review state: whole-branch approved; session Crit pending
   - commit state: branch tip includes sync commit
+  - publication state: not published
+  - next permitted action: crit
+- baseline conflicts: none
+- next permitted action: crit
+
+### User
+
+2
+
+### Assistant
+
+Chose push + PR. Ran pre-crit sync and session Crit (CHANGES_REQUESTED). Applied Important fixes for affirmative wording and Settings ownership sync, then requested re-crit.
+
+## Sync
+
+- status: synced
+- trigger: Crit response fixes
+- artifacts updated: transcript, sign-out-specification.md, design.md, plan.md, specification-review.md, staged-development.md, crit-review.md, docs/development/2026-08-12-r1-step1-sign-out-plan.md
+- artifacts already current: e2e-report.md, screenshots, mockups
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - review state: Crit CHANGES_REQUESTED addressed; re-crit pending
+  - commit state: Crit response pending commit
   - publication state: not published
   - next permitted action: crit
 - baseline conflicts: none

@@ -66,6 +66,7 @@ R1は次の縦切り順で進める。
 
 - Sign Up、Sign In、OTP確認、Owner表示名登録、Sign Outを実装する。
 - Sign Outは、Active Walkがある場合に確認ダイアログを表示し、承諾後にActive WalkをFailedにしてからCognito sessionを無効化する。Active Walkがない場合は確認なしでSign Outする。
+- アカウント縦切りの Settings（`/settings`）は Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
 - Dog一覧、Dog登録、Dog選択を実装し、Dog登録時にDaily 30分のGoal Revisionを作成する。
 - Ready、Starting、Recording、Completed、Failedを、APIのActive Walkと同期して表示する。
 - 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。
@@ -82,7 +83,8 @@ R1は次の縦切り順で進める。
 
 ## R3: 設定と公開準備
 
-- Owner編集、Preferences、Email Change、利用規約、プライバシーポリシー、アプリ情報を提供する。
+- Owner編集、Preferences、Email Changeを提供する。
+- Settings の法務リンクは R1 アカウント縦切りで提供済みの公開文書入口を継続利用し、Preferences と Email Change を Settings に追加する。
 - 日本語・英語、km・mile、Light・Dark・System、通知設定を画面表示へ反映する。
 - Dynamic Type、Reduce Motion、テキスト・ラベル・アイコンによる状態表現を実機で確認する。
 - 公開用の法務文書URL、データ保持と削除、配布範囲、審査対応を公開リリースの要件として確定する。

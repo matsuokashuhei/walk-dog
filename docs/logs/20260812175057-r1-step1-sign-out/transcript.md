@@ -12,6 +12,7 @@
 - Artifact List:
   - `docs/logs/20260812175057-r1-step1-sign-out/transcript.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/specification-review.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-spec-mockups.html`
 
 ## Messages
 
@@ -53,6 +54,29 @@ ok
   - task phase: specification confirmation
   - review state: awaiting-confirmation
   - commit state: session start committed; specification-review pending commit
+  - publication state: not published
+  - next permitted action: await plan-level confirmation
+- baseline conflicts: none
+- next permitted action: await plan-level confirmation
+
+### User
+
+画面とAPIの仕様を提示してください。画面はHTMLモック、コンポーネント一覧、イベント一覧。APIはリクエスト/レスポンスと振る舞い。
+
+### Assistant
+
+explaining-specifications-and-design に従い、Sign Out の画面契約と API 契約を WHAT → HOW → WHY で提示。セッション成果物に `sign-out-spec-mockups.html` を追加した。
+
+## Sync
+
+- status: synced
+- trigger: sign-out screen/API specification presentation and HTML mockups
+- artifacts updated: transcript, sign-out-spec-mockups.html
+- artifacts already current: specification-review.md
+- cross-artifact matrix:
+  - task phase: specification confirmation
+  - review state: awaiting-confirmation
+  - commit state: mockups pending commit
   - publication state: not published
   - next permitted action: await plan-level confirmation
 - baseline conflicts: none

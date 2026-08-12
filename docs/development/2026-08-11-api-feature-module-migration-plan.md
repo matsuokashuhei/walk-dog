@@ -56,7 +56,7 @@
 - Consumes: Current `createApp`, four `register…Route` functions, `mockCognito`, `mockDb`.
 - Produces: Recursive test commands and the preserved 45-test baseline used by every later Task.
 
-- [ ] **Step 1: Run and record the current baseline**
+- [x] **Step 1: Run and record the current baseline**
 
 Run from `apps/api`:
 
@@ -67,7 +67,7 @@ npm run check
 
 Expected: TAP reports `tests 45`, `pass 45`, `fail 0`; lint, jscpd, knip, and typecheck exit 0. Record all 45 test names and the summary in the session `verification.md`.
 
-- [ ] **Step 2: Configure recursive default and separate integration discovery**
+- [x] **Step 2: Configure recursive default and separate integration discovery**
 
 Set the scripts exactly:
 
@@ -78,7 +78,7 @@ Set the scripts exactly:
 }
 ```
 
-- [ ] **Step 3: Move existing tests and update imports only**
+- [x] **Step 3: Move existing tests and update imports only**
 
 Preserve every `test('…')` name and assertion. Update relative imports to current production paths; for example:
 
@@ -87,7 +87,7 @@ import { registerSignUpRoute } from '../../../../src/routes/sign-up.js'
 import { cognitoError, createAuthApp, mockCognito } from '../fixtures.js'
 ```
 
-- [ ] **Step 4: Verify the moved baseline**
+- [x] **Step 4: Verify the moved baseline**
 
 Run:
 
@@ -97,7 +97,7 @@ npm test
 
 Expected: TAP still reports exactly `tests 45`, `pass 45`, `fail 0`, and every name recorded in Step 1 appears once.
 
-- [ ] **Step 5: Add an OpenAPI characterization test**
+- [x] **Step 5: Add an OpenAPI characterization test**
 
 Register all four current auth routes on the test app, request `/openapi.json`, and assert this matrix:
 
@@ -113,7 +113,7 @@ const expectedOperations = {
 
 Also assert OpenAPI `3.1.0`, component `Error`, and the exact request-schema required/nullable rules already exercised by the endpoint tests.
 
-- [ ] **Step 6: Run Task 1 gates and review**
+- [x] **Step 6: Run Task 1 gates and review**
 
 Run:
 
@@ -125,7 +125,7 @@ git diff --check
 
 Expected: 45 preserved tests plus the new OpenAPI test pass. Request an independent review of the Task 1 diff and resolve every Critical or Important finding.
 
-- [ ] **Step 7: Commit Task 1**
+- [x] **Step 7: Commit Task 1**
 
 ```bash
 git add apps/api/package.json apps/api/test docs/logs/20260811225753-migrate-api-feature-modules
@@ -161,7 +161,7 @@ export type App = OpenAPIHono<{ Variables: AppVariables }>
 export function registerHealthRoutes(): App
 ```
 
-- [ ] **Step 1: Point boundary tests at the target modules**
+- [x] **Step 1: Point boundary tests at the target modules**
 
 Update app, config, and observability test imports to the target paths and add a health aggregate assertion:
 
@@ -177,11 +177,11 @@ Run the targeted tests and confirm they fail with target modules unresolved.
 node --import tsx --test test/app.test.ts test/config.test.ts test/infrastructure/observability/request-middleware.test.ts
 ```
 
-- [ ] **Step 2: Create shared Hono and error contracts**
+- [x] **Step 2: Create shared Hono and error contracts**
 
 `shared/http/types.ts` exports the typed `App`; `error-contract.ts` exports the existing `errorSchema`. Feature routes import these inward contracts rather than `src/app.ts`.
 
-- [ ] **Step 3: Extract the health module**
+- [x] **Step 3: Extract the health module**
 
 Use `healthResponseSchema`, exported `healthRoute`, and `registerHealthRoute`; return a completed child app from `registerHealthRoutes()`:
 
@@ -195,7 +195,7 @@ export function registerHealthRoutes(): App {
 
 Keep the route path `/health` until Task 6 mounts the completed child at `/`.
 
-- [ ] **Step 4: Move config and observability implementations**
+- [x] **Step 4: Move config and observability implementations**
 
 Preserve exported function names and current values:
 
@@ -211,11 +211,11 @@ closeSentry()
 
 Update `instrument.ts`, `app.ts`, `index.ts`, and tests to import the infrastructure paths.
 
-- [ ] **Step 5: Register health through the module boundary**
+- [x] **Step 5: Register health through the module boundary**
 
 Keep `createApp(dependencies, registerRoutes?)` compatible for the remaining auth migration, register the completed health child from the app factory, and retain top-level `defaultHook`, middleware, `notFound`, `onError`, and OpenAPI metadata.
 
-- [ ] **Step 6: Run Task 2 gates and review**
+- [x] **Step 6: Run Task 2 gates and review**
 
 ```bash
 node --import tsx --test test/app.test.ts test/config.test.ts test/infrastructure/observability/request-middleware.test.ts
@@ -226,7 +226,7 @@ git diff --check
 
 Expected: public health/OpenAPI/error/request-ID tests and all baseline names pass. Request independent review and resolve all Critical or Important findings.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```bash
 git add apps/api/src apps/api/test docs/logs/20260811225753-migrate-api-feature-modules
@@ -271,7 +271,7 @@ export interface OwnerRepository {
 export function createDrizzleOwnerRepository(database: DbInstance): OwnerRepository
 ```
 
-- [ ] **Step 1: Write failing repository unit tests**
+- [x] **Step 1: Write failing repository unit tests**
 
 Use a small transaction fake and assert:
 
@@ -282,7 +282,7 @@ assert.deepEqual(calls, ['transaction', 'insert'])
 
 Add the conflict branch assertion `['transaction', 'insert', 'select']`, exact insert values `{ cognitoSubject, displayName: null }`, mapper output with `avatarUrl: null`, and unexpected query error identity propagation. Run the suite and confirm the target repository module is unresolved.
 
-- [ ] **Step 2: Move the Drizzle schema and client**
+- [x] **Step 2: Move the Drizzle schema and client**
 
 Update the schema import in `client.ts` and set Drizzle Kit to:
 
@@ -292,15 +292,15 @@ schema: './src/infrastructure/database/schema/*.ts'
 
 Run `npm run db:generate`, then verify that the generated migration tree remains equal to the committed migration tree with `git diff --exit-code -- drizzle`.
 
-- [ ] **Step 3: Implement the Owner interface and repository**
+- [x] **Step 3: Implement the Owner interface and repository**
 
 Inside one `database.transaction()`, insert with targeted conflict handling, return the inserted row when present, otherwise select by `owners.cognitoSubject` with `limit(1)`. Keep row-to-Owner conversion private to the repository.
 
-- [ ] **Step 4: Route current verification through the repository**
+- [x] **Step 4: Route current verification through the repository**
 
 Keep the current verification-route signature for this Task. Rewrite the temporary `ownerFromCognitoSubject(database, subject)` helper to call `createDrizzleOwnerRepository(database).resolveByCognitoSubject(subject)` and update response serialization to accept the module `Owner`.
 
-- [ ] **Step 5: Add the real PostgreSQL concurrency test**
+- [x] **Step 5: Add the real PostgreSQL concurrency test**
 
 Use a unique `cognitoSubject`, call `resolveByCognitoSubject` concurrently twice, and assert the same `ownerId` and one matching database row. Delete only the generated subject row in test cleanup.
 
@@ -312,7 +312,7 @@ POSTGRES_HOST=127.0.0.1 npm run migrate
 POSTGRES_HOST=127.0.0.1 npm run test:integration
 ```
 
-- [ ] **Step 6: Run Task 3 gates and review**
+- [x] **Step 6: Run Task 3 gates and review**
 
 ```bash
 node --import tsx --test test/infrastructure/database/owner-schema.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts
@@ -323,7 +323,7 @@ git diff --check
 
 Expected: insert/existing branches, schema assertions, and existing authentication responses pass. Request independent review and resolve all Critical or Important findings.
 
-- [ ] **Step 7: Commit Task 3**
+- [x] **Step 7: Commit Task 3**
 
 ```bash
 git add apps/api/src apps/api/test apps/api/drizzle.config.ts docs/logs/20260811225753-migrate-api-feature-modules
@@ -375,7 +375,7 @@ export type StartSignUp = (input: { email: string }) => Promise<StartSignUpResul
 export type StartSignIn = (input: { email: string }) => Promise<StartSignInResult>
 ```
 
-- [ ] **Step 1: Write failing use-case tests**
+- [x] **Step 1: Write failing use-case tests**
 
 For Sign Up, assert direct challenge success, `username-exists` followed by resend, already-confirmed result, invalid input, rate limit, dependency order, and unexpected error identity. For Sign In, assert EMAIL_OTP challenge conversion, authentication failure, rate limit, incomplete challenge as an internal failure, and unexpected error identity.
 
@@ -385,19 +385,19 @@ assert.deepEqual(result, expectedChallenge)
 assert.deepEqual(calls, ['signUp:test@example.com'])
 ```
 
-- [ ] **Step 2: Define auth contracts, types, errors, and start use cases**
+- [x] **Step 2: Define auth contracts, types, errors, and start use cases**
 
 Move the current Zod request/response schemas into `contracts.ts`. Use cases return discriminated module results. Exact status, message, request ID, and retryability stay in endpoint routes.
 
-- [ ] **Step 3: Write failing Cognito adapter command/result tests**
+- [x] **Step 3: Write failing Cognito adapter command/result tests**
 
 Use a recording sender/gateway and assert `SignUpCommand`, `ResendConfirmationCodeCommand`, and `InitiateAuthCommand` inputs exactly. Assert PascalCase SDK output conversion, each documented exception result, and unexpected error identity propagation.
 
-- [ ] **Step 4: Implement the Cognito start-operation adapter**
+- [x] **Step 4: Implement the Cognito start-operation adapter**
 
 Keep `createCognitoClient(config)` and its current method assertions in infrastructure. `createCognitoAuthProvider(cognitoClient)` implements module result conversion and imports AWS types only under `infrastructure/cognito`.
 
-- [ ] **Step 5: Refactor the two start routes**
+- [x] **Step 5: Refactor the two start routes**
 
 Each handler reads `c.req.valid('json')`, calls its injected use case once, and maps the result to the existing response. Keep full public paths during this Task so the current root aggregator remains valid:
 
@@ -408,7 +408,7 @@ export function registerSignInRoute(app: App, startSignIn: StartSignIn): void
 
 Route tests inject only these functions and assert their received input. Invalid JSON completes at the validation response, demonstrated by an empty use-case call log.
 
-- [ ] **Step 6: Run Task 4 gates and review**
+- [x] **Step 6: Run Task 4 gates and review**
 
 ```bash
 node --import tsx --test test/modules/auth/routes/sign-up.test.ts test/modules/auth/routes/sign-in.test.ts test/modules/auth/use-cases/start-sign-up.test.ts test/modules/auth/use-cases/start-sign-in.test.ts test/infrastructure/cognito/client.test.ts test/infrastructure/cognito/cognito-auth-provider.test.ts
@@ -419,7 +419,7 @@ git diff --check
 
 Expected: current Sign Up/Sign In HTTP assertions plus new use-case/adapter boundaries pass. Request independent review and resolve all Critical or Important findings.
 
-- [ ] **Step 7: Commit Task 4**
+- [x] **Step 7: Commit Task 4**
 
 ```bash
 git add apps/api/src apps/api/test docs/logs/20260811225753-migrate-api-feature-modules
@@ -466,7 +466,7 @@ export type VerifySignUp = (input: VerifySignUpInput) => Promise<VerifyAuthResul
 export type VerifySignIn = (input: VerifySignInInput) => Promise<VerifyAuthResult>
 ```
 
-- [ ] **Step 1: Write failing verify use-case tests**
+- [x] **Step 1: Write failing verify use-case tests**
 
 For each use case, assert provider input, authenticated result → Owner resolution by `subject`, complete tokens and Owner output, every known provider failure, a provider-only call log for failure outcomes, and unexpected error identity propagation.
 
@@ -477,15 +477,15 @@ assert.deepEqual(calls, [
 ])
 ```
 
-- [ ] **Step 2: Extend Cognito adapter tests and implementation**
+- [x] **Step 2: Extend Cognito adapter tests and implementation**
 
 Assert exact `ConfirmSignUpCommand`, follow-up `InitiateAuthCommand`, and `RespondToAuthChallengeCommand` input. Require AccessToken, IdToken, and RefreshToken; decode the ID-token payload and require a string `sub`; return camelCase `Authentication`. Convert ExpiredCode, CodeMismatch, NotAuthorized, AliasExists, TooManyRequests, and LimitExceeded to documented module failures; propagate all other errors.
 
-- [ ] **Step 3: Implement verify use cases**
+- [x] **Step 3: Implement verify use cases**
 
 Call provider once, resolve Owner only for `authenticated`, and return `{ outcome: 'authenticated', authentication, owner }`. Return known feature failures unchanged for route mapping.
 
-- [ ] **Step 4: Refactor verify routes**
+- [x] **Step 4: Refactor verify routes**
 
 Use injected `VerifySignUp`/`VerifySignIn` functions. Preserve exact current messages, including:
 
@@ -501,11 +501,11 @@ Use injected `VerifySignUp`/`VerifySignIn` functions. Preserve exact current mes
 
 Keep full public paths through this Task. Route tests inject only the corresponding verify use case.
 
-- [ ] **Step 5: Remove transitional auth helpers**
+- [x] **Step 5: Remove transitional auth helpers**
 
 All authentication response schemas come from `modules/auth/contracts.ts`; token/Owner composition comes from use cases and route serialization. Production imports resolve through module or infrastructure paths.
 
-- [ ] **Step 6: Run Task 5 gates and review**
+- [x] **Step 6: Run Task 5 gates and review**
 
 ```bash
 node --import tsx --test test/modules/auth/routes/sign-up-verify.test.ts test/modules/auth/routes/sign-in-verify.test.ts test/modules/auth/use-cases/verify-sign-up.test.ts test/modules/auth/use-cases/verify-sign-in.test.ts test/infrastructure/cognito/cognito-auth-provider.test.ts test/infrastructure/database/drizzle-owner-repository.test.ts
@@ -516,7 +516,7 @@ git diff --check
 
 Expected: current verification contracts, added ordering/error coverage, and all baseline names pass. Request independent review and resolve all Critical or Important findings.
 
-- [ ] **Step 7: Commit Task 5**
+- [x] **Step 7: Commit Task 5**
 
 ```bash
 git add apps/api/src apps/api/test docs/logs/20260811225753-migrate-api-feature-modules
@@ -565,7 +565,7 @@ export function createApplication(
 ): { app: App; resources: ApplicationResources }
 ```
 
-- [ ] **Step 1: Write failing aggregate and composition tests**
+- [x] **Step 1: Write failing aggregate and composition tests**
 
 `auth-routes.test.ts` requests the child OpenAPI document or mounts it on a test parent and asserts exactly one operation for each relative/public method-path. `composition.test.ts` injects spy factories and asserts order and identity:
 
@@ -580,11 +580,11 @@ assert.equal(receivedCognitoClient, cognitoClient)
 
 Importing `index.ts` performs module definition; listener, signal, PostgreSQL, and AWS construction begin when `createApplication` is invoked. Assert an empty factory call log immediately after import.
 
-- [ ] **Step 2: Build completed auth and health child apps**
+- [x] **Step 2: Build completed auth and health child apps**
 
 Change auth endpoint paths to `/sign-up`, `/sign-up/verify`, `/sign-in`, `/sign-in/verify`. Register every endpoint before returning the child app. Keep health at `/health` and mount it at `/`.
 
-- [ ] **Step 3: Mount completed modules in app.ts**
+- [x] **Step 3: Mount completed modules in app.ts**
 
 Apply middleware and global hooks once, then mount:
 
@@ -596,15 +596,15 @@ for (const route of routes) {
 
 Production supplies exactly `{ path: '/', app: healthRoutes }` and `{ path: '/v1/auth', app: authRoutes }`. Register OpenAPI document metadata after completed route registration so `/openapi.json` contains all operations.
 
-- [ ] **Step 4: Implement the pure composition factory**
+- [x] **Step 4: Implement the pure composition factory**
 
 `createApplication(env, factories)` loads each config once, creates one logger, Pool/DB, and Cognito client, shares them with adapters/repository, constructs four use cases, constructs both feature apps, and returns the Hono app plus closeable resources. Default factories are production implementations; tests replace the complete factory set.
 
-- [ ] **Step 5: Move process startup and lifecycle to server.ts**
+- [x] **Step 5: Move process startup and lifecycle to server.ts**
 
 Change package entry scripts to `src/server.ts` / `dist/server.js`. `server.ts` calls `createApplication(process.env)`, starts `serve`, registers SIGINT/SIGTERM, and uses an idempotent shutdown promise. Close order is listener → Pool → Cognito client → Sentry; every resource closes once, including the server-close error path.
 
-- [ ] **Step 6: Remove transitional first-level directories and verify imports**
+- [x] **Step 6: Remove transitional first-level directories and verify imports**
 
 Run:
 
@@ -614,7 +614,7 @@ rg "src/(auth|routes|db|contracts|observability|schema)|from ['\"]\.\.?/(auth|ro
 
 Expected: every production/test import resolves through `modules`, `infrastructure`, or `shared`. Confirm `drizzle.config.ts` points to `src/infrastructure/database/schema/*.ts` and `knip.json` entries include `src/server.ts` and recursive tests.
 
-- [ ] **Step 7: Verify the public contract and full suite**
+- [x] **Step 7: Verify the public contract and full suite**
 
 ```bash
 npm test
@@ -633,11 +633,11 @@ Expected:
 - OpenAPI `3.1.0`, `Error`, request ID header, request schemas, and success/error statuses match.
 - Integration, lint, jscpd, knip, typecheck, build, skill consistency, and diff checks succeed.
 
-- [ ] **Step 8: Complete artifacts and independent review**
+- [x] **Step 8: Complete artifacts and independent review**
 
 Record final test counts, integration result, quality-gate output, OpenAPI comparison, import-boundary result, and staged-plan classification in `verification.md`; mark every deliverable in `completion-checklist.md`; sync the transcript. Request an independent full-diff review and resolve every Critical or Important finding, rerunning the affected and full gates.
 
-- [ ] **Step 9: Commit Task 6**
+- [x] **Step 9: Commit Task 6**
 
 ```bash
 git add apps/api docs/logs/20260811225753-migrate-api-feature-modules

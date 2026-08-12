@@ -35,6 +35,16 @@ Repository-owned development files and session artifacts are created under the r
 5. Keep existing worktrees outside the workspace unchanged. New session files use the workspace-local worktree.
 6. After the path checks succeed, add the resolved path once to the session `Worktrees` registry and persist the same entry in the transcript `Worktrees` list. When this session creates another workspace, append its resolved path once to that ordered registry and persist the same entry before using it. The transcript list is the persisted record of the runtime registry, not a second cleanup list. Run `syncing-session-artifacts` after the record changes and continue only when the result is `status: synced`.
 
+### Temporary dependency reuse
+
+When a worktree reuses package dependencies from another checkout:
+
+1. Confirm the source is a real directory and the destination path is absent.
+2. Create exactly one symlink at the destination to the absolute expected source path.
+3. Verify the destination is a symlink whose resolved target equals that absolute path, and verify `target/node_modules` is absent.
+4. When the destination is already a real directory, report the path and the retry operation (restore an absent destination, then create the single symlink), and stop without creating a link inside that directory.
+5. After the commands that needed the link finish, unlink only that verified symlink. Confirm the destination and the accidental nested path are absent, and confirm the source directory remains.
+
 ## Design and Plan
 
 After the specification review is `ready` and before asking the user to approve a design or implementation plan:

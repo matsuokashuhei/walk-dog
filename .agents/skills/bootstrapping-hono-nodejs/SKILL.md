@@ -1,6 +1,6 @@
 ---
 name: bootstrapping-hono-nodejs
-description: Bootstrap or reconfigure a Hono Node.js API package, including create-hono, the Node adapter, serve entrypoint, app factory separation, and package scripts. Use when initializing apps/api or changing Node.js runtime startup. Do not use for route handlers, middleware composition, validation, OpenAPI schemas, or tests alone.
+description: Bootstrap or reconfigure a Hono Node.js API package, including create-hono, the Node adapter, serve entrypoint, app factory separation, package scripts, and owned-resource shutdown. Use when initializing apps/api or changing Node.js runtime startup or graceful shutdown. Do not use for route handlers, middleware composition, validation, OpenAPI schemas, or tests alone.
 ---
 
 # Bootstrapping Hono Node.js
@@ -23,6 +23,10 @@ Read the current official Hono Node.js docs before changing package bootstrap or
   - `build`: TypeScript compilation that writes production output to `dist`
   - `start`: `node dist/index.js`
 
+## Owned-resource shutdown
+
+Close owned resources in this order: listener, Pool, external clients, observability. Attempt every owned resource exactly once, including after an earlier close fails. Propagate the first failure after the full sequence. Concurrent and repeated shutdown calls return the same promise.
+
 ## Node.js initialization
 
 After the official docs review, initialize the first Node.js API with this sequence:
@@ -41,7 +45,7 @@ After the official docs review, initialize the first Node.js API with this seque
 | Phase | Provide |
 | --- | --- |
 | Documentation review | The Node.js adapter docs and create-hono docs read. |
-| Design | Package location, scripts, factory/entry boundary, and first public contract. |
+| Design | Package location, scripts, factory/entry boundary, first public contract, and owned-resource shutdown. |
 | Implementation | Focused bootstrap and startup changes that follow the reviewed documentation. |
 | Verification | Typecheck, package scripts, and contract tests via `$hono:testing-hono-apis`. |
 
@@ -53,7 +57,8 @@ After the official docs review, initialize the first Node.js API with this seque
 | Dev or start command | Node.js getting-started | Script commands and entry file |
 | Listener vs testable app | Node.js getting-started | Factory export and serve call site |
 | First public endpoints | Project API design | `/health`, `/openapi.json`, request ID, error JSON |
+| Owned-resource shutdown | Node.js getting-started | Close order, every resource once, first failure, idempotent promise |
 
 ## Completion check
 
-Before reporting a bootstrap change complete, provide the documentation reviewed, the package and entry boundary changed, and the verification results.
+Before reporting a bootstrap change complete, provide the documentation reviewed, the package and entry boundary changed, the owned-resource shutdown contract, and the verification results.

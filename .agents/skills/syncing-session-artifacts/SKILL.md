@@ -44,11 +44,23 @@ Do not skip a trigger because the change felt small. A commit that changes behav
    - implementation plan tasks and constraints;
    - completion checklist deliverables and verification results;
    - specification-review status and deliverables when that file exists.
-3. Update every outdated record in positive terms that state what is now true.
-4. Refresh the transcript Artifact List so it lists every created or changed session path.
-5. Append a short transcript entry for the sync event (review fix, follow-up fix, merge, pre-crit, or pre-publish).
-6. Check baseline conflicts: if an artifact path was already modified in the recorded baseline, stop, record the conflict, and ask for direction. Do not overwrite baseline work.
-7. Record the completion result: which artifacts were updated, which were already current, and the next permitted action.
+3. Build a cross-artifact state matrix and require equality for every shared field that more than one artifact states:
+
+   | Field | Typical sources |
+   | --- | --- |
+   | task phase | transcript, plan, checklist, verification |
+   | test totals | checklist, verification, transcript |
+   | review state | transcript, checklist, verification, retrospective |
+   | commit state | transcript, checklist, verification |
+   | publication state | transcript, checklist, retrospective |
+   | next permitted action | transcript, checklist, retrospective |
+
+   Every artifact that states a field must agree on that field's value. When values differ, return `status: blocked`, name the conflicting fields and artifact paths, and wait until those records are reconciled to one shared value.
+4. Update every outdated record in positive terms that state what is now true.
+5. Refresh the transcript Artifact List so it lists every created or changed session path.
+6. Append a short transcript entry for the sync event (review fix, follow-up fix, merge, pre-crit, or pre-publish).
+7. Check baseline conflicts: if an artifact path was already modified in the recorded baseline, stop, record the conflict, and ask for direction. Do not overwrite baseline work.
+8. Record the completion result: which artifacts were updated, which were already current, matrix equality, and the next permitted action.
 
 ## Completion record
 
@@ -58,18 +70,19 @@ Each sync must leave a clear result in the conversation or transcript entry:
 - trigger that required the sync;
 - artifacts updated;
 - artifacts already current;
+- cross-artifact state matrix with one agreed value per field, or the conflicting fields and artifact paths when status is `blocked`;
 - baseline conflicts, if any;
-- next permitted action: `continue`, `crit`, or `publish`.
+- next permitted action: `continue`, `crit`, `publish`, `open-follow-up-pr`, or `terminal-worktree-cleanup`.
 
-Proceed only when status is `synced` and the next permitted action matches the caller's intent.
+Proceed only when status is `synced`, every stated matrix field agrees across the artifacts that state it, and the next permitted action matches the caller's intent.
 
 ## Blocking states
 
-Use `blocked` when the active session directory or `transcript.md` cannot be identified.
+Use `blocked` when the active session directory or `transcript.md` cannot be identified, or when the cross-artifact state matrix finds disagreeing values for a shared field. The blocked result names each conflicting field and the artifact paths that state it, and the retry is to reconcile those records to one agreed value.
 
 Use `awaiting-direction` when a baseline-path conflict exists or two session directories claim to be active and the caller has not chosen one.
 
-Do not continue to Crit or Publish while status is `blocked` or `awaiting-direction`.
+Crit and Publish proceed only after status is `synced`.
 
 ## Explicit non-goals
 
@@ -81,8 +94,12 @@ Do not continue to Crit or Publish while status is `blocked` or `awaiting-direct
 
 ### RED
 
-A review-fix commit lands while `design.md`, `completion-checklist.md`, and the transcript Artifact List still describe the pre-review design. The agent continues to the next task or publish without updating those records.
+A review-response commit lands while `design.md`, `completion-checklist.md`, and the transcript Artifact List still describe the pre-review design. The agent continues to the next task or publish without updating those records.
+
+Checklist reports Task 6B and its gates complete while transcript and verification still describe that work as pending. Sync compares each artifact in isolation and returns `synced` without a shared-state equality gate.
 
 ### GREEN
 
-After the same review-fix commit, this skill updates the design and checklist to the post-review truth, refreshes the Artifact List, appends a transcript sync entry, and only then returns `next permitted action: continue`, `crit`, or `publish`.
+After the same review-response commit, this skill updates the design and checklist to the post-review truth, refreshes the Artifact List, appends a transcript sync entry, and only then returns `next permitted action: continue`, `crit`, or `publish`.
+
+When checklist, transcript, and verification disagree on task phase, sync returns `status: blocked`, names `task phase` plus those artifact paths, and reaches `synced` only after every artifact that states each matrix field agrees.

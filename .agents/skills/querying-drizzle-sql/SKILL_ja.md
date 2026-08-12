@@ -26,6 +26,7 @@ SQL ライクなクエリコードを変更する前に、最新の公式 Drizzl
 
 - 結果形状がフラットまたは JOIN 駆動の場合は SQL ライクなクエリビルダーを優先する。
 - 複数テーブル書き込みは `db.transaction()` でラップし、1 つのビジネス状態遷移が一緒にコミットされるようにする。
+- insert-or-resolve フローが一意のビジネスキーによる lookup にフォールバックする場合、同じキーを conflict target として指定する。
 - データベース行を API DTO にマッピングする。OpenAPI レスポンススキーマは公開コントラクトとして維持する。
 - `db.query` を通じたネストされたリレーショナルフェッチが必要な場合は `$drizzle:querying-drizzle-relations` を使用する。
 
@@ -45,9 +46,10 @@ SQL ライクなクエリコードを変更する前に、最新の公式 Drizzl
 | フィルター付き select | Select と operators | From、where、order、limit |
 | Join | Joins と select | Join 型、on 条件、選択カラム |
 | Insert / update / delete | 該当するミューテーションドキュメント | Values または set 句、where 句、returning |
+| 一意ビジネスキーによる insert-or-resolve | Insert | lookup キーと一致する conflict target；挿入および既存行パス |
 | 条件付きフィルター | Operators と data-querying compose 例 | 構成された `and` / `or` フィルターリスト |
 | 複数テーブル書き込み | Transactions | トランザクション境界と失敗動作 |
 
 ## 完了チェック
 
-クエリの変更が完了したと報告する前に、レビューしたドキュメント、変更したクエリ、検証結果を提供すること。
+クエリの変更が完了したと報告する前に、レビューしたドキュメント、変更したクエリ、検証結果を提供すること。insert-or-resolve では、正確な conflict target が lookup キーと一致することを検証し、挿入および既存行パスをカバーすること。

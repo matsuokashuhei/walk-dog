@@ -26,6 +26,7 @@ Read the current official Drizzle PostgreSQL query docs before changing SQL-like
 
 - Prefer the SQL-like query builder when the result shape is flat or join-driven.
 - Wrap multi-table writes in `db.transaction()` so one business state transition commits together.
+- When an insert-or-resolve flow falls back to lookup by a unique business key, specify that same key as the conflict target.
 - Map database rows to API DTOs; OpenAPI response schemas remain the public contract.
 - Use `$drizzle:querying-drizzle-relations` when the need is nested relational fetches through `db.query`.
 
@@ -45,9 +46,10 @@ Read the current official Drizzle PostgreSQL query docs before changing SQL-like
 | Filtered select | Select and operators | From, where, order, limit |
 | Join | Joins and select | Join type, on condition, selected columns |
 | Insert / update / delete | Matching mutation docs | Values or set clause, where clause, returning |
+| Insert-or-resolve by unique business key | Insert | Conflict target matching the lookup key; inserted and existing-row paths |
 | Conditional filters | Operators and data-querying compose examples | Composed `and` / `or` filter list |
 | Multi-table write | Transactions | Transaction boundary and failure behavior |
 
 ## Completion check
 
-Before reporting a query change complete, provide the documentation reviewed, the queries changed, and the verification results.
+Before reporting a query change complete, provide the documentation reviewed, the queries changed, and the verification results. For insert-or-resolve, verify the exact conflict target matches the lookup key and cover inserted and existing-row paths.

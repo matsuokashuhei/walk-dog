@@ -1,64 +1,64 @@
 ---
 name: bootstrapping-hono-nodejs
-description: Bootstrap or reconfigure a Hono Node.js API package, including create-hono, the Node adapter, serve entrypoint, app factory separation, package scripts, and owned-resource shutdown. Use when initializing apps/api or changing Node.js runtime startup or graceful shutdown. Do not use for route handlers, middleware composition, validation, OpenAPI schemas, or tests alone.
+description: Hono Node.js API パッケージの初期化または再構成。create-hono、Node アダプター、serve エントリーポイント、アプリケーションファクトリーの分離、パッケージスクリプト、所有リソースのシャットダウンを含む。apps/api の初期化や Node.js ランタイム起動または graceful shutdown の変更時に使用する。ルートハンドラー、ミドルウェア構成、バリデーション、OpenAPI スキーマ、テストのみには使用しない。
 ---
 
-# Bootstrapping Hono Node.js
+# Hono Node.js のブートストラップ
 
-Read the current official Hono Node.js docs before changing package bootstrap or runtime startup. Runtime is Node.js only.
+パッケージのブートストラップやランタイム起動を変更する前に、最新の公式 Hono Node.js ドキュメントを読むこと。ランタイムは Node.js のみ。
 
-## Required documentation review
+## 必要なドキュメントレビュー
 
-1. Open <https://hono.dev/docs/getting-started/nodejs> before changing Node adapter or server startup.
-2. Read <https://hono.dev/docs/guides/create-hono> when using or adjusting `create-hono`.
-3. Record the documentation URLs read and the bootstrap decision in the active session log, design, or pull request description.
+1. Node アダプターやサーバー起動を変更する前に <https://hono.dev/docs/getting-started/nodejs> を開く。
+2. `create-hono` を使用または調整する際に <https://hono.dev/docs/guides/create-hono> を読む。
+3. 読んだドキュメントの URL とブートストラップの判断を、アクティブセッションログ、設計、またはプルリクエストの説明に記録する。
 
-## Project defaults
+## プロジェクトのデフォルト
 
-- Place the API package in `apps/api`.
-- Keep `src/app.ts` as an application factory. Keep `src/index.ts` as the Node.js entry that serves the factory result with `@hono/node-server`.
-- Tests import the factory without starting a Node.js listener (`$hono:testing-hono-apis`).
-- Package scripts:
-  - `dev`: `tsx watch src/index.ts`
-  - `build`: TypeScript compilation that writes production output to `dist`
-  - `start`: `node dist/index.js`
+- API パッケージは `apps/api` に配置する。
+- `src/app.ts` はアプリケーションファクトリーとして維持する。`src/index.ts` は `@hono/node-server` でファクトリーの結果を提供する Node.js エントリーポイントとして維持する。
+- テストは Node.js リスナーを起動せずにファクトリーをインポートする（`$hono:testing-hono-apis`）。
+- パッケージスクリプト：
+  - `dev`：`tsx watch src/index.ts`
+  - `build`：本番出力を `dist` に書き出す TypeScript コンパイル
+  - `start`：`node dist/index.js`
 
-## Owned-resource shutdown
+## 所有リソースのシャットダウン
 
-Close owned resources in this order: listener, Pool, external clients, observability. Attempt every owned resource exactly once, including after an earlier close fails. Propagate the first failure after the full sequence. Concurrent and repeated shutdown calls return the same promise.
+所有リソースは次の順序で閉じる：listener、Pool、外部クライアント、observability。先の close が失敗した後も含め、各所有リソースをちょうど 1 回試みる。全シーケンスの後に最初の失敗を伝播する。並行および繰り返しの shutdown 呼び出しは同じ promise を返す。
 
-## Node.js initialization
+## Node.js の初期化
 
-After the official docs review, initialize the first Node.js API with this sequence:
+公式ドキュメントのレビュー後、以下の順序で最初の Node.js API を初期化する：
 
-1. Run `cd apps/api`.
-2. Run `npm create hono@latest .`.
-3. Select the Node.js template and npm for dependency installation.
-4. Define the package scripts listed above.
-5. Keep the factory / entry separation.
-6. Define the first public contract before extending the API: `GET /health`, `GET /openapi.json`, a request ID on each response, and JSON error responses with status, message, request ID, and retryable.
-7. Add contract tests for health, OpenAPI, request ID, and error responses (`$hono:testing-hono-apis`).
-8. Wire OpenAPI with `$hono:documenting-hono-openapi` and shared middleware with `$hono:composing-hono-middleware`.
+1. `cd apps/api` を実行する。
+2. `npm create hono@latest .` を実行する。
+3. Node.js テンプレートと npm での依存関係インストールを選択する。
+4. 上記のパッケージスクリプトを定義する。
+5. ファクトリー / エントリーポイントの分離を維持する。
+6. API を拡張する前に最初のパブリックコントラクトを定義する：`GET /health`、`GET /openapi.json`、各レスポンスのリクエスト ID、status / message / request ID / retryable を含む JSON エラーレスポンス。
+7. health、OpenAPI、リクエスト ID、エラーレスポンスのコントラクトテストを追加する（`$hono:testing-hono-apis`）。
+8. `$hono:documenting-hono-openapi` で OpenAPI を、`$hono:composing-hono-middleware` で共有ミドルウェアを配線する。
 
-## Workflow
+## ワークフロー
 
-| Phase | Provide |
+| フェーズ | 提供内容 |
 | --- | --- |
-| Documentation review | The Node.js adapter docs and create-hono docs read. |
-| Design | Package location, scripts, factory/entry boundary, first public contract, and owned-resource shutdown. |
-| Implementation | Focused bootstrap and startup changes that follow the reviewed documentation. |
-| Verification | Typecheck, package scripts, and contract tests via `$hono:testing-hono-apis`. |
+| ドキュメントレビュー | 読んだ Node.js アダプターと create-hono のドキュメント |
+| 設計 | パッケージの場所、スクリプト、ファクトリー/エントリーポイントの境界、最初のパブリックコントラクト、所有リソースのシャットダウン |
+| 実装 | レビュー済みドキュメントに従ったブートストラップと起動の変更 |
+| 検証 | 型チェック、パッケージスクリプト、`$hono:testing-hono-apis` によるコントラクトテスト |
 
-## Common decisions
+## よくある判断
 
-| Request | Read before implementation | Record |
+| リクエスト | 実装前に読むもの | 記録 |
 | --- | --- | --- |
-| New Node.js API | Node.js getting-started and create-hono | Template, scripts, factory/entry paths |
-| Dev or start command | Node.js getting-started | Script commands and entry file |
-| Listener vs testable app | Node.js getting-started | Factory export and serve call site |
-| First public endpoints | Project API design | `/health`, `/openapi.json`, request ID, error JSON |
-| Owned-resource shutdown | Node.js getting-started | Close order, every resource once, first failure, idempotent promise |
+| 新しい Node.js API | Node.js getting-started と create-hono | テンプレート、スクリプト、ファクトリー/エントリーポイントのパス |
+| dev または start コマンド | Node.js getting-started | スクリプトコマンドとエントリーファイル |
+| リスナー vs テスト可能なアプリ | Node.js getting-started | ファクトリーのエクスポートと serve の呼び出し箇所 |
+| 最初の公開エンドポイント | プロジェクト API 設計 | `/health`、`/openapi.json`、リクエスト ID、エラー JSON |
+| 所有リソースのシャットダウン | Node.js getting-started | クローズ順序、各リソース 1 回、最初の失敗、冪等な promise |
 
-## Completion check
+## 完了チェック
 
-Before reporting a bootstrap change complete, provide the documentation reviewed, the package and entry boundary changed, the owned-resource shutdown contract, and the verification results.
+ブートストラップの変更が完了したと報告する前に、レビューしたドキュメント、変更したパッケージとエントリーポイントの境界、所有リソースのシャットダウン契約、検証結果を提供すること。

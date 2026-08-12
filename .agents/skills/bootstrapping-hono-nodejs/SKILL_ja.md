@@ -1,6 +1,6 @@
 ---
 name: bootstrapping-hono-nodejs
-description: 新しい Hono Node.js API パッケージの初期化または再構成。create-hono、Node アダプター、serve エントリーポイント、アプリケーションファクトリーの分離、パッケージスクリプト、所有リソースのシャットダウンを含む。apps/api の初期化や Node.js ランタイム起動または graceful shutdown の変更時に使用する。ルートハンドラー、ミドルウェア構成、バリデーション、OpenAPI スキーマ、テストのみには使用しない。
+description: Hono Node.js API パッケージの初期化または再構成。create-hono、Node アダプター、serve エントリーポイント、アプリケーションファクトリーの分離、パッケージスクリプト、所有リソースのシャットダウンを含む。apps/api の初期化や Node.js ランタイム起動または graceful shutdown の変更時に使用する。ルートハンドラー、ミドルウェア構成、バリデーション、OpenAPI スキーマ、テストのみには使用しない。
 ---
 
 # Hono Node.js のブートストラップ
@@ -36,7 +36,7 @@ description: 新しい Hono Node.js API パッケージの初期化または再�
 3. Node.js テンプレートと npm での依存関係インストールを選択する。
 4. 上記のパッケージスクリプトを定義する。
 5. ファクトリー / エントリーポイントの分離を維持する。
-6. API を拡張する前に最初のパブリックコントラクトを定義する：`GET /health`、`GET /openapi.json`、各レスポンスのリクエスト ID、status / message / requestId / retryable を含む JSON エラーレスポンス。
+6. API を拡張する前に最初のパブリックコントラクトを定義する：`GET /health`、`GET /openapi.json`、各レスポンスのリクエスト ID、status / message / request ID / retryable を含む JSON エラーレスポンス。
 7. health、OpenAPI、リクエスト ID、エラーレスポンスのコントラクトテストを追加する（`$hono:testing-hono-apis`）。
 8. `$hono:documenting-hono-openapi` で OpenAPI を、`$hono:composing-hono-middleware` で共有ミドルウェアを配線する。
 

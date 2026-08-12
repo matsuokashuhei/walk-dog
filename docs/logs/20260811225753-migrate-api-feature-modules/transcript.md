@@ -40,6 +40,7 @@
 13. User requested creation of the pull request after final verification.
 14. User approved the published pull request and requested its merge.
 15. User approved all five retrospective skill proposals.
+16. User requested that the skills in PR #48 be written in Japanese.
 
 ## Session events
 
@@ -104,3 +105,6 @@
 - `2026-08-12 12:55 JST`: Review-fix artifact sync completed. `status: synced`; trigger: independent review fixes; updated: retrospective, transcript, migration plan, five English skill bodies, and four Japanese sibling bodies; already current: specification review, completion checklist, and verification; cross-artifact matrix: task phase complete, tests 145 unit plus one integration, review fix applied with re-review pending, implementation commit merged in PR #47, retrospective skills implemented, next permitted action crit/re-review; baseline conflicts: none; next permitted action: crit.
 - `2026-08-12 13:00 JST`: Cursor Agent full-diff re-review returned exactly `APPROVED` with no Critical or Important findings.
 - `2026-08-12 13:02 JST`: Pre-publish artifact sync completed. `status: synced`; trigger: independent approval and immediate pre-publish gate; updated: retrospective and transcript; already current: specification review, completion checklist, verification, migration design, and migration plan; cross-artifact matrix: task phase complete, tests 145 unit plus one integration, review approved, implementation merged in PR #47, retrospective skills implemented, publication state follow-up pending, next permitted action open-follow-up-pr; baseline conflicts: none; next permitted action: publish/open-follow-up-pr.
+- `2026-08-12 13:15 JST`: User requested Japanese skill bodies in PR #48. Cursor Agent translated the complete canonical bodies for `bootstrapping-hono-nodejs`, `querying-drizzle-sql`, `run-dev-session`, and `syncing-session-artifacts`; `testing-hono-apis` was already Japanese. Existing Japanese sibling files were synchronized byte-for-byte.
+- `2026-08-12 13:25 JST`: Translation review found six Important semantic differences in trigger scope and process wording. Cursor Agent fixed all six; skill-library sync/check, five quick validations, pair equality, and `git diff --check` passed. Independent semantic re-review returned `APPROVED`.
+- `2026-08-12 13:27 JST`: PR feedback artifact sync completed. `status: synced`; trigger: user-requested Japanese skill bodies and review fixes; updated: retrospective, transcript, verification, and four canonical skill bodies plus their siblings; already current: specification review, completion checklist, migration design, and migration plan; cross-artifact matrix: task phase complete, tests 145 unit plus one integration, review approved, PR #48 open with feedback fix pending push, next permitted action publish; baseline conflicts: none; next permitted action: publish.

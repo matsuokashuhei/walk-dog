@@ -105,7 +105,8 @@
 
 ### Repository skill view
 
-- Japanese sibling bodies mirror the approved rules for bootstrap shutdown, Drizzle conflict targets, temporary dependency reuse, and artifact-state consistency.
+- The canonical bodies for bootstrap shutdown, Drizzle queries, development sessions, artifact sync, and Hono API testing are Japanese. Each existing `SKILL_ja.md` sibling is byte-identical to its canonical body.
 - `.agents/skill-library/` was regenerated from `.agents/skills/`.
 - `scripts/agent-skills.sh check`, all five quick validations, and `git diff --check` passed.
 - Cursor Agent full-diff review found four Important artifact/parity/evidence issues; all were fixed, and the independent re-review returned `APPROVED` with no Critical or Important findings.
+- After the user requested Japanese skill bodies in PR #48, Cursor Agent translated the four remaining English canonical bodies. A semantic review found and fixed six Important translation differences; the final re-review returned `APPROVED`.

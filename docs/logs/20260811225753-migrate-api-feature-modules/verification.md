@@ -614,3 +614,4 @@ Codex cleaned and verified both temporary dependency links absent:
 - User approved PR #47; GitHub merged it into `main` as `dd38d690ab594160457da20359bd04a58581723d`.
 - Follow-up branch `agent/api-feature-module-migration-retrospective-20260812121500` holds the mandatory post-merge retrospective and the five approved, implemented, forward-tested skill updates.
 - All five quick validations, `scripts/agent-skills.sh check`, and `git diff --check` passed for the follow-up change set.
+- PR #48 feedback localized every changed canonical skill body to Japanese. Four canonical/`SKILL_ja.md` pairs are byte-identical; `testing-hono-apis` was already Japanese. Cursor Agent semantic re-review returned `APPROVED` after six translation fixes.

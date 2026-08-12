@@ -32,6 +32,15 @@ const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) =
   return context.json(invalidInputBody(context.get('requestId')), 400)
 }
 
+function registerOpenApiComponents(app: App) {
+  app.openAPIRegistry.register('Error', errorSchema)
+  app.openAPIRegistry.registerComponent('securitySchemes', 'BearerAuth', {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT',
+  })
+}
+
 export const createApp = (
   dependencies: AppDependencies,
   routes: ModuleRoute[],
@@ -39,7 +48,7 @@ export const createApp = (
   const app = new OpenAPIHono<{ Variables: AppVariables }>({
     defaultHook: validationErrorHook,
   })
-  app.openAPIRegistry.register('Error', errorSchema)
+  registerOpenApiComponents(app)
   if (Sentry.getClient()) {
     app.use('*', sentry(app))
   }

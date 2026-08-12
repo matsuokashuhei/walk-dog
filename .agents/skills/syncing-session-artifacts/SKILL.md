@@ -1,88 +1,105 @@
 ---
 name: syncing-session-artifacts
-description: Use when a walk-dog development session creates or changes session records, or after review fixes, follow-up commits, or main merges that must update transcript, design, plan, and checklist before continuing.
+description: walk-dog 開発セッションがセッション記録を作成または変更した時、またはレビュー修正、フォローアップコミット、main マージ後にトランスクリプト、設計、計画、チェックリストを続行前に更新する必要がある場合に使用する。
 ---
 
-# Syncing Session Artifacts
+# セッション成果物の同期
 
-Keep the active session directory aligned with session reality. Update transcript, design, plan, checklist, and related records whenever the session state changes, not only before publish.
+アクティブセッションディレクトリをセッションの現実と一致させる。公開前だけでなく、セッション状態が変化するたびにトランスクリプト、設計、計画、チェックリスト、関連記録を更新する。
 
-## Required sources
+## 必要なソース
 
-Read these sources in this order:
+以下のソースをこの順序で読む：
 
-1. The active `docs/logs/<timestamp>-<slug>/transcript.md` for purpose, baseline, Artifact List, and chronological events.
-2. The other records in that session directory (design, plan, specification-review, completion checklist, verification).
-3. The current branch diff and recent commits for review fixes, follow-up fixes, and merges that landed after the last artifact sync.
-4. The session baseline recorded at start, for conflict detection against paths already dirty before the session.
+1. アクティブな `docs/logs/<timestamp>-<slug>/transcript.md`：目的、ベースライン、成果物リスト、時系列イベント
+2. そのセッションディレクトリ内の他の記録（設計、計画、specification-review、完了チェックリスト、検証）
+3. 現在のブランチ差分と最近のコミット：最後の成果物同期後に反映されたレビュー修正、フォローアップ修正、マージ
+4. セッション開始時に記録されたベースライン：セッション前に既にダーティだったパスとの競合検出用
 
-Session artifacts define what the session claims; commits and diffs define what changed; the baseline defines which paths the session must not silently overwrite.
+セッション成果物はセッションが主張する内容を定義し、コミットと差分は変更された内容を定義し、ベースラインはセッションが静かに上書きしてはならないパスを定義する。
 
-## Worktree consistency check
+## ワークツリー整合性チェック
 
-Before syncing, verify that `.agents/skills/` files modified in the session exist at the same revision in both the worktree and the main repository checkout. When the session created or edited a skill file, regenerate `.agents/skill-library/` before checking the categorized view.
+同期前に、セッションで変更した `.agents/skills/` ファイルがワークツリーとメインリポジトリチェックアウトの両方で同じリビジョンに存在することを確認する。セッションがスキルファイルを作成または編集した場合は、分類ビューを確認する前に `.agents/skill-library/` を再生成する。
 
-## Required triggers
+## 必要なトリガー
 
-Run this skill before continuing after any of these events:
+以下のイベントの後、続行前にこのスキルを実行する：
 
-- Creating or editing any file under the active `docs/logs/<timestamp>-<slug>/` directory
-- A review-response commit (Crit or PR review comments)
-- A follow-up fix commit that changes session deliverables (for example defensive-code cleanup)
-- Merging `origin/main` into the session branch
-- Immediately before Crit review of session artifacts
-- Immediately before Publish
+- アクティブな `docs/logs/<timestamp>-<slug>/` ディレクトリ配下のファイルを作成または編集した時
+- レビュー応答コミット（Crit または PR レビューコメント）
+- セッション成果物を変更するフォローアップ修正コミット（例：防衛的コードのクリーンアップ）
+- `origin/main` をセッションブランチにマージした時
+- セッション成果物の Crit レビューの直前
+- Publish の直前
 
-Do not skip a trigger because the change felt small. A commit that changes behavior without an artifact sync leaves the session record stale.
+変更が小さく感じられてもトリガーをスキップしない。成果物同期なしで動作を変更するコミットはセッション記録を古くする。
 
-## Sync workflow
+## 同期ワークフロー
 
-1. Identify the active session directory and open `transcript.md`.
-2. Compare session reality with each existing artifact:
-   - purpose and scope in the transcript header;
-   - design decisions and components;
-   - implementation plan tasks and constraints;
-   - completion checklist deliverables and verification results;
-   - specification-review status and deliverables when that file exists.
-3. Update every outdated record in positive terms that state what is now true.
-4. Refresh the transcript Artifact List so it lists every created or changed session path.
-5. Append a short transcript entry for the sync event (review fix, follow-up fix, merge, pre-crit, or pre-publish).
-6. Check baseline conflicts: if an artifact path was already modified in the recorded baseline, stop, record the conflict, and ask for direction. Do not overwrite baseline work.
-7. Record the completion result: which artifacts were updated, which were already current, and the next permitted action.
+1. アクティブセッションディレクトリを特定し、`transcript.md` を開く。
+2. セッションの現実と各既存成果物を比較する：
+   - トランスクリプトヘッダーの目的とスコープ
+   - 設計判断とコンポーネント
+   - 実装計画のタスクと制約
+   - 完了チェックリストの成果物と検証結果
+   - specification-review のステータスと成果物（ファイルが存在する場合）
+3. 横断成果物状態マトリックスを構築し、複数の成果物が述べる共有フィールドごとに等価を要求する：
 
-## Completion record
+   | フィールド | 典型的なソース |
+   | --- | --- |
+   | task phase | transcript, plan, checklist, verification |
+   | test totals | checklist, verification, transcript |
+   | review state | transcript, checklist, verification, retrospective |
+   | commit state | transcript, checklist, verification |
+   | publication state | transcript, checklist, retrospective |
+   | next permitted action | transcript, checklist, retrospective |
 
-Each sync must leave a clear result in the conversation or transcript entry:
+   フィールドを述べるすべての成果物は、そのフィールドの値で一致しなければならない。値が異なる場合は `status: blocked` を返し、競合するフィールドと成果物パスを挙げ、それらの記録が 1 つの共有値に調整されるまで待つ。
+4. すべての古い記録を、現在 true であることを述べる肯定形で更新する。
+5. トランスクリプトの成果物リストを更新し、作成または変更されたすべてのセッションパスをリストする。
+6. 同期イベント（レビュー修正、フォローアップ修正、マージ、pre-crit、または pre-publish）の短いトランスクリプトエントリを追加する。
+7. ベースライン競合をチェックする：成果物パスが記録されたベースラインで既に変更されていた場合、停止し、競合を記録し、指示を仰ぐ。ベースライン作業を上書きしない。
+8. 完了結果を記録する：更新された成果物、既に最新だった成果物、マトリックス等価、次の許可アクション。
 
-- `status: synced`, `blocked`, or `awaiting-direction`;
-- trigger that required the sync;
-- artifacts updated;
-- artifacts already current;
-- baseline conflicts, if any;
-- next permitted action: `continue`, `crit`, or `publish`.
+## 完了記録
 
-Proceed only when status is `synced` and the next permitted action matches the caller's intent.
+各同期は会話またはトランスクリプトエントリに明確な結果を残す：
 
-## Blocking states
+- `status: synced`、`blocked`、または `awaiting-direction`
+- 同期を必要としたトリガー
+- 更新された成果物
+- 既に最新だった成果物
+- 横断成果物状態マトリックス（フィールドごとに合意した 1 つの値、または `status: blocked` のときの競合フィールドと成果物パス）
+- ベースライン競合（ある場合）
+- 次の許可アクション：`continue`、`crit`、`publish`、`open-follow-up-pr`、または `terminal-worktree-cleanup`
 
-Use `blocked` when the active session directory or `transcript.md` cannot be identified.
+ステータスが `synced` で、述べられたマトリックスフィールドがそれを述べる成果物間で一致し、次の許可アクションが呼び出し元の意図と一致する場合のみ進行する。
 
-Use `awaiting-direction` when a baseline-path conflict exists or two session directories claim to be active and the caller has not chosen one.
+## ブロッキング状態
 
-Do not continue to Crit or Publish while status is `blocked` or `awaiting-direction`.
+アクティブセッションディレクトリまたは `transcript.md` が特定できない場合、または横断成果物状態マトリックスが共有フィールドで不一致の値を見つけた場合は `blocked` を使用する。blocked 結果は各競合フィールドとそれを述べる成果物パスを挙げ、再試行はそれらの記録を 1 つの合意値に調整することである。
 
-## Explicit non-goals
+ベースラインパスの競合が存在する場合、または 2 つのセッションディレクトリがアクティブであると主張し呼び出し元が選択していない場合は `awaiting-direction` を使用する。
 
-- Running Crit
-- Creating or updating the pull request
-- Synchronizing plan-level decisions into `docs/development/staged-development.md` (that remains Development Plan Sync in `run-dev-session`)
+ステータスが `synced` の後にのみ Crit と Publish に進む。
 
-## Validation scenarios
+## 明示的な非目標
+
+- Crit の実行
+- プルリクエストの作成または更新
+- 計画レベルの判断の `docs/development/staged-development.md` への同期（それは `run-dev-session` の開発計画同期に残る）
+
+## 検証シナリオ
 
 ### RED
 
-A review-fix commit lands while `design.md`, `completion-checklist.md`, and the transcript Artifact List still describe the pre-review design. The agent continues to the next task or publish without updating those records.
+レビュー応答コミットが反映されたが、`design.md`、`completion-checklist.md`、トランスクリプト成果物リストが依然としてレビュー前の設計を記述している。エージェントはそれらの記録を更新せずに次のタスクまたは公開に進む。
+
+チェックリストが Task 6B とそのゲート完了を報告する一方、トランスクリプトと検証は依然としてその作業を保留中と記述している。同期は各成果物を孤立して比較し、共有状態の等価ゲートなしで `synced` を返す。
 
 ### GREEN
 
-After the same review-fix commit, this skill updates the design and checklist to the post-review truth, refreshes the Artifact List, appends a transcript sync entry, and only then returns `next permitted action: continue`, `crit`, or `publish`.
+同じレビュー応答コミット後、このスキルが設計とチェックリストをレビュー後の真実に更新し、成果物リストを更新し、トランスクリプト同期エントリを追加し、その後に `next permitted action: continue`、`crit`、または `publish` を返す。
+
+チェックリスト、トランスクリプト、検証が task phase で不一致のとき、同期は `status: blocked` を返し、`task phase` とそれらの成果物パスを挙げ、各マトリックスフィールドを述べるすべての成果物が一致した後にのみ `synced` に到達する。

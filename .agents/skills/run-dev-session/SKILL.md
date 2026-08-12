@@ -1,98 +1,108 @@
 ---
 name: run-dev-session
-description: Use when starting or continuing a focused development session in this repository.
+description: このリポジトリでの開発セッションを開始または継続する際に使用する。
 ---
 
-# Run Development Session
+# 開発セッションの実行
 
-Run this skill for every development session. Keep one session focused on one stated purpose.
+すべての開発セッションでこのスキルを実行する。1 つのセッションは 1 つの表明された目的に集中させる。
 
-## Start
+## 開始
 
-### Purpose Discovery
+### 目的発見
 
-An undecided purpose begins a discovery conversation. Explore the current repository state and `docs/development/staged-development.md` read-only, then present candidate purposes and their release context. The user selects or revises a purpose. A confirmed purpose begins the execution session.
+未決定の目的は発見会話から始める。読み取り専用で現在のリポジトリ状態と `docs/development/staged-development.md` を探索し、候補目的とそのリリースコンテキストを提示する。ユーザーが目的を選択または修正する。確認された目的で実行セッションを開始する。
 
-### Execution Session
+### 実行セッション
 
-1. Derive a concise purpose and lowercase hyphenated English slug from the confirmed purpose. Present the purpose and wait for the user's approval.
-2. Inspect `git status --short`. Record this baseline before changing files.
-3. Resolve the repository workspace root from the Git common directory. Create branch `agent/<slug>-<YYYYmmddHHMMSS>` from `origin/main` in `<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>`, and initialize an empty session `Worktrees` registry.
-4. Create `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` inside the workspace-local worktree with the purpose, timestamp, baseline, an empty `Worktrees` list, and an empty artifact list. Immediately stage and commit the transcript and any other created session artifacts so they survive worktree resets.
-5. Read `docs/development/staged-development.md` and record the active release, approved decisions, release acceptance conditions, and any release-start decisions that affect the purpose.
-6. Append the first user request and every visible user or assistant message in chronological order.
-7. **REQUIRED SUB-SKILL:** Use `confirming-development-specifications` to verify the purpose against the specifications, active release, current deliverables, and plan decisions. The sub-skill creates `specification-review.md` in the session directory; add that file to the transcript artifact list.
-8. Continue to design or implementation only when the specification review status is `ready`. An `awaiting-confirmation` or `blocked` review pauses the session until the required decision or source clarification is recorded.
+1. 確認された目的から簡潔な目的と小文字ハイフン区切りの英語スラッグを導出する。目的を提示し、ユーザーの承認を待つ。
+2. `git status --short` を検査する。ファイル変更前にこのベースラインを記録する。
+3. Git 共通ディレクトリからリポジトリワークスペースルートを解決する。`<workspace-root>/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>` に `origin/main` からブランチ `agent/<slug>-<YYYYmmddHHMMSS>` を作成し、空のセッション `Worktrees` レジストリを初期化する。
+4. ワークスペースローカルワークツリー内に `docs/logs/<YYYYmmddHHMMSS>-<slug>/transcript.md` を作成し、目的、タイムスタンプ、ベースライン、空の `Worktrees` リスト、空の成果物リストを含める。トランスクリプトと他に作成したセッション成果物を直ちにステージしてコミットし、ワークツリーのリセット後も残るようにする。
+5. `docs/development/staged-development.md` を読み、アクティブリリース、承認済み判断、リリース受入条件、目的に影響するリリース開始判断を記録する。
+6. 最初のユーザーリクエストと、すべての表示されるユーザーまたはアシスタントメッセージを時系列順に追加する。
+7. **必須サブスキル:** `confirming-development-specifications` を使用して、仕様、アクティブリリース、現在の成果物、計画判断に対して目的を検証する。サブスキルはセッションディレクトリに `specification-review.md` を作成する。そのファイルをトランスクリプト成果物リストに追加する。
+8. 仕様レビューのステータスが `ready` の場合のみ設計または実装に進む。`awaiting-confirmation` または `blocked` のレビューは、必要な判断またはソースの明確化が記録されるまでセッションを一時停止する。
 
-### Workspace Boundary
+### ワークスペース境界
 
-Repository-owned development files and session artifacts are created under the repository workspace.
+リポジトリ所有の開発ファイルとセッション成果物はリポジトリワークスペース配下に作成される。
 
-1. Set `GIT_COMMON_DIR` with `git rev-parse --git-common-dir`, then set `WORKSPACE_ROOT` to the parent directory of `GIT_COMMON_DIR`.
-2. Set `WORKTREE_PATH` to `${WORKSPACE_ROOT}/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>` and create the worktree from `origin/main` at that path.
-3. Confirm that `.worktrees/` is covered by the repository `.gitignore` and that the resolved `WORKTREE_PATH` is under `${WORKSPACE_ROOT}/.worktrees/`.
-4. If the ignore check, directory creation, `git worktree add`, or path check fails, report the path and reason, provide the retry operation, and stop the session.
-5. Keep existing worktrees outside the workspace unchanged. New session files use the workspace-local worktree.
-6. After the path checks succeed, add the resolved path once to the session `Worktrees` registry and persist the same entry in the transcript `Worktrees` list. When this session creates another workspace, append its resolved path once to that ordered registry and persist the same entry before using it. The transcript list is the persisted record of the runtime registry, not a second cleanup list. Run `syncing-session-artifacts` after the record changes and continue only when the result is `status: synced`.
+1. `git rev-parse --git-common-dir` で `GIT_COMMON_DIR` を設定し、`GIT_COMMON_DIR` の親ディレクトリに `WORKSPACE_ROOT` を設定する。
+2. `WORKTREE_PATH` を `${WORKSPACE_ROOT}/.worktrees/agent/<slug>-<YYYYmmddHHMMSS>` に設定し、そのパスに `origin/main` からワークツリーを作成する。
+3. `.worktrees/` がリポジトリ `.gitignore` でカバーされていること、解決された `WORKTREE_PATH` が `${WORKSPACE_ROOT}/.worktrees/` 配下であることを確認する。
+4. 無視チェック、ディレクトリ作成、`git worktree add`、またはパスチェックが失敗した場合は、パスと理由を報告し、再試行操作を提供し、セッションを停止する。
+5. ワークスペース外にある既存ワークツリーは変更しない。新しいセッションファイルはワークスペースローカルワークツリーを使用する。
+6. パスチェックが成功した後、解決済みパスをセッション `Worktrees` レジストリへ一度追加し、同じエントリをトランスクリプトの `Worktrees` リストへ永続化する。このセッションが別のワークスペースを作成するときは、その解決済みパスを順序付きレジストリへ一度追記し、使用前に同じエントリを永続化する。トランスクリプトのリストはランタイムレジストリの永続記録であり、第二のクリーンアップリストではない。記録変更後に `syncing-session-artifacts` を実行し、結果が `status: synced` の場合のみ続行する。
 
-## Design and Plan
+### 一時的な依存関係の再利用
 
-After the specification review is `ready` and before asking the user to approve a design or implementation plan:
+ワークツリーが別のチェックアウトからパッケージ依存関係を再利用する場合:
 
-1. **REQUIRED SUB-SKILL:** Use `explaining-specifications-and-design` to structure the user-facing design and plan explanation as WHAT → HOW → WHY. Do not present wiring, path filters, or file lists before WHAT is clear.
-2. When the purpose includes **designing or changing** GitHub Actions workflow files under `.github/workflows/`, CI jobs that run those workflows, or publish pipelines implemented as workflows, **REQUIRED SUB-SKILL:** Use `designing-github-actions-ci` during design and before writing workflow YAML. Record official docs read and the gate WHAT table in the session design. Do not require this skill when only authoring or editing skills, docs, or other process artifacts about CI.
-3. When the purpose or change set includes **defining or changing** Zod schemas (`z.object`, `z.string`, enums, composition, metadata, or format helpers such as `z.email()`), **REQUIRED SUB-SKILL:** Use `zod:defining-zod-schemas` before editing those schemas. Record the official Zod docs read and the schema decision in the session design or transcript. Follow project defaults there, including `.nonempty()` for non-empty strings and top-level format helpers such as `z.email()`.
-4. Present the structured design and plan, wait for approval, then continue to Task Progress.
-5. ユーザーが skill の作成または更新を依頼したときは、成果物を独立したトップレベル Task として計画に登録する。ユーザーが指定した言語、skill 名、配置先、baseline、forward-test、validator、承認順序を完了条件にする。skill を別の skill へ統合または削除するときは、統合元ごとに吸収 inventory を作成する。inventory は trigger 条件、公開される正確な literal、path、command、命名規則、project default、reference、validation scenario を記録する。統合先 skill と forward-test は inventory の全項目について、維持された規則または承認済みの置換を対応付ける。**REQUIRED SUB-SKILL:** `skill-creator` と `superpowers:writing-skills` を使用する。
+1. ソースが実ディレクトリであり、宛先パスが存在しないことを確認する。
+2. 宛先に、期待するソースの絶対パスへのシンボリックリンクをちょうど 1 つ作成する。
+3. 宛先が、解決先がその絶対パスと等しいシンボリックリンクであること、および `target/node_modules` が存在しないことを確認する。
+4. 宛先が既に実ディレクトリである場合は、パスと再試行操作（宛先を不在の状態に戻してから単一のシンボリックリンクを作成する）を報告し、そのディレクトリ内にリンクを作成せずに停止する。
+5. リンクを必要としたコマンドが完了した後、検証済みのそのシンボリックリンクのみを解除する。宛先と偶発的なネストパスが不在であること、およびソースディレクトリが残っていることを確認する。
 
-## Task Progress
+## 設計と計画
 
-After the specification review is `ready` and the written implementation plan is approved, use `superpowers:executing-plans` to execute the plan.
+仕様レビューが `ready` になり、設計または実装計画の承認をユーザーに求める前に：
 
-When a Task's change set includes defining or changing Zod schemas, run the `zod:defining-zod-schemas` REQUIRED SUB-SKILL from Design and Plan before editing those schemas, even if the schema work was not the original Task title.
+1. **必須サブスキル:** `explaining-specifications-and-design` を使用して、ユーザー向けの設計と計画の説明を WHAT → HOW → WHY で構成する。WHAT が明確になる前に配線、パスフィルター、ファイルリストを提示しない。
+2. 目的に `.github/workflows/` 配下の GitHub Actions ワークフローファイルの**設計または変更**、それらのワークフローを実行する CI ジョブ、またはワークフローとして実装された公開パイプラインが含まれる場合、**必須サブスキル:** 設計中およびワークフロー YAML 作成前に `designing-github-actions-ci` を使用する。公式ドキュメントの参照とゲート WHAT テーブルをセッション設計に記録する。CI に関するスキル、ドキュメント、またはその他のプロセス成果物の作成・編集のみを行う場合はこのスキルは不要。
+3. 目的または変更セットに Zod スキーマ（`z.object`、`z.string`、enums、composition、metadata、または `z.email()` などの format helpers）の**定義または変更**が含まれる場合、**必須サブスキル:** それらのスキーマを編集する前に `zod:defining-zod-schemas` を使用する。読んだ公式 Zod ドキュメントとスキーマ判断をセッション設計またはトランスクリプトに記録する。非空文字列の `.nonempty()` や `z.email()` などのトップレベル format helpers を含む、そこにあるプロジェクトデフォルトに従う。
+4. 構成された設計と計画を提示し、承認を待ち、タスク進行に進む。
+5. ユーザーが skill の作成または更新を依頼したときは、成果物を独立したトップレベル Task として計画に登録する。ユーザーが指定した言語、skill 名、配置先、baseline、forward-test、validator、承認順序を完了条件にする。skill を別の skill へ統合または削除するときは、統合元ごとに吸収 inventory を作成する。inventory は trigger 条件、公開される正確な literal、path、command、命名規則、project default、reference、validation scenario を記録する。統合先 skill と forward-test は inventory の全項目について、維持された規則または承認済みの置換を対応付ける。**必須サブスキル:** `skill-creator` と `superpowers:writing-skills` を使用する。
 
-1. In executing-plans Step 1.5, register every top-level Task from the plan in the live `update_plan` todos. Count each top-level Task once; steps nested under a Task are part of that Task.
-2. After registering the todos and before starting the first Task, announce the total and next Task in the conversation: `Implementation plan: N tasks. Next: Task 1 — <name>`.
-3. Before working on each Task, mark that todo `in_progress` and announce `Task n/N started — <name>`.
-4. After the Task deliverable, required review, and Task-specific verification are complete, mark the todo `completed` and announce `Task n/N completed (n/N) — <verification summary>`.
-5. When verification fails or a required decision is pending, keep the Task active and announce the current state, reason, and next action. Resume the Task after the condition is resolved.
-6. When an approved plan changes its top-level Task list, update the live todos and announce the new total and the reason before continuing.
+## タスク進行
 
-The live `update_plan` todos and the conversation announcements are the task-progress record. This workflow does not add a separate task ledger to `progress.md` or a dedicated progress section to `transcript.md`.
+仕様レビューが `ready` になり、書面の実装計画が承認された後、`superpowers:executing-plans` を使用して計画を実行する。
 
-## Session Artifacts
+Task の変更セットに Zod スキーマの定義または変更が含まれる場合、元の Task タイトルがそのスキーマ作業でなくても、編集前に設計と計画の `zod:defining-zod-schemas` 必須サブスキルを実行する。
 
-`docs/logs/<timestamp>-<slug>/` holds the session transcript and every session record.
+1. executing-plans の Step 1.5 で、計画のすべてのトップレベル Task をライブ `update_plan` todos に登録する。各トップレベル Task を 1 回カウントする。Task 配下のステップはその Task の一部とする。
+2. todos を登録し、最初の Task を開始する前に、会話で合計と次の Task をアナウンスする：`Implementation plan: N tasks. Next: Task 1 — <name>`。
+3. 各 Task に取り掛かる前に、その todo を `in_progress` とマークし、`Task n/N started — <name>` をアナウンスする。
+4. Task の成果物、必要なレビュー、Task 固有の検証が完了した後、todo を `completed` とマークし、`Task n/N completed (n/N) — <verification summary>` をアナウンスする。
+5. 検証が失敗した場合や必要な判断が保留中の場合は、Task をアクティブに保ち、現在の状態、理由、次のアクションをアナウンスする。条件が解決された後に Task を再開する。
+6. 承認された計画がトップレベル Task リストを変更した場合、ライブ todos を更新し、新しい合計と理由を続行前にアナウンスする。
 
-The session `Worktrees` registry is the ordered ownership record for every workspace created by this session. Its transcript `Worktrees` list is the persisted representation of the same entries. Store workspace-relative paths in the transcript and resolve them against `WORKSPACE_ROOT` for Git operations.
+ライブ `update_plan` todos と会話アナウンスがタスク進行の記録となる。このワークフローは `progress.md` に個別のタスク台帳を追加せず、`transcript.md` に専用の進捗セクションも追加しない。
 
-**REQUIRED SUB-SKILL:** Use `syncing-session-artifacts` whenever a session record is created or changed, and after review-response commits, follow-up fix commits, or merges into the session branch. Run it again immediately before Crit and immediately before Publish. Continue only when that skill returns `status: synced` with the matching next permitted action.
+## セッション成果物
 
-## Purpose Boundary
+`docs/logs/<timestamp>-<slug>/` はセッショントランスクリプトとすべてのセッション記録を保持する。
 
-Discovery requests refine the purpose through conversation and read-only inspection. Execution actions connect to the approved purpose and a session artifact. A request that materially changes an approved purpose receives an explicit purpose update; keep the updated purpose and reason in the transcript.
+セッション `Worktrees` レジストリは、このセッションが作成したすべてのワークスペースの順序付き所有記録である。トランスクリプトの `Worktrees` リストは同じエントリの永続表現である。トランスクリプトにはワークスペース相対パスを保存し、Git 操作では `WORKSPACE_ROOT` に対して解決する。
 
-## Development Plan Sync
+**必須サブスキル:** セッション記録が作成または変更されたとき、およびレビュー応答コミット、フォローアップ修正コミット、セッションブランチへのマージ後は必ず `syncing-session-artifacts` を使用する。Crit の直前および Publish の直前にも再度実行する。そのスキルが `status: synced` を返し、一致する次の許可アクションを伴う場合のみ続行する。
 
-Use `docs/development/staged-development.md` as the release plan of record. When a user confirms a decision that changes release order, approved foundation choices, provided capabilities, public interfaces, verification conditions, or release-start decisions, classify it into the matching section and update the plan in the same session.
+## 目的境界
 
-If a confirmed decision is implementation-local, superseded, or outside the staged plan, record that classification and reason in the transcript. Add `docs/development/staged-development.md` to the artifact list whenever it changes.
+発見リクエストは会話と読み取り専用の調査を通じて目的を絞り込む。実行アクションは承認された目的とセッション成果物に接続する。承認された目的を実質的に変更するリクエストは明示的な目的更新を受け取る。更新された目的と理由をトランスクリプトに保持する。
 
-Synchronize a confirmed plan-level decision immediately after the user approves it, before presenting the next decision or starting implementation. Record the changed section and the corresponding transcript decision in the artifact log. Do not continue while a plan-level decision is unsynced or its classification is unclear.
+## 開発計画の同期
 
-When the synced change is a prerequisite table (or equivalent step-to-foundation mapping):
+`docs/development/staged-development.md` をリリース計画の記録として使用する。ユーザーがリリース順序、承認済み基盤の選択、提供機能、公開インターフェース、検証条件、またはリリース開始判断を変更する判断を確認した場合、該当するセクションに分類し、同じセッションで計画を更新する。
 
-1. Cross-check every cell against the staged plan’s release capability sections and later-release boundaries.
-2. Cross-check product preconditions against the relevant files in `docs/specs/`.
-3. Use affirmative precondition labels only (required for the step, required for a named environment such as local-API device verification or VPS API device verification, or not a precondition for this step).
-4. Decompose mobile R0 foundations into auth state, API client, durable outbound queue, and iOS location permission; keep Cognito API verification and server-side SQS distinct.
-5. Record the cross-check result in the session transcript or specification review Gaps checked before treating the table as synced.
+確認された判断が実装ローカル、後続判断で置き換え済み、または段階的計画外である場合、その分類と理由をトランスクリプトに記録する。`docs/development/staged-development.md` が変更された場合は常に成果物リストに追加する。
 
-At the end of the session, compare every confirmed decision in the transcript with `docs/development/staged-development.md`. Record each decision as synced, deferred to a named release-start decision, or outside the staged plan. Update the plan or ask for direction before publishing when the classification is unclear. The session is publishable only when this final comparison has no unresolved decision.
+確認された計画レベルの判断は、ユーザーが承認した直後、次の判断を提示する前または実装を開始する前に同期する。変更されたセクションと対応するトランスクリプトの判断を成果物ログに記録する。計画レベルの判断が未同期または分類が不明確な間は続行しない。
 
-## Decision Questions
+前提条件テーブル（または同等のステップ対基盤マッピング）を同期した変更である場合：
 
-Use this format only when a user decision is needed:
+1. 段階的計画のリリース機能セクションと後続リリース境界に対して、すべてのセルを照合する。
+2. 製品の前提条件を `docs/specs/` 内の関連ファイルと照合する。
+3. 肯定形の前提条件ラベルのみを使う（そのステップに必要、local-API device verification や VPS API device verification など名前付き環境に必要、またはこのステップの前提条件ではない）。
+4. モバイル R0 基盤を auth state、API client、durable outbound queue、iOS location permission に分解する。Cognito API verification と server-side SQS は区別したままにする。
+5. テーブルを同期済みと扱う前に、照合結果をセッショントランスクリプトまたは仕様レビューの Gaps checked に記録する。
+
+セッション終了時に、トランスクリプト内のすべての確認された判断を `docs/development/staged-development.md` と比較する。各判断を、同期済み、指定されたリリース開始判断に延期、または段階的計画外として記録する。分類が不明確な場合は公開前に計画を更新するか指示を求める。この最終比較に未解決の判断がない場合のみセッションは公開可能とする。
+
+## 決定質問
+
+ユーザーの判断が必要な場合のみこの形式を使用する：
 
 1. When
 2. Where
@@ -101,40 +111,40 @@ Use this format only when a user decision is needed:
 5. Why
 6. How
 
-Place a separator after the proposal. Then ask one concise question that states the decision's effect in one sentence, such as "When X happens, Y returns Z. Is this acceptable?" Do not ask whether to confirm an item number. Answer factual clarifications directly.
+提案の後に区切りを置く。次に、判断の効果を 1 文で述べる簡潔な質問を 1 つ行う（例：「X が発生した場合、Y は Z を返します。これは許容されますか？」）。項目番号の確認を求めない。事実の明確化には直接回答する。
 
-## Artifacts and Review
+## 成果物とレビュー
 
-**REQUIRED SUB-SKILL:** Complete `syncing-session-artifacts` with `next permitted action: crit` before starting Crit.
+**必須サブスキル:** Crit を開始する前に `syncing-session-artifacts` を `next permitted action: crit` で完了する。
 
-Before publishing, review every session artifact with `crit`. Exclude `transcript.md` from Crit review. Wait for the reviewer to finish, address each comment, reply through Crit, and complete review rounds until no unresolved comments remain. After each review-response commit, run `syncing-session-artifacts` again before the next Crit round or Publish.
+公開前に `crit` ですべてのセッション成果物をレビューする。`transcript.md` は Crit レビューから除外する。レビューアーが終了するのを待ち、各コメントに対応し、Crit を通じて返信し、未解決のコメントがなくなるまでレビューラウンドを完了する。各レビュー応答コミット後、次の Crit ラウンドまたは Publish の前に `syncing-session-artifacts` を再度実行する。
 
-## Publish
+## 公開
 
-**REQUIRED SUB-SKILL:** Complete `syncing-session-artifacts` with `next permitted action: publish` immediately before these steps.
+**必須サブスキル:** 以下の手順の直前に `syncing-session-artifacts` を `next permitted action: publish` で完了する。
 
-1. Stage the records in the session artifact list and `transcript.md`.
-2. Commit the session artifacts and log on the dedicated branch.
-3. Push the branch and create an open PR against `main`.
-4. Include the session log in every PR. Do not stage baseline changes or request a separate scope decision for them.
+1. セッション成果物リストと `transcript.md` の記録をステージする。
+2. 専用ブランチでセッション成果物とログをコミットする。
+3. ブランチをプッシュし、`main` に対するオープンな PR を作成する。
+4. すべての PR にセッションログを含める。ベースライン変更をステージしたり、それらに対して別途スコープ判断を要求したりしない。
 
-If branch creation, review, or publishing conflicts with baseline work, record the paths, reason, and restart condition in the transcript, then stop.
+ブランチ作成、レビュー、または公開がベースライン作業と競合する場合、パス、理由、再開条件をトランスクリプトに記録し、停止する。
 
-## After merge
+## マージ後
 
-When the session pull request merges into `main` (including when the user asks to merge and merge completes):
+セッションのプルリクエストが `main` にマージされたとき（ユーザーがマージを依頼し完了した場合を含む）：
 
-1. **REQUIRED SUB-SKILL:** Use `retrospecting-dev-session` to turn user corrections and avoidable review comments into skill create or update proposals. Write `retrospective.md` in the session directory and add it to the Artifact List.
-2. Present the skill proposals. Implement skill changes only after explicit user approval.
-3. **REQUIRED SUB-SKILL:** Run `syncing-session-artifacts` after the retrospective record (and any approved skill edits) change session files. After that sync, the next permitted action is `open-follow-up-pr` until a follow-up PR exists.
-4. Land the retrospective (and any approved skill edits) on `main` via a follow-up PR:
-   - Prefer a new branch from `origin/main` (the session branch may already be deleted after merge).
-   - Commit `retrospective.md`, the updated transcript and Artifact List, and any approved skill file changes.
-   - Push and open a follow-up PR against `main`.
-5. When the follow-up PR merges, or when the user declines skill implementation and only the retrospective record lands and merges, the next permitted action is terminal worktree cleanup.
-6. Before reporting `done`, use `superpowers:finishing-a-development-branch` Step 6 for every path in the session `Worktrees` registry:
-   - Resolve the recorded paths against `WORKSPACE_ROOT` and change to the main repository root before removal.
-   - For each registered path under the workspace `.worktrees/` boundary, run `git worktree remove "$WORKTREE_PATH"` without a force option.
-   - After every owned path is removed, run `git worktree prune` and report the removed paths.
-   - When a path contains changes, preserve it, report the path and the same cleanup operation as the retry, and keep the session awaiting direction until cleanup succeeds.
-   - A path owned by the host environment remains in place and is reported with the platform cleanup operation. The session reaches `done` after every repository-owned registered path has a cleanup result and all cleanup gates have passed.
+1. **必須サブスキル:** `retrospecting-dev-session` を使用して、ユーザー修正と回避可能なレビューコメントをスキルの作成・更新提案に変換する。セッションディレクトリに `retrospective.md` を書き、成果物リストに追加する。
+2. スキル提案を提示する。明示的なユーザー承認後にのみスキル変更を実装する。
+3. **必須サブスキル:** 振り返り記録（および承認されたスキル編集）がセッションファイルを変更した後、`syncing-session-artifacts` を実行する。その同期後、フォローアップ PR が存在するまでは次の許可アクションは `open-follow-up-pr` となる。
+4. フォローアップ PR で振り返り（および承認されたスキル編集）を `main` に反映させる：
+   - `origin/main` からの新しいブランチを推奨（セッションブランチはマージ後既に削除されている可能性がある）
+   - `retrospective.md`、更新されたトランスクリプトと成果物リスト、承認されたスキルファイルの変更をコミットする
+   - プッシュし、`main` に対するフォローアップ PR を開く
+5. フォローアップ PR がマージされたとき、またはユーザーがスキル実装を辞退し振り返り記録のみが反映されマージされたとき、次の許可アクションは terminal worktree cleanup となる。
+6. `done` を報告する前に、セッション `Worktrees` レジストリ内のすべてのパスに対して `superpowers:finishing-a-development-branch` の Step 6 を使用する：
+   - 記録されたパスを `WORKSPACE_ROOT` に対して解決し、削除前にメインリポジトリルートへ移動する。
+   - ワークスペース `.worktrees/` 境界配下の各登録パスに対して、force オプションなしで `git worktree remove "$WORKTREE_PATH"` を実行する。
+   - 所有するすべてのパスを削除した後、`git worktree prune` を実行し、削除したパスを報告する。
+   - パスに変更が含まれる場合は保持し、パスと同じクリーンアップ操作を再試行として報告し、クリーンアップが成功するまでセッションを指示待ちにする。
+   - ホスト環境が所有するパスはそのまま残し、プラットフォームのクリーンアップ操作とともに報告する。リポジトリ所有の登録パスすべてにクリーンアップ結果があり、すべてのクリーンアップゲートが通過した後にセッションは `done` に到達する。

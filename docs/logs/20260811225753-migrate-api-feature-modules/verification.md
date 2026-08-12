@@ -494,7 +494,7 @@ Commands from `apps/api` (temporary symlink to main checkout `node_modules`, rem
 - Codex freshly re-ran targeted 71/71, OpenAPI 1/1, full 130/130, `npm run check`, and `git diff --check`; every gate passed.
 - Independent re-review returned `APPROVED` with no Critical or Important findings.
 - Task 5 is committed as `refactor: extract authentication verification slices`.
-- Task 6 not started.
+- Task 6 follows in the sections below and completes at 145 unit tests with independent `APPROVED` re-reviews and commit `refactor: compose feature-first API`.
 
 ## Task 6A: Route aggregation and pure application composition
 
@@ -607,3 +607,12 @@ Codex cleaned and verified both temporary dependency links absent:
 - Independent Important finding fixes are complete; Codex fresh final gates passed (targeted 26/26, full 145/145, check, build, integration 1/1, db:generate/drizzle diff, agent-skills check, import-boundary classification, `git diff --check`).
 - Both independent re-reviews returned exactly `APPROVED` with no Critical or Important findings.
 - Task 6 is committed as `refactor: compose feature-first API`.
+
+### Publication and merge
+
+- Published PR #47 with the completed migration and session artifacts; GitHub CI passed lint, jscpd, knip, and typecheck.
+- User approved PR #47; GitHub merged it into `main` as `dd38d690ab594160457da20359bd04a58581723d`.
+- Follow-up branch `agent/api-feature-module-migration-retrospective-20260812121500` holds the mandatory post-merge retrospective and the five approved, implemented, forward-tested skill updates.
+- All five quick validations, `scripts/agent-skills.sh check`, and `git diff --check` passed for the follow-up change set.
+- PR #48 feedback localized every changed canonical skill body to Japanese. Four canonical/`SKILL_ja.md` pairs are byte-identical; `testing-hono-apis` was already Japanese. Cursor Agent semantic re-review returned `APPROVED` after six translation fixes.
+- PR #48 follow-up removed the four redundant `SKILL_ja.md` files after canonical Japanese localization. `testing-hono-apis` had no sibling and remained unchanged. Skill synchronization, consistency check, and diff check passed.

@@ -1,53 +1,55 @@
 ---
 name: querying-drizzle-sql
-description: Write Drizzle SQL-like PostgreSQL queries, including select, insert, update, delete, joins, filters, and transactions. Use when building CRUD or join-based queries with the query builder. Do not use for db.query relational finds, schema-only edits, Pool setup, or drizzle-kit migration commands alone.
+description: Drizzle SQL ライクな PostgreSQL クエリを記述する。select、insert、update、delete、joins、filters、transactions を含む。クエリビルダーでの CRUD や JOIN ベースのクエリ構築時に使用する。db.query リレーショナル検索、スキーマのみの編集、Pool セットアップ、drizzle-kit マイグレーションコマンドのみには使用しない。
 ---
 
-# Querying Drizzle SQL
+# Drizzle SQL のクエリ
 
-Read the current official Drizzle PostgreSQL query docs before changing SQL-like query code. Dialect is PostgreSQL only.
+SQL ライクなクエリコードを変更する前に、最新の公式 Drizzle PostgreSQL クエリドキュメントを読むこと。ダイアレクトは PostgreSQL のみ。
 
-## Required documentation review
+## 必要なドキュメントレビュー
 
-1. Open <https://orm.drizzle.team/docs/data-querying> and identify the query shape.
-2. Read the matching docs before implementing:
-   - Select: <https://orm.drizzle.team/docs/select>
-   - Insert: <https://orm.drizzle.team/docs/insert>
-   - Update: <https://orm.drizzle.team/docs/update>
-   - Delete: <https://orm.drizzle.team/docs/delete>
-   - Joins: <https://orm.drizzle.team/docs/joins>
-   - Filters and operators: <https://orm.drizzle.team/docs/operators>
-   - Query helpers: <https://orm.drizzle.team/docs/query-utils>
-   - Raw fragments when needed: <https://orm.drizzle.team/docs/sql>
-   - Multi-statement writes: <https://orm.drizzle.team/docs/transactions>
-3. Record the documentation URLs read and the query decision in the active session log, design, or pull request description.
+1. <https://orm.drizzle.team/docs/data-querying> を開き、クエリ形状を特定する。
+2. 実装前に対応するドキュメントを読む：
+   - Select：<https://orm.drizzle.team/docs/select>
+   - Insert：<https://orm.drizzle.team/docs/insert>
+   - Update：<https://orm.drizzle.team/docs/update>
+   - Delete：<https://orm.drizzle.team/docs/delete>
+   - Joins：<https://orm.drizzle.team/docs/joins>
+   - フィルターと演算子：<https://orm.drizzle.team/docs/operators>
+   - クエリヘルパー：<https://orm.drizzle.team/docs/query-utils>
+   - 必要な場合の生フラグメント：<https://orm.drizzle.team/docs/sql>
+   - 複数ステートメント書き込み：<https://orm.drizzle.team/docs/transactions>
+3. 読んだドキュメントの URL とクエリの判断を、アクティブセッションログ、設計、またはプルリクエストの説明に記録する。
 
-## Project defaults
+## プロジェクトのデフォルト
 
-- Prefer the SQL-like query builder when the result shape is flat or join-driven.
-- Wrap multi-table writes in `db.transaction()` so one business state transition commits together.
-- Map database rows to API DTOs; OpenAPI response schemas remain the public contract.
-- Use `$drizzle:querying-drizzle-relations` when the need is nested relational fetches through `db.query`.
+- 結果形状がフラットまたは JOIN 駆動の場合は SQL ライクなクエリビルダーを優先する。
+- 複数テーブル書き込みは `db.transaction()` でラップし、1 つのビジネス状態遷移が一緒にコミットされるようにする。
+- insert-or-resolve フローが一意のビジネスキーによる lookup にフォールバックする場合、同じキーを conflict target として指定する。
+- データベース行を API DTO にマッピングする。OpenAPI レスポンススキーマは公開コントラクトとして維持する。
+- `db.query` を通じたネストされたリレーショナルフェッチが必要な場合は `$drizzle:querying-drizzle-relations` を使用する。
 
-## Workflow
+## ワークフロー
 
-| Phase | Provide |
+| フェーズ | 提供内容 |
 | --- | --- |
-| Documentation review | The query capability and official Drizzle docs read. |
-| Design | Tables, filters, joins, write set, transaction boundary, and DTO mapping. |
-| Implementation | Focused query changes that follow the reviewed documentation. |
-| Verification | Typecheck, automated tests for the query path, and an HTTP or unit assertion when exposed by the API. |
+| ドキュメントレビュー | 読んだクエリ機能と公式 Drizzle ドキュメント |
+| 設計 | テーブル、フィルター、JOIN、書き込みセット、トランザクション境界、DTO マッピング |
+| 実装 | レビュー済みドキュメントに従ったクエリの変更 |
+| 検証 | 型チェック、クエリパスの自動テスト、API で公開される場合は HTTP またはユニットアサーション |
 
-## Common decisions
+## よくある判断
 
-| Request | Read before implementation | Record |
+| リクエスト | 実装前に読むもの | 記録 |
 | --- | --- | --- |
-| Filtered select | Select and operators | From, where, order, limit |
-| Join | Joins and select | Join type, on condition, selected columns |
-| Insert / update / delete | Matching mutation docs | Values or set clause, where clause, returning |
-| Conditional filters | Operators and data-querying compose examples | Composed `and` / `or` filter list |
-| Multi-table write | Transactions | Transaction boundary and failure behavior |
+| フィルター付き select | Select と operators | From、where、order、limit |
+| Join | Joins と select | Join 型、on 条件、選択カラム |
+| Insert / update / delete | 該当するミューテーションドキュメント | Values または set 句、where 句、returning |
+| 一意ビジネスキーによる insert-or-resolve | Insert | lookup キーと一致する conflict target；挿入および既存行パス |
+| 条件付きフィルター | Operators と data-querying compose 例 | 構成された `and` / `or` フィルターリスト |
+| 複数テーブル書き込み | Transactions | トランザクション境界と失敗動作 |
 
-## Completion check
+## 完了チェック
 
-Before reporting a query change complete, provide the documentation reviewed, the queries changed, and the verification results.
+クエリの変更が完了したと報告する前に、レビューしたドキュメント、変更したクエリ、検証結果を提供すること。insert-or-resolve では、正確な conflict target が lookup キーと一致することを検証し、挿入および既存行パスをカバーすること。

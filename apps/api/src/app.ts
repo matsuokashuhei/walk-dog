@@ -1,61 +1,42 @@
-import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
+import { OpenAPIHono } from '@hono/zod-openapi'
 import * as Sentry from '@sentry/hono/node'
 import { sentry } from '@sentry/hono/node'
+import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
-import { errorSchema } from './contracts/error.js'
-import { type Logger } from './observability/logger.js'
-import { createRequestLoggerMiddleware } from './observability/request-middleware.js'
-
-type Variables = {
-  requestId: string
-  logger: Logger
-}
-
-export type App = OpenAPIHono<{ Variables: Variables }>
+import type { Logger } from './infrastructure/observability/logger.js'
+import { createRequestLoggerMiddleware } from './infrastructure/observability/request-middleware.js'
+import { errorSchema } from './shared/http/error-contract.js'
+import type { App, AppVariables } from './shared/http/types.js'
 
 export type AppDependencies = {
   logger: Logger
   setRequestId: (requestId: string) => void
 }
 
-const healthRoute = createRoute({
-  method: 'get',
-  path: '/health',
-  responses: {
-    200: {
-      content: { 'application/json': { schema: z.object({ status: z.literal('ok') }) } },
-      description: 'API process health state',
-      headers: {
-        'X-Request-Id': {
-          description: 'Request identifier for this response',
-          schema: { type: 'string' },
-        },
-      },
-    },
-    500: {
-      content: { 'application/json': { schema: errorSchema } },
-      description: 'API processing error',
-    },
-  },
+export type ModuleRoute = {
+  path: string
+  app: App
+}
+
+const invalidInputBody = (requestId: string) => ({
+  code: 'INVALID_INPUT' as const,
+  message: '入力内容を確認してください。',
+  requestId,
+  retryable: false as const,
 })
 
 const validationErrorHook: NonNullable<App['defaultHook']> = (result, context) => {
   if (result.success) {
     return
   }
-  return context.json({
-    code: 'INVALID_INPUT',
-    message: '入力内容を確認してください。',
-    requestId: context.get('requestId'),
-    retryable: false,
-  }, 400)
+  return context.json(invalidInputBody(context.get('requestId')), 400)
 }
 
 export const createApp = (
   dependencies: AppDependencies,
-  registerRoutes?: (app: App) => void,
+  routes: ModuleRoute[],
 ): App => {
-  const app = new OpenAPIHono<{ Variables: Variables }>({
+  const app = new OpenAPIHono<{ Variables: AppVariables }>({
     defaultHook: validationErrorHook,
   })
   app.openAPIRegistry.register('Error', errorSchema)
@@ -77,17 +58,23 @@ export const createApp = (
     requestId: context.get('requestId'),
     retryable: false,
   }, 404))
-  app.onError((_error, context) => context.json({
-    code: 'INTERNAL_ERROR',
-    message: 'An unexpected error occurred.',
-    requestId: context.get('requestId'),
-    retryable: false,
-  }, 500))
-  app.openapi(healthRoute, (context) => context.json({ status: 'ok' }, 200))
+  app.onError((error, context) => {
+    if (error instanceof HTTPException && error.status === 400) {
+      return context.json(invalidInputBody(context.get('requestId')), 400)
+    }
+    return context.json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred.',
+      requestId: context.get('requestId'),
+      retryable: false,
+    }, 500)
+  })
+  for (const route of routes) {
+    app.route(route.path, route.app)
+  }
   app.doc('/openapi.json', {
     openapi: '3.1.0',
     info: { title: 'walk / dog API', version: '0.1.0' },
   })
-  registerRoutes?.(app)
   return app
 }

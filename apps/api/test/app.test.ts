@@ -1,29 +1,45 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { OpenAPIHono } from '@hono/zod-openapi'
 import { createApp } from '../src/app.js'
-import { setRequestIdTag } from '../src/observability/sentry.js'
-import { testLogger } from './test-logger.js'
+import { healthRoute, registerHealthRoutes } from '../src/modules/health/index.js'
+import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
+import type { AppVariables } from '../src/shared/http/types.js'
+import { testLogger } from './support/test-logger.js'
 
 const appDependencies = {
   logger: testLogger,
   setRequestId: setRequestIdTag,
 }
 
+const withHealth = () => createApp(appDependencies, [
+  { path: '/', app: registerHealthRoutes() },
+])
+
+test('registerHealthRoutes serves GET /health', async () => {
+  assert.equal(healthRoute.method, 'get')
+  assert.equal(healthRoute.path, '/health')
+  const routes = registerHealthRoutes()
+  const response = await routes.request('/health')
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), { status: 'ok' })
+})
+
 test('GET /health returns the API health state', async () => {
-  const response = await createApp(appDependencies).request('/health')
+  const response = await withHealth().request('/health')
 
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { status: 'ok' })
 })
 
 test('GET /health generates a non-empty request ID when none is received', async () => {
-  const response = await createApp(appDependencies).request('/health')
+  const response = await withHealth().request('/health')
 
   assert.ok(response.headers.get('X-Request-Id'))
 })
 
 test('GET /openapi.json describes the health endpoint and error schema', async () => {
-  const response = await createApp(appDependencies).request('/openapi.json')
+  const response = await withHealth().request('/openapi.json')
   const document = await response.json() as {
     openapi: string
     paths: Record<string, {
@@ -44,7 +60,7 @@ test('GET /openapi.json describes the health endpoint and error schema', async (
 })
 
 test('uses a received request ID for the health response', async () => {
-  const response = await createApp(appDependencies).request('/health', {
+  const response = await withHealth().request('/health', {
     headers: { 'X-Request-Id': 'request-123' },
   })
 
@@ -52,7 +68,7 @@ test('uses a received request ID for the health response', async () => {
 })
 
 test('returns the error contract for an unknown path', async () => {
-  const response = await createApp(appDependencies).request('/missing', {
+  const response = await withHealth().request('/missing', {
     headers: { 'X-Request-Id': 'request-404' },
   })
   const body = await response.json() as { requestId: string }
@@ -68,11 +84,14 @@ test('returns the error contract for an unknown path', async () => {
 })
 
 test('returns the error contract when a route throws', async () => {
-  const response = await createApp(appDependencies, (app) => {
-    app.get('/test-error', () => {
-      throw new Error('expected test error')
-    })
-  }).request('/test-error', {
+  const errorChild = new OpenAPIHono<{ Variables: AppVariables }>()
+  errorChild.get('/test-error', () => {
+    throw new Error('expected test error')
+  })
+  const response = await createApp(appDependencies, [
+    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: errorChild },
+  ]).request('/test-error', {
     headers: { 'X-Request-Id': 'request-500' },
   })
   const body = await response.json() as { requestId: string }

@@ -1,0 +1,91 @@
+# API feature module migration session
+
+- Purpose: `apps/api`を公開HTTP契約を維持したままfeature-first構成へ移行する。
+- Timestamp: `20260811225753`
+- Branch: `agent/migrate-api-feature-modules-20260811225753`
+- Baseline:
+  - `origin/main` was at `d19fe2e Merge pull request #46 from matsuokashuhei/agent/api-feature-module-skills-retrospective-20260811222858`.
+  - The main checkout had an unstaged `.agents/skills/routing-hono-apis/SKILL.md` change and an untracked `docs/development/2026-08-11-routing-hono-apis-skill-integration-plan.md`.
+  - The session worktree starts clean and preserves both main-checkout changes.
+
+## Worktrees
+
+- `.worktrees/agent/migrate-api-feature-modules-20260811225753`
+
+## Artifact List
+
+- `docs/logs/20260811225753-migrate-api-feature-modules/transcript.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/specification-review.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/completion-checklist.md`
+- `docs/logs/20260811225753-migrate-api-feature-modules/verification.md`
+- `docs/specs/2026-08-11-api-feature-module-migration-design.md`
+- `docs/development/2026-08-11-api-feature-module-migration-plan.md`
+
+## Conversation
+
+1. User asked what follows the merged API feature-module architecture and skill work.
+2. Assistant recommended PR2: migrate `apps/api` to the approved feature-first structure while preserving the public HTTP and OpenAPI contracts and the 45-test baseline.
+3. User approved starting that work.
+4. User selected endpoint-by-endpoint vertical slices.
+5. User approved the written design and implementation plan.
+6. User requested Cursor Agent with Grok 4.5 as implementer, with Codex monitoring and inspecting every deliverable.
+7. User requested Implement only Task 6A: route aggregation and pure application composition (TDD), leave Task 6 review/commit pending, do not commit or push.
+8. User requested Continue and finish Task 6A from uncommitted work only: treat earlier 500s as a temporary dual-Hono `node_modules` layout issue (do not change production for it); verify with one temporary symlink; update artifacts with targeted 47/47; leave Task 6B/review/commit pending; do not commit or push.
+9. User requested Implement Task 6B only on top of completed uncommitted Task 6A: server lifecycle, Cognito destroy boundary, package entry to `server.ts`/`dist/server.js`, full Task 6 verification evidence; leave independent review/commit pending; do not commit or push.
+10. User requested Address exactly the independent Task 6 review findings (shutdown downstream closes, vacuous entry tests, artifact sync) without broadening scope or committing.
+11. User requested Documentation-only finish for Task 6 review fixes: update only the three session files with delivered Task 6B, findings/fixes, Codex fresh finals, and official skill URLs; leave independent re-review and Task 6 commit pending.
+12. User requested Finalize Task 6 only: both independent re-reviews returned exactly `APPROVED`; Codex cleaned and verified both temporary dependency links absent; update the three session artifacts; stage Task 6 `apps/api` changes plus those artifacts; commit `refactor: compose feature-first API`; do not push.
+
+## Session events
+
+- `2026-08-11 22:57 JST`: Created the dedicated worktree from `origin/main`, recorded the main-checkout baseline, and registered the worktree.
+- `2026-08-11 23:02 JST`: Specification review completed with `status: ready`. The migration is implementation-local, preserves the current R1 release contract and prerequisite table, and proceeds to design.
+- `2026-08-11 23:03 JST`: Initial artifact sync completed. `status: synced`; trigger: specification review creation; updated: transcript and specification review; already current: none; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:06 JST`: User selected endpoint-by-endpoint vertical slices and approved the presented WHAT/HOW/WHY design.
+- `2026-08-11 23:08 JST`: Wrote the migration design with public-contract gates, source layout, dependency flow, vertical sequence, error ownership, test boundaries, and official Hono/Node guidance.
+- `2026-08-11 23:09 JST`: Design artifact sync completed. `status: synced`; trigger: migration design creation; updated: transcript and migration design; already current: specification review; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:12 JST`: User approved the written migration design.
+- `2026-08-11 23:18 JST`: Created a six-Task implementation plan with exact files, interfaces, RED/GREEN steps, vertical-slice gates, Task-to-design traceability, review gates, and commits.
+- `2026-08-11 23:19 JST`: Plan self-review confirmed complete design coverage, balanced code fences, consistent interface names, concrete commands, affirmative constraints, and one independently testable deliverable per Task.
+- `2026-08-11 23:20 JST`: Plan artifact sync completed. `status: synced`; trigger: implementation plan creation; updated: transcript and migration plan; already current: specification review and migration design; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:24 JST`: Registered all six top-level Tasks in the live plan. Cursor Agent model `cursor-grok-4.5-high` is the implementation worker; Codex owns monitoring, diff inspection, fresh verification, review gates, and artifact synchronization.
+- `2026-08-11 23:25 JST`: Execution-choice artifact sync completed. `status: synced`; trigger: user-selected Cursor Agent execution; updated: transcript; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-11 23:51 JST`: Cursor Agent completed Task 1 by recording the 45-test baseline, enabling recursive unit and separate integration-test discovery, moving tests into feature-first locations, and adding an OpenAPI characterization test.
+- `2026-08-11 23:51 JST`: Codex inspection confirmed production source remained unchanged and all 45 baseline test names and assertions were preserved. Fresh verification passed 46/46 tests, lint, jscpd, knip, typecheck, and `git diff --check`.
+- `2026-08-11 23:51 JST`: Independent review identified that the OpenAPI characterization needed an exact path-to-method map and complete verify-request nullable assertions. Cursor Agent applied the focused fix; Codex repeated all gates; independent re-review returned `APPROVED` with no Critical or Important findings.
+- `2026-08-11 23:51 JST`: Task 1 artifact sync completed. `status: synced`; trigger: Task 1 review fix and completion; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 00:01 JST`: Cursor Agent completed Task 2 by extracting shared HTTP types and error contract, the health feature module, infrastructure config, and infrastructure observability while preserving the root application boundary and remaining auth compatibility.
+- `2026-08-12 00:01 JST`: Codex verified exact blob equality for moved config, error, logger, request-middleware, and Sentry implementations; confirmed old import paths were removed and module/shared code had no infrastructure imports; then passed targeted 25/25 tests, the full 47/47 suite, lint, jscpd, knip, typecheck, and `git diff --check`.
+- `2026-08-12 00:01 JST`: Independent Task 2 review returned `APPROVED` with no Critical or Important findings.
+- `2026-08-12 00:01 JST`: Task 2 artifact sync completed. `status: synced`; trigger: Task 2 completion and independent approval; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 00:15 JST`: Cursor Agent completed Task 3 with the Owner module, Drizzle repository, database schema/client relocation, repository unit tests, and a real PostgreSQL concurrency integration test. Database shape and committed migration artifacts remained unchanged.
+- `2026-08-12 00:15 JST`: Codex inspection found untargeted conflict handling. Cursor Agent changed the insert to `onConflictDoNothing({ target: owners.cognitoSubject })` and added exact unit assertions; Codex passed targeted 14/14 tests, full 51/51 tests, integration 1/1, lint, jscpd, knip, typecheck, and migration/diff gates.
+- `2026-08-12 00:15 JST`: Independent review found that integration cleanup could skip Pool closure after a delete failure. Cursor Agent added nested cleanup `try/finally`; Codex repeated all Task 3 gates; independent re-review returned `APPROVED` with no Critical or Important findings.
+- `2026-08-12 00:15 JST`: Task 3 artifact sync completed. `status: synced`; trigger: Task 3 inspection and independent review fixes; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 00:50 JST`: Cursor Agent completed Task 4 by extracting Sign Up and Sign In start contracts, provider interface, use cases, endpoint routes, Cognito client, and Cognito start-operation adapter while retaining full temporary public paths and verify-route compatibility.
+- `2026-08-12 00:50 JST`: Codex inspection added complete documented start-route status coverage and exported endpoint route constants. Independent review then identified the config-only Cognito factory contract, malformed-JSON validation boundary, and classic Zod import requirements; Cursor Agent applied all three focused fixes.
+- `2026-08-12 00:50 JST`: Codex passed targeted 45/45 tests, OpenAPI characterization 1/1, full 87/87 tests, lint, jscpd, knip, typecheck, dependency-direction checks, and `git diff --check`. Independent re-review returned `APPROVED` with no Critical or Important findings.
+- `2026-08-12 00:50 JST`: Task 4 artifact sync completed. `status: synced`; trigger: Task 4 inspection and independent review fixes; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 01:25 JST`: Independent Task 5 review found that `sign-in-verify` route contracts omitted the reachable `code-already-used` outcome while session docs claimed every documented outcome. Cursor Agent added the route contract test (400 `CODE_ALREADY_USED` full Japanese envelope with `requestId`/`retryable`, exactly one use-case call) without changing production behavior; Task 6 not started.
+- `2026-08-12 01:25 JST`: Task 5 Important-finding artifact sync completed. `status: synced`; trigger: independent review fix for sign-in `CODE_ALREADY_USED` route contract; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 01:33 JST`: After the sign-in `CODE_ALREADY_USED` route-contract fix, independent re-review returned exactly `APPROVED`. Codex freshly re-ran targeted 71/71, OpenAPI 1/1, full 130/130, `npm run check`, and `git diff --check`; every gate passed. Task 6 remains pending and not started.
+- `2026-08-12 01:33 JST`: Task 5 completion artifact sync completed. `status: synced`; trigger: Task 5 independent approval and commit; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 01:39 JST`: User requested Task 6A only: route aggregation and pure application composition (TDD), leaving Task 6B server lifecycle and Task 6 review/commit pending; do not commit or push.
+- `2026-08-12 01:55 JST`: Cursor Agent completed Task 6A. Auth aggregate (`registerAuthRoutes`), child-relative auth paths, `ModuleRoute[]` app mounting, and import-safe `createApplication` landed; transitional `src/routes` removed; `server.ts`/package scripts untouched.
+- `2026-08-12 01:55 JST`: Initial Task 6A artifact sync recorded a narrow 12-file targeted count; later verification replaced that with the full Task 6A route/composition suite.
+- `2026-08-12 11:26 JST`: User continued Task 6A finish. Codex had diagnosed earlier 500s as a temporary worktree `node_modules` layout (real directory + nested symlink → two Hono copies / `routePath` failure). Nested layout already removed; production code unchanged for that environment issue.
+- `2026-08-12 11:30 JST`: Cursor Agent inspected Task 6A sources for unfinished markers (none), verified under exactly one temporary symlink to main `apps/api/node_modules`, then unlinked that symlink (path absent afterward).
+- `2026-08-12 11:30 JST`: Fresh gates: targeted 47/47, full 134/134 (45 baseline names once), `npm run check` exit 0, `npm run build` exit 0, import-boundary clean for top-level transitional paths, `git diff --check` exit 0.
+- `2026-08-12 11:30 JST`: Task 6A finish artifact sync completed. `status: synced`; trigger: Task 6A verification correction and finish evidence; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue (Task 6B / independent review / commit still pending).
+- `2026-08-12 11:30 JST`: User requested Task 6B only: `server.ts` serve/signal/idempotent shutdown, Cognito `destroy()` boundary, package `dev`/`start` and knip entry to `server.ts`/`dist/server.js`, remaining Task 6 verification; leave independent review/commit pending.
+- `2026-08-12 11:45 JST`: Cursor Agent completed Task 6B. `server.ts` owns listener lifecycle; `index.ts` remains import-safe `createApplication`; Cognito sender/client expose `destroy()`; package scripts and knip point at the server entry; transitional first-level directories remain removed.
+- `2026-08-12 11:45 JST`: Initial Task 6B gates under one temporary `node_modules` symlink: targeted 54/54, full 140/140 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no drizzle diff, import-boundary classification, `git diff --check`.
+- `2026-08-12 11:51 JST`: Independent Task 6 review recorded Important findings: downstream cleanup skipped after an earlier close failure; vacuous entry-boundary tests; session artifacts still described Task 6B as pending.
+- `2026-08-12 11:55 JST`: Cursor Agent applied focused fixes: attempt all closes in listener→Pool→Cognito→Sentry while preserving the first error and the same idempotent promise; Pool/Cognito failure close-order tests; subprocess import-safety and direct-source startup coverage; package source/dist scripts with `isDirectRun` source/dist checks.
+- `2026-08-12 12:00 JST`: Codex fresh final results after finding fixes: targeted 26/26, full 145/145 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no migration/drizzle diff, `scripts/agent-skills.sh check`, import-boundary classification, `git diff --check`.
+- `2026-08-12 12:00 JST`: Official skill URLs recorded for Task 6B: Hono Node `https://hono.dev/docs/getting-started/nodejs`, Hono App `https://hono.dev/d%6Fcs/api/hono`, Hono Routing `https://hono.dev/d%6Fcs/api/routing`, Hono Testing `https://hono.dev/d%6Fcs/guides/testing`, Node.js Test Runner `https://nodejs.org/api/test.html`.
+- `2026-08-12 12:00 JST`: Task 6 review-fix documentation sync completed. `status: synced`; trigger: documentation-only finish for Task 6 review fixes; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue (independent re-review and Task 6 commit pending).
+- `2026-08-12 12:05 JST`: Both independent Task 6 re-reviews returned exactly `APPROVED` with no Critical or Important findings.
+- `2026-08-12 12:05 JST`: Codex cleaned and verified both temporary dependency links absent: worktree `apps/api/node_modules` and main-checkout nested `apps/api/node_modules/node_modules` self-link. Main-checkout user-owned changes remain untouched.
+- `2026-08-12 12:05 JST`: Task 6 completion artifact sync completed. `status: synced`; trigger: Task 6 independent approvals, dependency-link cleanup, and commit; updated: transcript, completion checklist, and verification; already current: specification review, migration design, and migration plan; baseline conflicts: none; next permitted action: continue.
+- `2026-08-12 12:05 JST`: Task 6 committed as `refactor: compose feature-first API`.

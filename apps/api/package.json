@@ -2,18 +2,18 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --import ./src/instrument.ts src/index.ts",
+    "dev": "tsx watch --import ./src/instrument.ts src/server.ts",
     "build": "tsc",
-    "start": "node --import ./dist/instrument.js dist/index.js",
+    "start": "node --import ./dist/instrument.js dist/server.js",
     "lint": "eslint .",
     "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
     "knip": "knip",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run jscpd && npm run knip && npm run typecheck",
-    "test": "tsx --test test/*.test.ts",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
     "db:generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
-    "test:integration": "tsx --test test/integration/**/*.test.ts"
+    "test:integration": "node --import tsx --test \"test/**/*.integration.ts\""
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1101.0",

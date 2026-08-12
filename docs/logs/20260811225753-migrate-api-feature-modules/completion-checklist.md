@@ -1,0 +1,69 @@
+# Completion checklist
+
+- [x] Task 1: Recorded the 45-test baseline in `verification.md`.
+- [x] Task 1: Configured recursive `test/**/*.test.ts` and separate `test/**/*.integration.ts` discovery.
+- [x] Task 1: Moved existing tests into feature-first layout and updated imports only.
+- [x] Task 1: Preserved all 45 baseline test names and assertions.
+- [x] Task 1: Added OpenAPI characterization for health and four auth operations.
+- [x] Task 1: `npm test`, `npm run check`, and `git diff --check` passed.
+- [x] Task 1: Independent review resolved for Critical/Important findings (exact OpenAPI path→method map and full verify nullable assertions).
+- [x] Task 1: Commit `test: preserve API migration baseline`.
+- [x] Task 2: Pointed app/config/observability tests at target modules; added `registerHealthRoutes` aggregate assertion (TDD red confirmed).
+- [x] Task 2: Created `shared/http/types.ts` and moved error contract to `shared/http/error-contract.ts`.
+- [x] Task 2: Extracted health feature module (`contracts`, `routes/health`, `registerHealthRoutes`).
+- [x] Task 2: Moved config and observability into `infrastructure/`.
+- [x] Task 2: Wired `createApp` to mount health child; kept `registerRoutes?` for remaining auth routes.
+- [x] Task 2: Targeted tests, `npm test` (47/47), `npm run check`, and `git diff --check` passed.
+- [x] Task 2: Independent review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 2: Commit `refactor: extract API platform boundaries`.
+- [x] Task 3: Wrote failing Owner repository unit tests (insert, conflict select, exact values, nullable mapping, unexpected error identity).
+- [x] Task 3: Moved Drizzle schema/client to `infrastructure/database` without DB shape changes; `db:generate` produced no migration; `git diff --exit-code -- drizzle` empty.
+- [x] Task 3: Added Owner module types/repository/index and `createDrizzleOwnerRepository` (one transaction, insert with `onConflictDoNothing({ target: owners.cognitoSubject })` returning, select-by-unique-subject limit 1, private row mapping).
+- [x] Task 3: Kept verification route signatures; temporary `ownerFromCognitoSubject` delegates to the repository; `toAuthenticationResponse` accepts module `Owner`.
+- [x] Task 3: Added real PostgreSQL concurrency integration test with unique subject and subject-only cleanup.
+- [x] Task 3: Updated `drizzle.config.ts` schema glob to `./src/infrastructure/database/schema/*.ts`.
+- [x] Task 3: Targeted tests, `npm test` (51/51), `npm run check`, and `git diff --check` passed; local postgres migrate + `test:integration` passed.
+- [x] Task 3: Codex finding fixed — targeted `owners.cognitoSubject` conflict; insert/conflict unit tests assert exact `onConflictDoNothing` config; gates re-run (repository unit 4, targeted 14, `npm test` 51/51, `npm run check`, `git diff --check`).
+- [x] Task 3: Independent Important finding fixed — integration cleanup nested try/finally so subject-only delete is attempted and `closeDbClient(pool)` always runs; gates re-run (integration 1, targeted 14, `npm test` 51/51, `npm run check`, `git diff --check`, no drizzle migration diff).
+- [x] Task 3: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 3: Commit `refactor: add Owner repository boundary`.
+- [x] Task 4: Wrote failing start Sign Up / Sign In use-case tests (challenge, username-exists→resend, already-confirmed, invalid-input, rate-limited, incomplete-challenge, unexpected identity).
+- [x] Task 4: Defined auth contracts/types/errors/provider and `createStartSignUp` / `createStartSignIn` use cases returning discriminated module results.
+- [x] Task 4: Wrote failing Cognito adapter tests for SignUp, ResendConfirmationCode, and InitiateAuth command inputs, PascalCase conversion, documented exceptions, and unexpected error identity.
+- [x] Task 4: Moved Cognito client to `infrastructure/cognito/client.ts`; production factory is `createCognitoClient(config)` with optional recording sender for infrastructure tests; added `createCognitoAuthProvider` for start operations only.
+- [x] Task 4: Moved Sign Up / Sign In start routes into `modules/auth/routes`, exported `signUpRoute` / `signInRoute`, inject use cases once, keep full public paths via temporary `routes/index.ts` aggregator.
+- [x] Task 4: Route contract tests cover documented start outcomes including Sign Up 429 and global 500; Sign In 409, incomplete-challenge 500, and global 500; malformed JSON 400 full envelope with empty use-case call log; baseline start-route names preserved.
+- [x] Task 4: `modules/auth/contracts.ts` imports `z` from classic `zod`; route OpenAPI wiring remains via `@hono/zod-openapi`.
+- [x] Task 4: Targeted suite, `npm test`, `npm run check`, and `git diff --check` passed after Codex completion-gap fixes.
+- [x] Task 4: Independent Important findings fixed — optional Cognito sender default for production factory, malformed JSON route cases, classic `zod` import in auth contracts; gates re-run (targeted, `npm test`, `npm run check`, `git diff --check`, OpenAPI characterization).
+- [x] Task 4: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 4: Commit `refactor: extract authentication start slices`.
+- [x] Task 5: Wrote failing verify Sign Up / Sign In use-case tests (authenticated tokens+Owner, subject-only Owner resolution, every known failure short-circuit, unexpected provider/Owner identity).
+- [x] Task 5: Extended AuthProvider/types with `Authentication`, verify provider/use-case results, and `createVerifySignUp` / `createVerifySignIn` (provider once; Owner only on authenticated).
+- [x] Task 5: Extended Cognito adapter for ConfirmSignUp→InitiateAuth and RespondToAuthChallenge; require AccessToken/IdToken/RefreshToken plus string ID-token `sub`; map documented exceptions; propagate unexpected errors.
+- [x] Task 5: Moved verify routes into `modules/auth/routes` with exported `signUpVerifyRoute` / `signInVerifyRoute`, injected verify use cases, preserved Japanese messages/status/code/retryable, classic `zod` contracts.
+- [x] Task 5: Removed transitional `src/auth/contracts.ts`, `src/auth/owner.ts`, and old `src/routes/sign-{up,in}-verify.ts`; temporary aggregator re-exports module verify registrars.
+- [x] Task 5: Route contract tests cover schema/malformed JSON (no use-case calls), every documented outcome including sign-in `code-already-used` → 400 `CODE_ALREADY_USED` full envelope, unexpected global 500, full envelopes/call counts; OpenAPI characterization retained.
+- [x] Task 5: Codex found unused intermediate `use-cases/verify-auth.ts` via knip; removed it and kept authoritative `verify-sign-up.ts` / `verify-sign-in.ts`.
+- [x] Task 5: Targeted suite (70), OpenAPI (1), `npm test` (129), `npm run check`, and `git diff --check` passed after the unused-file removal.
+- [x] Task 5: Independent Important finding fixed — added sign-in-verify route contract for reachable `code-already-used` (status 400, complete Japanese `CODE_ALREADY_USED` envelope with `requestId`/`retryable`, exactly one use-case call); gates re-run (targeted 71, OpenAPI 1, `npm test` 130, `npm run check`, `git diff --check`).
+- [x] Task 5: Independent re-review returned `APPROVED` with no Critical or Important findings.
+- [x] Task 5: Commit `refactor: extract authentication verification slices`.
+- [x] Task 6A: Wrote failing `auth-routes.test.ts` and `composition.test.ts` (aggregate OpenAPI relative/public paths; factory order/identity; import-safe empty call log).
+- [x] Task 6A: Created `modules/auth/routes/index.ts` and `modules/auth/index.ts`; `registerAuthRoutes` registers all four endpoints before returning the child.
+- [x] Task 6A: Changed auth endpoint paths to child-relative `/sign-up`, `/sign-up/verify`, `/sign-in`, `/sign-in/verify`; kept health at `/health`.
+- [x] Task 6A: Changed `createApp` to accept `ModuleRoute[]`, mount each completed child once, apply middleware/hooks once, register OpenAPI after mounts.
+- [x] Task 6A: Rewrote `index.ts` as import-safe `createApplication(env, factories?)` returning `{ app, resources }`; importing causes no config/listener/DB/AWS construction.
+- [x] Task 6A: Updated app/openapi/request-middleware tests and auth fixtures; removed transitional `src/routes`.
+- [x] Task 6A: Targeted 47/47 (auth aggregate + composition + app + OpenAPI + four auth route suites), full 134/134 (45 baseline names once), `npm run check`, `npm run build`, import-boundary, and `git diff --check` passed under one temporary `node_modules` symlink (removed after).
+- [x] Task 6A: Inspected implementation/tests — no unfinished TODO/FIXME/placeholder production or test code; no production changes for the dual-Hono dependency-layout issue.
+- [x] Task 6B: Rewrote `server.test.ts` (TDD) preserving the two baseline shutdown names exactly once; covered import-safe wiring, start/signal injection, close order listener→Pool→Cognito→Sentry, once-only closes, idempotent concurrent/repeated shutdown, and listener-error downstream closes.
+- [x] Task 6B: Implemented `server.ts` as serve/signal/idempotent-shutdown owner with injectable `createApplication`/`start`/`process`; `index.ts` remains import-safe `createApplication`.
+- [x] Task 6B: Added Cognito `destroy()` resource boundary in infrastructure (`CognitoSender.destroy` required; production `CognitoIdentityProviderClient.destroy()`); package `dev`/`start` and `knip.json` entry point to `server.ts` / `dist/server.js`.
+- [x] Task 6B: Confirmed transitional first-level `src/{auth,routes,db,contracts,observability,schema}` remain removed; `instrument.ts` remains Sentry preload using relocated config only.
+- [x] Task 6B: Initial implementation gates passed under one temporary `node_modules` symlink (removed after): targeted 54/54, full 140/140 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no drizzle diff, import-boundary classification, and `git diff --check`.
+- [x] Task 6: Independent Important findings fixed — shutdown attempts every close in listener→Pool→Cognito→Sentry order while preserving the first error and the same idempotent promise; Pool-failure and Cognito-failure close-order tests; subprocess import-safety and direct-source startup coverage; package `dev`/`start` source/dist scripts with `isDirectRun` source/dist checks.
+- [x] Task 6: Codex fresh final gates after finding fixes: targeted 26/26, full 145/145 (45 baseline names once), `npm run check`, `npm run build`, integration 1/1, `db:generate` no migration / empty drizzle diff, `scripts/agent-skills.sh check`, import-boundary classification, and `git diff --check`.
+- [x] Task 6: Both independent re-reviews returned exactly `APPROVED` with no Critical or Important findings.
+- [x] Task 6: Codex cleaned and verified both temporary dependency links absent — worktree `apps/api/node_modules` and main-checkout nested `apps/api/node_modules/node_modules` self-link; main-checkout user-owned changes remain untouched.
+- [x] Task 6: Commit `refactor: compose feature-first API`.

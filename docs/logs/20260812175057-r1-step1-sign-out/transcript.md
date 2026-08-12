@@ -155,3 +155,22 @@ ok
   - next permitted action: await plan approval
 - baseline conflicts: none
 - next permitted action: await plan approval
+
+## Session events
+
+- `2026-08-12 21:53 JST`: Task 6 iOS evidence captured on iPhone 17 Pro simulator. Settings idle and Sign Out → Sign In screenshots saved. `POST /v1/auth/sign-out` returned `204`. Report: `e2e-report.md`.
+
+## Sync
+
+- status: synced
+- trigger: iOS Sign Out E2E evidence recorded
+- artifacts updated: transcript, e2e-report.md, screenshots/ios-settings-idle.png, screenshots/ios-sign-out-sign-in.png
+- artifacts already current: plan.md, design.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: verification evidence
+  - review state: evidence recorded
+  - commit state: e2e evidence pending commit
+  - publication state: not published
+  - next permitted action: commit evidence
+- baseline conflicts: none
+- next permitted action: commit evidence

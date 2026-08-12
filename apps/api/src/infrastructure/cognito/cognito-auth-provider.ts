@@ -13,6 +13,7 @@ import {
 import type {
   AuthProvider,
   ResendSignUpCodeProviderResult,
+  SignOutProviderResult,
   SignUpProviderResult,
   StartSignInProviderResult,
   VerifySignInProviderResult,
@@ -228,6 +229,24 @@ async function verifySignIn(
   }
 }
 
+async function signOut(
+  cognitoClient: CognitoClient,
+  accessToken: string,
+): Promise<SignOutProviderResult> {
+  try {
+    await cognitoClient.globalSignOut(accessToken)
+    return { outcome: 'signed-out' }
+  } catch (error) {
+    if (error instanceof NotAuthorizedException) {
+      return { outcome: 'authentication-failed' }
+    }
+    if (isRateLimited(error)) {
+      return { outcome: 'rate-limited' }
+    }
+    throw error
+  }
+}
+
 export function createCognitoAuthProvider(cognitoClient: CognitoClient): AuthProvider {
   return {
     signUp: (email) => signUp(cognitoClient, email),
@@ -235,5 +254,6 @@ export function createCognitoAuthProvider(cognitoClient: CognitoClient): AuthPro
     startSignIn: (email, session) => startSignIn(cognitoClient, email, session),
     verifySignUp: (input) => verifySignUp(cognitoClient, input),
     verifySignIn: (input) => verifySignIn(cognitoClient, input),
+    signOut: (accessToken) => signOut(cognitoClient, accessToken),
   }
 }

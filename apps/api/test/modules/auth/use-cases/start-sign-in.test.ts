@@ -36,6 +36,9 @@ function createProviderFake(handlers: Partial<AuthProvider>): {
     async verifySignIn() {
       throw new Error('unexpected verifySignIn')
     },
+    async signOut() {
+      throw new Error('unexpected signOut')
+    },
   }
   return { provider, calls }
 }

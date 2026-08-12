@@ -6,6 +6,7 @@ import {
   InitiateAuthCommand,
   RespondToAuthChallengeCommand,
   ResendConfirmationCodeCommand,
+  GlobalSignOutCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
 
 export type CognitoConfig = {
@@ -54,19 +55,20 @@ export function createCognitoClient(
     },
     initiateAuth(email: string, session?: string) {
       return sender.send(new InitiateAuthCommand({
-        ClientId: config.clientId,
-        AuthFlow: 'USER_AUTH',
+        ClientId: config.clientId, AuthFlow: 'USER_AUTH',
         AuthParameters: { USERNAME: email, PREFERRED_CHALLENGE: 'EMAIL_OTP' },
         Session: session,
       }))
     },
     respondToAuthChallenge(email: string, session: string, code: string) {
       return sender.send(new RespondToAuthChallengeCommand({
-        ClientId: config.clientId,
-        ChallengeName: 'EMAIL_OTP',
+        ClientId: config.clientId, ChallengeName: 'EMAIL_OTP',
         ChallengeResponses: { USERNAME: email, EMAIL_OTP_CODE: code },
         Session: session,
       }))
+    },
+    globalSignOut(accessToken: string) {
+      return sender.send(new GlobalSignOutCommand({ AccessToken: accessToken }))
     },
   }
 }

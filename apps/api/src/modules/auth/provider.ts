@@ -46,10 +46,16 @@ export type VerifySignInProviderResult =
   | { outcome: 'rate-limited' }
   | { outcome: 'incomplete-authentication' }
 
+export type SignOutProviderResult =
+  | { outcome: 'signed-out' }
+  | { outcome: 'authentication-failed' }
+  | { outcome: 'rate-limited' }
+
 export interface AuthProvider {
   signUp(email: string): Promise<SignUpProviderResult>
   resendSignUpCode(email: string): Promise<ResendSignUpCodeProviderResult>
   startSignIn(email: string, session?: string): Promise<StartSignInProviderResult>
   verifySignUp(input: { username: string; session: string | null; code: string }): Promise<VerifySignUpProviderResult>
   verifySignIn(input: { username: string; session: string; code: string }): Promise<VerifySignInProviderResult>
+  signOut(accessToken: string): Promise<SignOutProviderResult>
 }

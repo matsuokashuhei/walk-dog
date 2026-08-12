@@ -3,7 +3,7 @@
 - status: awaiting-confirmation
 - Purpose: R1 Step 1 Sign Out across API and Mobile
 - Active release: R1
-- next permitted action: await plan-level confirmation for mobile Sign Out placement and Active Walk discard scope
+- next permitted action: await confirmation of mobile Settings placement; Active Walk Sign Out behavior is confirmed
 
 ## Sources
 
@@ -13,53 +13,47 @@
    - Account requires PostgreSQL owners schema, Cognito API token verification, mobile auth state, and mobile API client.
 2. `docs/specs/external-specification.html`
    - 01.6 Settings: Sign Out on `/settings`
-   - 01.5 Active Walk mid Sign Out: confirmation; on accept, discard Active Walk as Failed then Sign Out
-   - 02.2 Auth API: `POST /auth/sign-out`, Access Token, request `{ discardActiveWalk? }`, success `204 No Content`
-   - 02.7 Sign Out: Active Walk confirmation; `discardActiveWalk=true` discards then signs out
-   - AC-AUTH-05: Active Walk present, discard accepted → Failed discard, Sign In
+   - 01.5 / 02.7 / AC-AUTH-05: Active Walk mid Sign Out uses confirmation; accepted discard ends as Failed then Sign In
+   - 02.2 listed optional `discardActiveWalk`; this session replaces that with always-Failed Active Walk on Sign Out
 3. `docs/specs/mobile-journey-wireflow.html`
-   - ME-03 `/settings`: Sign Out success path; Active Walk blocks Sign Out on failure path
+   - ME-03 `/settings`: Sign Out success path; Active Walk blocks unconfirmed Sign Out
 4. `docs/specs/2026-07-26-hono-api-r0-design.md`
-   - Authenticated endpoints verify Cognito access tokens with `aws-jwt-verify`
-   - OpenAPI `BearerAuth`; auth middleware before protected handlers
-   - Missing/invalid token → HTTP 401, `UNAUTHENTICATED`
-5. Prior logs
-   - `docs/logs/20260803005130-r1-step1-sign-up-mobile/specification-review.md`: Sign Out deferred as remaining Account capability
-   - `docs/logs/20260810140823-r1-step1-sign-in/specification-review.md`: Sign In delivered; Account still lists Sign Out
+   - Cognito access-token verification, `BearerAuth`, HTTP 401 `UNAUTHENTICATED`
+5. Session specification
+   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
+   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-spec-mockups.html`
 6. Current implementation
-   - `apps/api/src/modules/auth/routes/index.ts`: Sign Up / Sign In routes only; no Sign Out route
-   - `apps/api/src/modules/auth/provider.ts`: no Sign Out provider method
-   - No Cognito access-token verifier middleware in `apps/api/src`
-   - `apps/mobile/src/lib/auth.tsx`: `clearSession` exists; no Sign Out API call
-   - `apps/mobile/src/app/(app)/index.tsx`: signed-in home placeholder; no `/settings` route
+   - Auth routes cover Sign Up / Sign In only
+   - No access-token verifier middleware
+   - Mobile has `clearSession` and no Settings / Sign Out UI
 
-## Current release deliverables (proposed pending confirmation)
+## Current release deliverables
 
-1. Just-in-time R0: Cognito access-token verification middleware and OpenAPI `BearerAuth` for protected routes.
-2. API: `POST /v1/auth/sign-out` accepts a verified access token, optional `discardActiveWalk`, invalidates the Cognito session, returns `204`.
-3. Mobile: authenticated owner can Sign Out, clear local tokens, and return to Sign In.
-4. Verification: API contract tests for success and 401; mobile/iOS evidence for Sign Out to Sign In.
+1. Just-in-time R0: Cognito access-token verification and OpenAPI `BearerAuth`.
+2. API: `POST /v1/auth/sign-out` with verified access token; empty body; Active Walk present → Failed then Cognito sign-out; success `204`.
+3. Mobile Settings (`/settings`): legal links, Sign Out, Active Walk confirmation dialog, loading and error states, success transition to Sign In.
+4. Verification: API contracts for `204` and `401`; mobile evidence for no-Active-Walk Sign Out and confirm → Sign In when Active Walk is present.
 
 ## Decisions
 
-- Plan-level (awaiting confirmation): Mobile Sign Out entry point for this session.
-  - Option A: minimal `/settings` with Sign Out only (Preferences / email change remain R3).
-  - Option B: Sign Out control on the current authenticated home placeholder until Settings exists.
-- Deferred release decision (awaiting confirmation): Active Walk discard path (`discardActiveWalk`, confirmation dialog, AC-AUTH-05) belongs to R1 Step 3 Active Walk. This session accepts the optional request field and signs out when no Active Walk exists.
-- Implementation-local (after confirmation): Cognito GlobalSignOut / RevokeToken adapter details, route module layout under feature-first auth, E2E screenshot set.
-- Outside staged plan: none identified.
-- Note: external auth error list includes `AUTHENTICATION_REQUIRED`; R0 design and middleware skill define the auth gate as `UNAUTHENTICATED`. Sign Out 401 uses the R0 gate contract.
+- Plan-level (confirmed 2026-08-12): Active Walk during Sign Out is always Failed after the owner confirms. The client shows a confirmation dialog when Active Walk exists. The API does not accept `discardActiveWalk`; Sign Out itself performs Failed when an Active Walk exists.
+- Plan-level (awaiting confirmation): Mobile entry is minimal `/settings` with Sign Out and legal links. Preferences and Email Change remain R3.
+- Implementation-local (after Settings confirmation): Cognito sign-out adapter, feature-first auth route module, E2E screenshots.
+- Deferred: Active Walk persistence and Failed transition implementation land with the Active Walk slice when that data exists; the Sign Out contract already defines the behavior.
+- Note: auth gate uses `UNAUTHENTICATED` per R0 design.
 
 ## Verification conditions
 
-- OpenAPI and route contract tests cover authenticated Sign Out success (`204`) and missing/invalid access token (`401` `UNAUTHENTICATED`).
-- Mobile clears Secure Store tokens and shows the Sign In route after Sign Out.
-- iOS evidence records authenticated Sign Out and the post-Sign-Out Sign In state.
+- `POST /v1/auth/sign-out` returns `204` for a valid access token.
+- Missing or invalid access token returns `401` `UNAUTHENTICATED`.
+- Mobile clears Secure Store tokens and shows Sign In after success.
+- When Active Walk is present, Sign Out tap shows confirmation; cancel keeps session and walk; confirm signs out and treats Active Walk as Failed.
+- iOS evidence covers idle Settings, confirm (when Active Walk is available), and post-Sign-Out Sign In.
 
 ## Gaps checked
 
-- Release boundaries: Account owns Sign Out; Dog / Active Walk / Preferences remain later steps or R3. Active Walk discard is proposed as deferred to Step 3 pending confirmation.
-- Specification preconditions: Cognito API token verification is required and unfinished → included as just-in-time R0 for this session. Mobile auth state and API client exist from Sign Up / Sign In.
-- Implementation evidence: Sign Out route, token verifier, Settings screen, and Sign Out UI are absent; `clearSession` helper exists.
-- Plan table: Account row marks Cognito API token verification as 必須; delivered claim for verifier is false until this session implements it.
-- Source tension recorded: `AUTHENTICATION_REQUIRED` (external) vs `UNAUTHENTICATED` (R0 design / middleware skill) for the auth gate; gate follows R0.
+- Release boundaries: Account owns Sign Out UI/API. Active Walk Failed transition is part of the Sign Out contract and is realized when Active Walk data exists.
+- Specification preconditions: Cognito API token verification is required and unfinished → JIT R0 in this session.
+- Implementation evidence: Sign Out route, verifier, Settings, and confirm dialog are absent.
+- Plan table: Account requires Cognito API token verification; verifier not delivered until this session.
+- Confirmed product override: external optional `discardActiveWalk` is replaced by always-Failed Active Walk on confirmed Sign Out.

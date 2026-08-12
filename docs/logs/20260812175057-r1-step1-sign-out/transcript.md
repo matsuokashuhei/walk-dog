@@ -13,6 +13,8 @@
   - `docs/logs/20260812175057-r1-step1-sign-out/transcript.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/specification-review.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-spec-mockups.html`
+  - `docs/development/staged-development.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
 
 ## Messages
 
@@ -81,3 +83,26 @@ explaining-specifications-and-design に従い、Sign Out の画面契約と API
   - next permitted action: await plan-level confirmation
 - baseline conflicts: none
 - next permitted action: await plan-level confirmation
+
+### User
+
+Active Walk は常にFailedにしてください。その代わりにActive Walkがある場合は、サインアウトボタンを押したとき、確認ダイアログを出してください。この前提で仕様書を再作成してください。
+
+### Assistant
+
+Sign Out 仕様を再作成した。Active Walk ありは確認ダイアログ、承諾後は常に Failed。API は discardActiveWalk を持たない。staged-development.md に計画レベル判断を同期した。
+
+## Sync
+
+- status: synced
+- trigger: Sign Out specification rewrite after Active Walk confirmation decision
+- artifacts updated: transcript, sign-out-specification.md, sign-out-spec-mockups.html, specification-review.md, docs/development/staged-development.md
+- artifacts already current: none
+- cross-artifact matrix:
+  - task phase: specification confirmation
+  - review state: awaiting-confirmation (Settings placement)
+  - commit state: rewrite pending commit
+  - publication state: not published
+  - next permitted action: await Settings placement confirmation
+- baseline conflicts: none
+- next permitted action: await Settings placement confirmation

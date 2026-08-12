@@ -65,6 +65,7 @@ R1は次の縦切り順で進める。
 ## R1: 散歩記録の縦切り
 
 - Sign Up、Sign In、OTP確認、Owner表示名登録、Sign Outを実装する。
+- Sign Outは、Active Walkがある場合に確認ダイアログを表示し、承諾後にActive WalkをFailedにしてからCognito sessionを無効化する。Active Walkがない場合は確認なしでSign Outする。
 - Dog一覧、Dog登録、Dog選択を実装し、Dog登録時にDaily 30分のGoal Revisionを作成する。
 - Ready、Starting、Recording、Completed、Failedを、APIのActive Walkと同期して表示する。
 - 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。
@@ -89,6 +90,7 @@ R1は次の縦切り順で進める。
 ## 公開インターフェース
 
 - `/v1` 配下に認証、Owner、Dog、Goal、Walk、TrackPoint、Event、History、Contribution、Preference APIを段階ごとに追加する。
+- `POST /v1/auth/sign-out` はAccess Tokenで認証し、成功時に204を返す。Active Walkがある場合はFailedにしてからsessionを無効化する。
 - `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。
 - `eventId` はEventの冪等キー、`sequence` はWalk内のTrackPoint送信順序を表す。
 - PostgreSQLはOwner、Dog、Goal Revision、Walk、Participant、Event、Preferenceを扱い、DynamoDBはTrackPointを扱う。

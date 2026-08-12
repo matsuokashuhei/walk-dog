@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sign Out — screen mockups (R1 Step 1)</title>
+  <title>Sign Out — screen mockups</title>
   <style>
     :root {
       --bg: #f3efe7;
@@ -13,7 +13,6 @@
       --card: #fffdf8;
       --accent: #2f5d50;
       --danger: #8a3b2c;
-      --warn: #9a6b2f;
       --soft: #ece5da;
     }
     * { box-sizing: border-box; }
@@ -29,7 +28,7 @@
     }
     main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
     h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
-    .lede { color: var(--muted); margin: 0 0 28px; max-width: 62ch; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
     h2 { font-size: 1.15rem; margin: 36px 0 14px; }
     .note {
       background: var(--card);
@@ -136,35 +135,24 @@
       font-family: ui-sans-serif, system-ui, sans-serif;
       font-size: 0.78rem;
     }
-    .tag {
-      display: inline-block;
-      margin-left: 6px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: var(--soft);
-      color: var(--muted);
-      font-size: 0.68rem;
-      vertical-align: middle;
-      font-family: ui-sans-serif, system-ui, sans-serif;
-    }
-    .tag.later { background: #efe4d2; color: var(--warn); }
   </style>
 </head>
 <body>
   <main>
     <h1>Sign Out 画面モック</h1>
     <p class="lede">
-      R1 Step 1 の提供対象は Settings（Sign Out）の idle / loading / error と、成功後の Sign In 復帰です。
-      Active Walk 確認ダイアログは製品仕様に含まれますが、Active Walk 縦切り（Step 3）の対象です。
+      Active Walk があるときは Sign Out 押下で確認ダイアログを出す。
+      承諾後の Sign Out では Active Walk を常に Failed にする。
+      Active Walk がないときは確認なしで Sign Out する。
     </p>
 
     <div class="note">
       Route: <code>/settings</code> → 成功時 <code>/sign-in</code>。
-      法務リンクは既存公開文書 <code>https://cacheandbuffer.com/</code> を開く。
-      Preferences / Email Change はこのセッションの提供対象外。
+      API: <code>POST /v1/auth/sign-out</code>（body に discard フラグは持たない）。
+      法務リンクは <code>https://cacheandbuffer.com/</code>。
     </div>
 
-    <h2>このセッションの画面</h2>
+    <h2>画面一覧</h2>
     <div class="gallery">
       <article class="screen-card">
         <h3>SETTINGS-01 · Idle</h3>
@@ -178,11 +166,33 @@
             <div class="btn danger">Sign Out</div>
           </div>
         </div>
-        <p class="caption">/settings · 法務リンクと Sign Out</p>
+        <p class="caption">/settings · Active Walk なしならここから直接 API</p>
       </article>
 
       <article class="screen-card">
-        <h3>SETTINGS-02 · Signing out</h3>
+        <h3>SETTINGS-02 · Confirm</h3>
+        <div class="phone" aria-label="Active Walk confirm">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">settings</div>
+            <h4>Settings</h4>
+            <div class="dialog">
+              <strong>Active Walk を破棄しますか？</strong>
+              サインアウトすると、記録中の散歩は Failed になります。
+              <div class="dialog-actions">
+                <div class="btn ghost">キャンセル</div>
+                <div class="btn danger">破棄して Sign Out</div>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn danger" style="opacity:0.45">Sign Out</div>
+          </div>
+        </div>
+        <p class="caption">Active Walk あり · キャンセルで Idle に戻る</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>SETTINGS-03 · Signing out</h3>
         <div class="phone" aria-label="Settings loading">
           <div class="status"><span>9:41</span><span>● ● ●</span></div>
           <div class="screen">
@@ -194,11 +204,11 @@
             <div class="btn danger" style="opacity:0.45">Sign Out</div>
           </div>
         </div>
-        <p class="caption">/settings · API 呼び出し中。再操作を受け付けない</p>
+        <p class="caption">API 呼び出し中 · 再操作を受け付けない</p>
       </article>
 
       <article class="screen-card">
-        <h3>SETTINGS-03 · Error</h3>
+        <h3>SETTINGS-04 · Error</h3>
         <div class="phone" aria-label="Settings error">
           <div class="status"><span>9:41</span><span>● ● ●</span></div>
           <div class="screen">
@@ -210,7 +220,7 @@
             <div class="btn danger">Sign Out</div>
           </div>
         </div>
-        <p class="caption">/settings · 失敗メッセージと手動 Retry（同じ Sign Out）</p>
+        <p class="caption">失敗時は Settings に留まり、同じ Sign Out で再試行</p>
       </article>
 
       <article class="screen-card">
@@ -227,32 +237,7 @@
             <div class="legal"><span>利用規約</span><span>プライバシーポリシー</span></div>
           </div>
         </div>
-        <p class="caption">/sign-in · ローカル session 削除後の未認証画面</p>
-      </article>
-    </div>
-
-    <h2>製品仕様の後続画面 <span class="tag later">R1 Step 3</span></h2>
-    <div class="gallery">
-      <article class="screen-card">
-        <h3>SETTINGS-04 · Active Walk confirm</h3>
-        <div class="phone" aria-label="Active Walk confirm">
-          <div class="status"><span>9:41</span><span>● ● ●</span></div>
-          <div class="screen">
-            <div class="label">settings</div>
-            <h4>Settings</h4>
-            <div class="dialog">
-              <strong>Active Walk を破棄しますか？</strong>
-              サインアウトすると、記録中の散歩は Failed として破棄されます。
-              <div class="dialog-actions">
-                <div class="btn ghost">キャンセル</div>
-                <div class="btn danger">破棄して Sign Out</div>
-              </div>
-            </div>
-            <div class="spacer"></div>
-            <div class="btn danger" style="opacity:0.45">Sign Out</div>
-          </div>
-        </div>
-        <p class="caption">Active Walk あり · 承諾時は discardActiveWalk=true</p>
+        <p class="caption">/sign-in · token 削除後の未認証画面</p>
       </article>
     </div>
   </main>

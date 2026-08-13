@@ -1,5 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
-import type { AccessTokenVerifier } from '../../../infrastructure/cognito/access-token-verifier.js'
+import type { AccessTokenVerifier } from '../../../shared/http/access-token.js'
 import { createAuthenticationMiddleware } from '../../../shared/http/authentication-middleware.js'
 import type { App, AppVariables } from '../../../shared/http/types.js'
 import type {

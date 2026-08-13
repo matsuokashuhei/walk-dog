@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native'
 import { hasActiveWalk } from '@/lib/active-walk'
-import { ApiError, apiRequest } from '@/lib/api'
+import { ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
+import { signOutRequest } from '@/lib/sign-out'
 
 const LEGAL_URL = 'https://cacheandbuffer.com/'
 
@@ -19,13 +20,6 @@ type ScreenState =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-
-export async function signOutRequest(accessToken: string): Promise<void> {
-  await apiRequest<void>('/v1/auth/sign-out', {
-    method: 'POST',
-    accessToken,
-  })
-}
 
 export default function SettingsScreen() {
   const { session, clearSession } = useAuth()

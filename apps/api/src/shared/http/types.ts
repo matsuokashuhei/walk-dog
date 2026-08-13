@@ -1,6 +1,6 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Logger } from 'pino'
-import type { Principal } from '../../infrastructure/cognito/access-token-verifier.js'
+import type { Principal } from './access-token.js'
 
 export type AppVariables = {
   requestId: string

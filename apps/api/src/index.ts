@@ -4,10 +4,7 @@ import {
   type AppDependencies,
   type ModuleRoute,
 } from './app.js'
-import {
-  createAccessTokenVerifier as createProductionAccessTokenVerifier,
-  type AccessTokenVerifier,
-} from './infrastructure/cognito/access-token-verifier.js'
+import { createAccessTokenVerifier as createProductionAccessTokenVerifier } from './infrastructure/cognito/access-token-verifier.js'
 import {
   createCognitoClient as createProductionCognitoClient,
   type CognitoClient,
@@ -44,6 +41,7 @@ import { createVerifySignUp } from './modules/auth/use-cases/verify-sign-up.js'
 import { registerHealthRoutes } from './modules/health/index.js'
 import type { OwnerRepository } from './modules/owners/index.js'
 import type { ActiveWalkCommands } from './modules/walks/active-walk-commands.js'
+import type { AccessTokenVerifier } from './shared/http/access-token.js'
 import type { App } from './shared/http/types.js'
 
 export type ApplicationConfigs = {

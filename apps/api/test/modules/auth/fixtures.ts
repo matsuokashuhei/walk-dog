@@ -3,10 +3,10 @@ import { createApp } from '../../../src/app.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
 import {
   registerAuthRoutes,
-  type AccessTokenVerifier,
   type AuthRouteDependencies,
   type SignOut,
 } from '../../../src/modules/auth/index.js'
+import type { AccessTokenVerifier } from '../../../src/shared/http/access-token.js'
 import type {
   StartSignIn,
   StartSignUp,

@@ -1,12 +1,5 @@
 import { CognitoJwtVerifier } from 'aws-jwt-verify'
-
-export type Principal = {
-  cognitoSubject: string
-}
-
-export type AccessTokenVerifier = {
-  verify(accessToken: string): Promise<Principal>
-}
+import type { AccessTokenVerifier } from '../../shared/http/access-token.js'
 
 export function createAccessTokenVerifier(config: {
   region: string
@@ -20,7 +13,7 @@ export function createAccessTokenVerifier(config: {
   })
 
   return {
-    async verify(accessToken: string): Promise<Principal> {
+    async verify(accessToken: string) {
       const payload = await cognitoVerifier.verify(accessToken)
       return { cognitoSubject: payload.sub }
     },

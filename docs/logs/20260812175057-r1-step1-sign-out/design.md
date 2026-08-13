@@ -62,6 +62,22 @@ signOut use case
 - OpenAPI に `POST /v1/auth/sign-out` と `BearerAuth` を載せる
 - iOS: Settings idle、Sign Out 成功後の Sign In。Active Walk 確認は Active Walk 接続後に証跡追加
 
+## Official documentation reviewed
+
+Read before Sign Out API / Zod / middleware work. Decisions follow these pages.
+
+| Source | URL | Decision recorded |
+| --- | --- | --- |
+| Zod objects / `z.strictObject` | https://zod.dev/api?id=objects | Sign Out body is `z.strictObject({})`. Empty object or omitted body is the allowed input; extra keys fail validation. |
+| Hono middleware | https://hono.dev/docs/guides/middleware | Path-scoped `app.use('/sign-out', …)` early-returns 401; `await next()` stays outside verify catch. |
+| Hono middleware concept | https://hono.dev/docs/concepts/middleware | Registration order; handler after auth gate. |
+| Hono routing | https://hono.dev/docs/api/routing | Child app routes + parent `app.route('/v1/auth', …)`; register child routes before mount. |
+| Hono Context | https://hono.dev/docs/api/context | `c.set('principal')` / `c.get('requestId')` for typed Variables. |
+| Hono validation | https://hono.dev/docs/guides/validation | JSON body via OpenAPI/Zod at the route; `c.req.valid('json')`. |
+| Zod OpenAPI | https://hono.dev/examples/zod-openapi | `createRoute` + `security: [{ BearerAuth: [] }]` + `app.doc('/openapi.json')`. |
+| Hono testing | https://hono.dev/docs/guides/testing | Route contracts use `app.request()` without a listener. |
+| Node.js test runner | https://nodejs.org/api/test.html | `node --import tsx --test`. |
+
 ## WHY
 
 - 確定仕様（確認ダイアログ + 常に Failed、`/settings`）を R1 アカウント縦切りに載せる

@@ -22,6 +22,8 @@
   - `docs/logs/20260812175057-r1-step1-sign-out/crit-review.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/plan.md`
   - `docs/logs/20260812175057-r1-step1-sign-out/sign-out-specification.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/skill-compliance-review-request.md`
+  - `docs/logs/20260812175057-r1-step1-sign-out/skill-compliance-review.md`
 
 ## Messages
 
@@ -272,3 +274,28 @@ Chose push + PR. Ran pre-crit sync and session Crit (CHANGES_REQUESTED). Applied
 - baseline conflicts: none
 - next permitted action: continue
 - pull request: https://github.com/matsuokashuhei/walk-dog/pull/49
+
+### User
+
+サブエージェントのコードレビューを依頼してください。レビューの観点は `.agents/skills` の各スキルです。これらの内容に準拠しているかどうかです。
+
+### Assistant
+
+Requested a Cursor Grok 4.5 skill-compliance review of `327d0f91`..`c3e04add` against AGENTS.md and every `.agents/skills/` skill. Result: CHANGES_REQUESTED, 0 Critical, 3 Important. Applied fixes: shared Principal/AccessTokenVerifier types, `signOutRequest` moved to `src/lib/sign-out.ts`, official Hono/Zod URLs recorded in design.md.
+
+## Sync
+
+- status: synced
+- trigger: skill-compliance review response
+- artifacts updated: transcript, skill-compliance-review-request.md, skill-compliance-review.md, design.md
+- artifacts already current: specification-review.md, plan.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance CHANGES_REQUESTED addressed; re-review pending
+  - commit state: review-fix pending commit
+  - publication state: PR #49 open
+  - next permitted action: continue
+- baseline conflicts: none
+- next permitted action: continue
+

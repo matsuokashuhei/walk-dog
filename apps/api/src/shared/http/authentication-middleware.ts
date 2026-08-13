@@ -1,8 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import type {
-  AccessTokenVerifier,
-  Principal,
-} from '../../infrastructure/cognito/access-token-verifier.js'
+import type { AccessTokenVerifier, Principal } from './access-token.js'
 import type { AppVariables } from './types.js'
 
 const unauthenticated = (requestId: string) => ({

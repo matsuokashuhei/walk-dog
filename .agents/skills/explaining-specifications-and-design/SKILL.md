@@ -1,46 +1,48 @@
 ---
 name: explaining-specifications-and-design
-description: Explain specifications, designs, and implementation plans in WHAT then HOW then WHY order so reviewers can judge the subject before the wiring. Use when presenting specs, design docs, or plans for approval, or when clarifying product or technical contracts. Do not use for Decision Questions that ask for a single approval; those stay in run-dev-session.
+description: 仕様、設計、実装計画を WHAT → HOW → WHY の順で説明し、配線の前に対象を判断できるようにする。仕様、設計書、計画の承認提示、または製品・技術契約の明確化に使用する。単一承認を求める決定質問には使わない。それは run-dev-session に残す。
 ---
 
-# Explaining Specifications and Design
+# 仕様と設計の説明
 
-Structure every user-facing specification or design explanation as WHAT, then HOW, then WHY. Lead with the subject of the change; do not open with files, path filters, or wiring.
+ユーザー向けの仕様または設計の説明は、WHAT、次に HOW、次に WHY で構成する。変更の対象から始め、ファイル、path フィルター、配線から始めない。
 
-## Lenses
+## レンズ
 
-| Lens | Answer |
+| レンズ | 答えること |
 | --- | --- |
-| **WHAT** | Subject of the change: capabilities, accepted inputs, returned data or displayed states, gates, valid transitions (positive terms; follow `AGENTS.md` 文書 rules). |
-| **HOW** | Mechanism: modules, workflows, commands, data flow, composition. |
-| **WHY** | Reason: acceptance condition, staged-plan fit, risk, constraint, or user goal. |
+| **WHAT** | 変更の対象：提供する能力、受け付ける入力、返すデータまたは表示する状態、ゲート、成立する遷移（肯定形。`AGENTS.md` の文書規則に従う） |
+| **HOW** | 仕組み：module、ワークフロー、コマンド、データフロー、composition |
+| **WHY** | 理由：受入条件、段階的計画との適合、リスク、制約、またはユーザー目標 |
 
-## Presentation rules
+## 提示規則
 
-1. Lead with WHAT. Do not open with wiring, path filters, file lists, or implementation choreography.
-2. For quality gates or other verification work, WHAT must include a table of each check command and what it verifies before any CI or file shape.
-3. HOW may include diagrams after WHAT is clear.
-4. WHY ties the proposal to `docs/development/staged-development.md`, `docs/specs/`, session purpose, or an explicit constraint.
-5. Keep Decision Questions (`When` … `How` in `run-dev-session`) for asking approval of an effect. This skill is for explaining the proposal itself.
+1. WHAT から始める。配線、path フィルター、ファイル一覧、実装手順から始めない。
+2. 対象がユーザー向け画面を含むとき、WHAT に HTML モック、コンポーネント一覧、イベント一覧を含める。対象が HTTP API を含むとき、WHAT にリクエスト、レスポンス、振る舞いを含める。ユーザーが頼む前に提示する。
+3. 品質ゲートなど検証作業では、CI やファイル形状の前に、各チェックコマンドとその検証対象のテーブルを WHAT に含める。
+4. HOW は WHAT が判断できるあとで図を含めてよい。
+5. WHY は提案を `docs/development/staged-development.md`、`docs/specs/`、セッション目的、または明示された制約へ最短で結ぶ。
+6. 効果の承認を求める決定質問（`run-dev-session` の `When` … `How`）は承認依頼に使う。このスキルは提案そのものの説明に使う。
 
-## Workflow
+## ワークフロー
 
-1. Identify the audience decision (approve design, approve plan, clarify contract).
-2. Draft WHAT from sources (specs, staged plan, package scripts, confirmed purpose).
-3. Draft HOW only after WHAT is complete enough to judge.
-4. Draft WHY as the shortest link from WHAT/HOW to acceptance or release fit.
-5. When a plan is part of the approval surface, map every top-level Task to its design section, concrete deliverable, and acceptance condition. Continue to approval when every Task has all three links.
-6. For documents under `docs/specs/` and `docs/development/`, audit constraint wording in its final form. State ownership, allowed dependencies, accepted inputs or states, data sources, and acceptance conditions affirmatively.
-7. Present to the user in WHAT → HOW → WHY order. Put the same order at the top of design and plan documents when those documents are the approval surface.
-8. After the WHAT/HOW/WHY explanation is complete, if the user must approve an effect, switch to `run-dev-session` Decision Questions. Do not use Decision Questions as a substitute for the explanation.
+1. 受け手の判断を特定する（設計承認、計画承認、契約の明確化）。
+2. ソース（仕様、段階的計画、package script、確定した目的）から WHAT を書く。
+3. WHAT が判断できるあとで HOW を書く。
+4. WHY は WHAT/HOW から受入またはリリース適合への最短の結びとする。
+5. 計画が承認面の一部であるとき、トップレベル Task ごとに設計節、具体成果物、受入条件を対応付ける。3 つすべて揃った Task だけ承認へ進む。
+6. `docs/specs/` と `docs/development/` 配下の文書は、最終形の制約表現を監査する。所有、許容する依存、受け付ける入力または状態、データソース、受入条件を肯定形で述べる。
+7. ユーザーへ WHAT → HOW → WHY の順で提示する。設計書と計画書が承認面であるときは、同じ順を文書の先頭に置く。
+8. WHAT/HOW/WHY の説明が終わったあと、効果の承認が必要なら `run-dev-session` の決定質問へ切り替える。決定質問を説明の代わりにしない。
 
-## Completion check
+## 完了確認
 
-Before asking for design or plan approval, confirm:
+設計または計画の承認を求める前に、次を確認する：
 
-- the user-facing summary uses WHAT → HOW → WHY in that order;
-- verification or gate subjects are explicit when the purpose includes quality gates or CI;
-- HOW does not substitute for a missing WHAT;
-- every top-level plan Task maps to a design section, deliverable, and acceptance condition;
-- files under `docs/specs/` and `docs/development/` express constraints as affirmative ownership, allowed dependency, accepted input or state, data source, or acceptance condition;
-- any remaining approval request uses Decision Questions only after the explanation, not instead of it.
+- ユーザー向け要約が WHAT → HOW → WHY の順である
+- 画面の対象は HTML モック、コンポーネント一覧、イベント一覧を含み、HTTP API の対象はリクエスト、レスポンス、振る舞いを含む
+- 目的が品質ゲートまたは CI を含むとき、検証対象が明示されている
+- HOW が欠けた WHAT の代わりになっていない
+- トップレベル計画 Task が設計節、成果物、受入条件に対応している
+- `docs/specs/` と `docs/development/` 配下の制約が、肯定形の所有、許容する依存、受け付ける入力または状態、データソース、または受入条件として書かれている
+- 残る承認依頼は説明のあとでのみ決定質問を使い、説明の代わりにしていない

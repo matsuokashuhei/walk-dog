@@ -1,76 +1,81 @@
 ---
 name: confirming-development-specifications
-description: Use when starting a walk-dog development session and the active release, specification evidence, implementation scope, or plan approval must be confirmed before design or implementation.
+description: walk-dog 開発セッションの開始時に、アクティブリリース、仕様の根拠、実装スコープ、計画承認を設計または実装の前に確定するときに使用する。
 ---
 
-# Confirming Development Specifications
+# 開発仕様の確認
 
-Confirm the purpose against the repository specifications and release plan before design or implementation. Produce a source-backed review record and mark the session ready only when the active release, provided behavior, and plan decisions are settled.
+目的をリポジトリの仕様とリリース計画に照合し、設計または実装の前に確定する。根拠付きのレビュー記録を作り、アクティブリリース、提供する振る舞い、計画判断が揃ったときだけセッションを ready にする。
 
-## Required sources
+## 必須ソース
 
-Read these sources in this order:
+次の順で読む：
 
-1. `docs/development/staged-development.md` for the active release, approved foundations, capabilities, acceptance conditions, and release-start decisions.
-2. The relevant files in `docs/specs/` for the product contract.
-3. Related `docs/logs/` records for confirmed decisions and their final status.
-4. The current implementation state for feasibility and existing behavior.
+1. `docs/development/staged-development.md`：アクティブリリース、承認済み基盤、提供機能、受入条件、リリース開始判断
+2. `docs/specs/` の関連ファイル：製品契約
+3. 関連する `docs/logs/`：確定済み判断とその最終状態
+4. 現在の実装：実現可能性と既存の振る舞い
 
-Record each source path and supporting heading, section, or log entry. The staged plan defines release scope; specifications define product behavior; logs provide decision evidence; code provides implementation evidence.
+各ソースのパスと、根拠となる見出し、節、ログエントリを記録する。段階的計画はリリース範囲を、仕様は製品振る舞いを、ログは判断の証跡を、コードは実装の証跡を定義する。
 
-## Confirmation workflow
+## 確認ワークフロー
 
-1. State the confirmed purpose and identify the active release.
-2. Extract only the behavior needed for the purpose:
-   - provided capability;
-   - accepted input;
-   - returned data or displayed state;
-   - valid state transitions;
-   - aggregation subject and source;
-   - verification condition.
-3. Map every extracted item to a source reference.
-4. Define current-release deliverables in positive terms. Keep later-release material as a release decision reference.
-5. When mapping unfinished foundations (especially R0) to later-release steps or prerequisite tables, decompose mobile foundations into separate columns or bullets:
-   - mobile auth state (Cognito session hold/restore/token attachment);
-   - mobile API client (OpenAPI typed client and shared error handling);
-   - durable outbound queue (on-device outbox; not SQS);
-   - iOS location permission (foreground/background Start and capture foundation).
-   Keep Cognito API token verification, on-device auth state, durable outbound queue, and server-side SQS as distinct prerequisites.
-6. Classify each new decision:
-   - **Plan-level:** release order, approved foundation, capability, public interface, verification condition, or release-start decision. Synchronize it to `staged-development.md` after explicit user confirmation and before implementation.
-   - **Implementation-local:** does not change the staged plan; record it in the session design or plan.
-   - **Deferred release decision:** belongs to a named later release; record that release.
-   - **Outside the staged plan:** record the classification and reason without changing the plan.
-7. Create `docs/logs/<timestamp>-<slug>/specification-review.md` with the purpose, release, positive deliverables, source map, decision classifications, verification conditions, and confirmation status. Add it to the session transcript's Artifact List.
-8. Mark the review `ready` only when current deliverables have source references, required sources exist, relevant sources agree, and no plan-level decision is awaiting confirmation.
+1. 確定した目的を述べ、アクティブリリースを特定する。
+2. 目的に必要な振る舞いだけを取り出す：
+   - 提供する能力
+   - 受け付ける入力
+   - 返すデータまたは表示する状態
+   - 成立する状態遷移
+   - 集計対象とソース
+   - 検証条件
+3. 取り出した各項目をソース参照へ対応付ける。
+4. 現行リリースの成果物を肯定形で定義する。後続リリースの内容はリリース判断の参照として残す。
+5. 未完了の基盤（とくに R0）を後続リリースのステップや前提条件テーブルへ対応付けるときは、モバイル基盤を次の列または箇条書きに分解する：
+   - モバイル認証状態（Cognito セッションの保持・復元・token 付与）
+   - モバイル API クライアント（OpenAPI 型付きクライアントと共有エラー処理）
+   - 端末上の送信キュー（on-device outbox。SQS ではない）
+   - iOS 位置情報許可（foreground/background の Start と取得基盤）
+   Cognito API の token 検証、端末上の認証状態、端末上の送信キュー、サーバ側 SQS は別の前提条件として扱う。
+6. 新しい判断を分類する：
+   - **計画レベル:** リリース順序、承認済み基盤、提供機能、公開インターフェース、検証条件、またはリリース開始判断。ユーザーの明示確認のあと、実装前に `staged-development.md` へ同期する。
+   - **実装ローカル:** 段階的計画を変えない。セッションの設計または計画へ記録する。
+   - **後続リリース判断:** 名前付きの後続リリースに属する。そのリリースを記録する。
+   - **段階的計画外:** 分類と理由を記録し、計画は変えない。
+7. `docs/logs/<timestamp>-<slug>/specification-review.md` を作成し、目的、リリース、肯定形の成果物、ソース対応、判断分類、検証条件、確認ステータスを書く。トランスクリプトの成果物リストへ追加する。
+8. `awaiting-confirmation` または `ready` の前に、製品契約をユーザーへ提示する。仕様の提示をユーザーに頼まれてから始めない。
+   - 目的がユーザー向け画面を含むとき: HTML モック、コンポーネント一覧、イベント一覧。モックは `docs/logs/<timestamp>-<slug>/` へ保存し（例: `*-spec-mockups.html`）、成果物リストへ追加する。
+   - 目的が HTTP API を含むとき: リクエスト、レスポンス、振る舞い。
+   - 目的が画面も HTTP API も含まないときは、この提示を省略する。
+9. 現行成果物にソース参照があり、必須ソースが存在し、関連ソースが一致し、計画レベルの判断が確認待ちではなく、ステップ 8 の製品契約提示が完了しているときだけ、レビューを `ready` にする。
 
-## Delivered claims and plan tables
+## 導入済みの主張と計画テーブル
 
-- Treat any “already delivered / 導入済み” conclusion as implementation evidence: record concrete repository paths (schema modules, migration SQL, workflow files, package scripts, or equivalent) in the source map. If the path is missing, keep the item as unfinished foundation or a just-in-time prerequisite.
-- When the purpose adds or changes a prerequisite table in `docs/development/staged-development.md`, cross-check every cell against:
-  - the staged plan’s release capability sections and later-release boundaries;
-  - the relevant product preconditions in `docs/specs/`;
-  - affirmative precondition labels (required / environment-specific required / not a precondition for this step).
-- Do not mark `ready` while a plan table or delivered claim lacks those cross-checks.
+- 「already delivered / 導入済み」の結論は実装証跡として扱う。ソース対応に具体的なリポジトリパス（schema module、migration SQL、workflow ファイル、package script など）を記録する。パスが無いときは未完了基盤または直前前提条件として残す。
+- 目的が `docs/development/staged-development.md` の前提条件テーブルを追加または変更するときは、各セルを次と照合する：
+  - 段階的計画のリリース機能節と後続リリース境界
+  - `docs/specs/` 内の関連する製品前提条件
+  - 肯定形の前提条件ラベル（そのステップに必要 / 名前付き環境に必要 / このステップの前提条件ではない）
+- 計画テーブルまたは導入済み主張にその照合が無いあいだは `ready` にしない。
 
-## Decision and blocking states
+## 判断と停止状態
 
-Use `WHAT / WHY / HOW` when a user decision is needed. State the effect of the decision in one concise question.
+ユーザー判断が必要なときは `WHAT / WHY / HOW` を使う。判断の効果を 1 つの短い質問で述べる。
 
-Use `awaiting-confirmation` when a plan-level decision needs the user's approval. Do not begin design or implementation in this state.
+計画レベルの判断にユーザー承認が必要なときは `awaiting-confirmation` を使う。この状態では設計と実装を始めない。
 
-Use `blocked` when a specification or declared primary document is missing, relevant sources conflict, or approval cannot establish a plan decision. Record the exact gap or conflict and ask for the smallest clarification. Do not select a source by update time or infer a product contract from implementation details.
+仕様または宣言された一次文書が無い、関連ソースが衝突する、または承認では計画判断を確立できないときは `blocked` を使う。欠落または衝突を正確に記録し、最小の明確化を求める。更新時刻でソースを選ばず、実装詳細から製品契約を推論しない。
 
-## Completion record
+## 完了記録
 
-The review record must include:
+レビュー記録には次を含める：
 
-- `status: ready`, `awaiting-confirmation`, or `blocked`;
-- active release and purpose;
-- source references and supported conclusions;
-- current release deliverables and acceptance conditions;
-- plan-level, implementation-local, deferred, and outside-plan decisions;
-- Gaps checked entries that enumerate the concrete cross-checks performed (release boundaries, specification preconditions, implementation evidence for delivered claims, and plan-table cell review when applicable);
-- the next permitted action.
+- `status: ready`、`awaiting-confirmation`、または `blocked`
+- アクティブリリースと目的
+- ソース参照と、それが支える結論
+- 現行リリースの成果物と受入条件
+- 計画レベル、実装ローカル、後続、計画外の判断
+- Gaps checked：実施した照合（リリース境界、仕様の前提条件、導入済み主張の実装証跡、該当する計画テーブルのセル）
+- 製品契約の提示状態（画面モック/コンポーネント/イベント、API のリクエスト/レスポンス/振る舞い、または目的がどちらも含まないため省略）
+- 次の許可アクション
 
-Proceed only when the next permitted action is explicitly `design` or `implementation`.
+次の許可アクションが明示的に `design` または `implementation` のときだけ進む。

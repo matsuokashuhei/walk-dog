@@ -9,17 +9,8 @@ import {
   View,
 } from 'react-native'
 import { z } from 'zod'
-import { ApiError, apiRequest } from '@/lib/api'
-
-type SignUpResponse = {
-  requestId: string
-  username: string
-  session: string | null
-  codeDelivery: {
-    destination: string
-    attribute: string
-  } | null
-}
+import { ApiError } from '@/lib/api'
+import { startSignUp } from '@/lib/auth-api'
 
 type ScreenState =
   | { kind: 'idle' }
@@ -43,10 +34,7 @@ export default function SignUpScreen() {
 
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<SignUpResponse>('/v1/auth/sign-up', {
-        method: 'POST',
-        body: { email: trimmedEmail },
-      })
+      const response = await startSignUp(trimmedEmail)
       if (!response.username) {
         setState({
           kind: 'error',

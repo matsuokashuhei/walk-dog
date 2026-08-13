@@ -4,6 +4,7 @@ import {
   type AppDependencies,
   type ModuleRoute,
 } from './app.js'
+import { createAccessTokenVerifier as createProductionAccessTokenVerifier } from './infrastructure/cognito/access-token-verifier.js'
 import {
   createCognitoClient as createProductionCognitoClient,
   type CognitoClient,
@@ -26,17 +27,21 @@ import {
   type Logger,
 } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
+import { createAbsentActiveWalkCommands } from './infrastructure/walks/absent-active-walk-commands.js'
 import {
   registerAuthRoutes,
   type AuthRouteDependencies,
 } from './modules/auth/index.js'
 import type { AuthProvider } from './modules/auth/provider.js'
+import { createSignOut } from './modules/auth/use-cases/sign-out.js'
 import { createStartSignIn } from './modules/auth/use-cases/start-sign-in.js'
 import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { createVerifySignIn } from './modules/auth/use-cases/verify-sign-in.js'
 import { createVerifySignUp } from './modules/auth/use-cases/verify-sign-up.js'
 import { registerHealthRoutes } from './modules/health/index.js'
 import type { OwnerRepository } from './modules/owners/index.js'
+import type { ActiveWalkCommands } from './modules/walks/active-walk-commands.js'
+import type { AccessTokenVerifier } from './shared/http/access-token.js'
 import type { App } from './shared/http/types.js'
 
 export type ApplicationConfigs = {
@@ -62,9 +67,13 @@ export type ApplicationFactories = {
   createCognitoClient: (config: CognitoConfig) => CognitoClient
   createAuthProvider: (client: CognitoClient) => AuthProvider
   createOwnerRepository: (db: DbInstance) => OwnerRepository
+  createActiveWalkCommands: () => ActiveWalkCommands
+  createAccessTokenVerifier: (config: CognitoConfig) => AccessTokenVerifier
   createUseCases: (dependencies: {
     authProvider: AuthProvider
     ownerRepository: OwnerRepository
+    activeWalkCommands: ActiveWalkCommands
+    accessTokenVerifier: AccessTokenVerifier
   }) => AuthRouteDependencies
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
   createHealthRoutes: () => App
@@ -94,12 +103,25 @@ const defaultFactories: ApplicationFactories = {
   createOwnerRepository(database) {
     return createDrizzleOwnerRepository(database)
   },
-  createUseCases({ authProvider, ownerRepository }) {
+  createActiveWalkCommands() {
+    return createAbsentActiveWalkCommands()
+  },
+  createAccessTokenVerifier(config) {
+    return createProductionAccessTokenVerifier(config)
+  },
+  createUseCases({
+    authProvider,
+    ownerRepository,
+    activeWalkCommands,
+    accessTokenVerifier,
+  }) {
     return {
       startSignUp: createStartSignUp(authProvider),
       verifySignUp: createVerifySignUp(authProvider, ownerRepository),
       startSignIn: createStartSignIn(authProvider),
       verifySignIn: createVerifySignIn(authProvider, ownerRepository),
+      signOut: createSignOut(ownerRepository, activeWalkCommands, authProvider),
+      accessTokenVerifier,
     }
   },
   createAuthRoutes(dependencies) {
@@ -123,7 +145,14 @@ export function createApplication(
   const cognitoClient = factories.createCognitoClient(configs.cognito)
   const authProvider = factories.createAuthProvider(cognitoClient)
   const ownerRepository = factories.createOwnerRepository(database)
-  const useCases = factories.createUseCases({ authProvider, ownerRepository })
+  const activeWalkCommands = factories.createActiveWalkCommands()
+  const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
+  const useCases = factories.createUseCases({
+    authProvider,
+    ownerRepository,
+    activeWalkCommands,
+    accessTokenVerifier,
+  })
   const authRoutes = factories.createAuthRoutes(useCases)
   const healthRoutes = factories.createHealthRoutes()
   const app = factories.createApp(

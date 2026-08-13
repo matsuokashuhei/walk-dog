@@ -49,6 +49,9 @@ function createFakes(handlers: {
     async verifySignIn() {
       throw new Error('unexpected verifySignIn')
     },
+    async signOut() {
+      throw new Error('unexpected signOut')
+    },
   }
   const owners: OwnerRepository = {
     async resolveByCognitoSubject(cognitoSubject) {

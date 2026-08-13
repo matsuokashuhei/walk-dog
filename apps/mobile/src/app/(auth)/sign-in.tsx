@@ -3,14 +3,9 @@ import { Stack, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { z } from 'zod'
-import { ApiError, apiRequest } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { startSignIn } from '@/lib/auth-api'
 
-type SignInResponse = {
-  username: string
-  session: string
-  requestId: string
-  codeDelivery: { destination: string; attribute: string } | null
-}
 type State = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; message: string }
 
 export default function SignInScreen() {
@@ -25,10 +20,7 @@ export default function SignInScreen() {
     }
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<SignInResponse>('/v1/auth/sign-in', {
-        method: 'POST',
-        body: { email: value },
-      })
+      const response = await startSignIn(value)
       router.push({ pathname: '/verify', params: { username: response.username, session: response.session, flow: 'sign-in' } })
       setState({ kind: 'idle' })
     } catch (error) {

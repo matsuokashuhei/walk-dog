@@ -48,3 +48,5 @@ export const authenticationResponseSchema = z.object({
   refreshToken: z.string(),
   owner: ownerResponseSchema,
 })
+
+export const signOutRequestSchema = z.strictObject({})

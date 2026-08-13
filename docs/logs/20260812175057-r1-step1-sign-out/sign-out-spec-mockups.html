@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign Out — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f7f4ef;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+    }
+    .screen { padding: 8px 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h4 { margin: 0; font-size: 1.35rem; }
+    .legal {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--accent);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+    .spacer { flex: 1; }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+    }
+    .btn.secondary { background: var(--soft); color: var(--ink); }
+    .btn.danger { background: #f3e2dc; color: var(--danger); }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .error {
+      color: var(--danger);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      background: #f8ece8;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .busy {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+    .dialog {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+    }
+    .dialog strong { display: block; margin-bottom: 6px; }
+    .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .caption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sign Out 画面モック</h1>
+    <p class="lede">
+      Active Walk があるときは Sign Out 押下で確認ダイアログを出す。
+      承諾後の Sign Out では Active Walk を常に Failed にする。
+      Active Walk がないときは確認なしで Sign Out する。
+    </p>
+
+    <div class="note">
+      Route: <code>/settings</code> → 成功時 <code>/sign-in</code>。
+      API: <code>POST /v1/auth/sign-out</code>（body に discard フラグは持たない）。
+      法務リンクは <code>https://cacheandbuffer.com/</code>。
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>SETTINGS-01 · Idle</h3>
+        <div class="phone" aria-label="Settings idle">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">settings</div>
+            <h4>Settings</h4>
+            <div class="legal"><span>利用規約</span><span>プライバシーポリシー</span><span>アプリ情報</span></div>
+            <div class="spacer"></div>
+            <div class="btn danger">Sign Out</div>
+          </div>
+        </div>
+        <p class="caption">/settings · Active Walk なしならここから直接 API</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>SETTINGS-02 · Confirm</h3>
+        <div class="phone" aria-label="Active Walk confirm">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">settings</div>
+            <h4>Settings</h4>
+            <div class="dialog">
+              <strong>Active Walk を破棄しますか？</strong>
+              サインアウトすると、記録中の散歩は Failed になります。
+              <div class="dialog-actions">
+                <div class="btn ghost">キャンセル</div>
+                <div class="btn danger">破棄して Sign Out</div>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn danger" style="opacity:0.45">Sign Out</div>
+          </div>
+        </div>
+        <p class="caption">Active Walk あり · キャンセルで Idle に戻る</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>SETTINGS-03 · Signing out</h3>
+        <div class="phone" aria-label="Settings loading">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">settings</div>
+            <h4>Settings</h4>
+            <div class="legal"><span>利用規約</span><span>プライバシーポリシー</span><span>アプリ情報</span></div>
+            <div class="spacer"></div>
+            <div class="busy">Signing out…</div>
+            <div class="btn danger" style="opacity:0.45">Sign Out</div>
+          </div>
+        </div>
+        <p class="caption">API 呼び出し中 · 再操作を受け付けない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>SETTINGS-04 · Error</h3>
+        <div class="phone" aria-label="Settings error">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">settings</div>
+            <h4>Settings</h4>
+            <div class="legal"><span>利用規約</span><span>プライバシーポリシー</span><span>アプリ情報</span></div>
+            <div class="spacer"></div>
+            <div class="error">サインアウトに失敗しました。再試行してください。</div>
+            <div class="btn danger">Sign Out</div>
+          </div>
+        </div>
+        <p class="caption">失敗時は Settings に留まり、同じ Sign Out で再試行</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>AUTH-01 · After Sign Out</h3>
+        <div class="phone" aria-label="Sign In after sign out">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">account</div>
+            <h4>Welcome back</h4>
+            <div class="label">Email</div>
+            <div class="btn ghost">you@example.com</div>
+            <div class="btn secondary">Continue</div>
+            <div class="legal"><span>Create account</span></div>
+            <div class="legal"><span>利用規約</span><span>プライバシーポリシー</span></div>
+          </div>
+        </div>
+        <p class="caption">/sign-in · token 削除後の未認証画面</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

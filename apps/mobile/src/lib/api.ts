@@ -65,6 +65,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   })
 
+  if (response.status === 204) {
+    return undefined as T
+  }
+
   let payload: unknown
   try {
     payload = await response.json()

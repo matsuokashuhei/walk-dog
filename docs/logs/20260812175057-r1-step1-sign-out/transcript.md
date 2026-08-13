@@ -367,3 +367,19 @@ Fresh verification: API `npm test` 172 pass / 0 fail; `npm run check` pass; mobi
 - baseline conflicts: none
 - next permitted action: publish
 
+## Sync
+
+- status: synced
+- trigger: publish — PR updated after auth-api alignment
+- artifacts updated: transcript
+- artifacts already current: skill-compliance-review.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance APPROVED; auth-api follow-up on PR
+  - commit state: `ab481f9` pushed
+  - publication state: PR #49 updated https://github.com/matsuokashuhei/walk-dog/pull/49
+  - next permitted action: continue
+- baseline conflicts: none
+- next permitted action: continue
+

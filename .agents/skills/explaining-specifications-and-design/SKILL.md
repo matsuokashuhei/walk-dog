@@ -18,10 +18,11 @@ Structure every user-facing specification or design explanation as WHAT, then HO
 ## Presentation rules
 
 1. Lead with WHAT. Do not open with wiring, path filters, file lists, or implementation choreography.
-2. For quality gates or other verification work, WHAT must include a table of each check command and what it verifies before any CI or file shape.
-3. HOW may include diagrams after WHAT is clear.
-4. WHY ties the proposal to `docs/development/staged-development.md`, `docs/specs/`, session purpose, or an explicit constraint.
-5. Keep Decision Questions (`When` … `How` in `run-dev-session`) for asking approval of an effect. This skill is for explaining the proposal itself.
+2. When the subject includes a user-facing screen, WHAT includes the HTML mockup, component list, and event list. When the subject includes an HTTP API, WHAT includes request, response, and behavior. Present these without waiting for the user to ask.
+3. For quality gates or other verification work, WHAT must include a table of each check command and what it verifies before any CI or file shape.
+4. HOW may include diagrams after WHAT is clear.
+5. WHY ties the proposal to `docs/development/staged-development.md`, `docs/specs/`, session purpose, or an explicit constraint.
+6. Keep Decision Questions (`When` … `How` in `run-dev-session`) for asking approval of an effect. This skill is for explaining the proposal itself.
 
 ## Workflow
 
@@ -39,6 +40,7 @@ Structure every user-facing specification or design explanation as WHAT, then HO
 Before asking for design or plan approval, confirm:
 
 - the user-facing summary uses WHAT → HOW → WHY in that order;
+- a screen subject includes HTML mockup, component list, and event list, and an HTTP API subject includes request, response, and behavior;
 - verification or gate subjects are explicit when the purpose includes quality gates or CI;
 - HOW does not substitute for a missing WHAT;
 - every top-level plan Task maps to a design section, deliverable, and acceptance condition;

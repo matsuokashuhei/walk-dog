@@ -22,7 +22,8 @@ description: このリポジトリでの開発セッションを開始または�
 5. `docs/development/staged-development.md` を読み、アクティブリリース、承認済み判断、リリース受入条件、目的に影響するリリース開始判断を記録する。
 6. 最初のユーザーリクエストと、すべての表示されるユーザーまたはアシスタントメッセージを時系列順に追加する。
 7. **必須サブスキル:** `confirming-development-specifications` を使用して、仕様、アクティブリリース、現在の成果物、計画判断に対して目的を検証する。サブスキルはセッションディレクトリに `specification-review.md` を作成する。そのファイルをトランスクリプト成果物リストに追加する。
-8. 仕様レビューのステータスが `ready` の場合のみ設計または実装に進む。`awaiting-confirmation` または `blocked` のレビューは、必要な判断またはソースの明確化が記録されるまでセッションを一時停止する。
+8. 仕様レビューがユーザー確認を待つとき、画面（HTMLモック、コンポーネント一覧、イベント一覧）と HTTP API（リクエスト、レスポンス、振る舞い）の提示が済んでいることを必須とする。ユーザーの「仕様を提示して」を待たない。
+9. 仕様レビューのステータスが `ready` の場合のみ設計または実装に進む。`awaiting-confirmation` または `blocked` のレビューは、必要な判断またはソースの明確化が記録されるまでセッションを一時停止する。
 
 ### ワークスペース境界
 
@@ -60,6 +61,8 @@ description: このリポジトリでの開発セッションを開始または�
 仕様レビューが `ready` になり、書面の実装計画が承認された後、`superpowers:executing-plans` を使用して計画を実行する。
 
 Task の変更セットに Zod スキーマの定義または変更が含まれる場合、元の Task タイトルがそのスキーマ作業でなくても、編集前に設計と計画の `zod:defining-zod-schemas` 必須サブスキルを実行する。
+
+Task の変更セットがモバイルのネットワーク呼び出しを追加または移動する場合、元の Task タイトルがその作業でなくても、編集前に **必須サブスキル:** `organizing-mobile-api-clients` を実行する。
 
 1. executing-plans の Step 1.5 で、計画のすべてのトップレベル Task をライブ `update_plan` todos に登録する。各トップレベル Task を 1 回カウントする。Task 配下のステップはその Task の一部とする。
 2. todos を登録し、最初の Task を開始する前に、会話で合計と次の Task をアナウンスする：`Implementation plan: N tasks. Next: Task 1 — <name>`。
@@ -119,9 +122,11 @@ Task の変更セットに Zod スキーマの定義または変更が含まれ�
 
 公開前に `crit` ですべてのセッション成果物をレビューする。`transcript.md` は Crit レビューから除外する。レビューアーが終了するのを待ち、各コメントに対応し、Crit を通じて返信し、未解決のコメントがなくなるまでレビューラウンドを完了する。各レビュー応答コミット後、次の Crit ラウンドまたは Publish の前に `syncing-session-artifacts` を再度実行する。
 
+Crit が APPROVED になったあと、Publish の前に **必須サブスキル:** `creating-pull-requests` の既定スキル準拠レビューを実行する。ユーザーの「サブエージェントのコードレビューを依頼して」を待たない。Critical または Important が残るあいだは PR を merge-ready にしない。
+
 ## 公開
 
-**必須サブスキル:** 以下の手順の直前に `syncing-session-artifacts` を `next permitted action: publish` で完了する。
+**必須サブスキル:** 以下の手順の直前に `syncing-session-artifacts` を `next permitted action: publish` で完了する。スキル準拠レビューが APPROVED（Critical 0 かつ Important 0）であることを確認してから公開する。
 
 1. セッション成果物リストと `transcript.md` の記録をステージする。
 2. 専用ブランチでセッション成果物とログをコミットする。

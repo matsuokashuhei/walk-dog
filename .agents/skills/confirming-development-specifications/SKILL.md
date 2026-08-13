@@ -42,7 +42,11 @@ Record each source path and supporting heading, section, or log entry. The stage
    - **Deferred release decision:** belongs to a named later release; record that release.
    - **Outside the staged plan:** record the classification and reason without changing the plan.
 7. Create `docs/logs/<timestamp>-<slug>/specification-review.md` with the purpose, release, positive deliverables, source map, decision classifications, verification conditions, and confirmation status. Add it to the session transcript's Artifact List.
-8. Mark the review `ready` only when current deliverables have source references, required sources exist, relevant sources agree, and no plan-level decision is awaiting confirmation.
+8. Present the product contract to the user before `awaiting-confirmation` or `ready`. Do not wait for the user to ask for the specification.
+   - When the purpose includes a user-facing screen: HTML mockup, component list, and event list. Save the mockup under `docs/logs/<timestamp>-<slug>/` (for example `*-spec-mockups.html`) and add it to the Artifact List.
+   - When the purpose includes an HTTP API: request, response, and behavior.
+   - When the purpose includes neither a screen nor an HTTP API, skip this presentation.
+9. Mark the review `ready` only when current deliverables have source references, required sources exist, relevant sources agree, no plan-level decision is awaiting confirmation, and the product-contract presentation required by step 8 is complete.
 
 ## Delivered claims and plan tables
 
@@ -71,6 +75,7 @@ The review record must include:
 - current release deliverables and acceptance conditions;
 - plan-level, implementation-local, deferred, and outside-plan decisions;
 - Gaps checked entries that enumerate the concrete cross-checks performed (release boundaries, specification preconditions, implementation evidence for delivered claims, and plan-table cell review when applicable);
+- product-contract presentation status (screen mockup/components/events, API request/response/behavior, or skipped because the purpose has neither);
 - the next permitted action.
 
 Proceed only when the next permitted action is explicitly `design` or `implementation`.

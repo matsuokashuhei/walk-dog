@@ -293,9 +293,77 @@ Requested a Cursor Grok 4.5 skill-compliance review of `327d0f91`..`c3e04add` ag
   - task phase: implementation complete
   - test totals: API 172 pass; npm run check pass; mobile tsc pass
   - review state: skill-compliance CHANGES_REQUESTED addressed; re-review pending
-  - commit state: review-fix pending commit
+  - commit state: `a1ddb03` pushed (`fix: align Sign Out types and Settings with agent skills`)
   - publication state: PR #49 open
   - next permitted action: continue
 - baseline conflicts: none
 - next permitted action: continue
+
+### Assistant
+
+Round 2 skill-compliance re-review of `327d0f91`..`a1ddb03` by Cursor Grok 4.5: APPROVED, 0 Critical, 0 Important. Round 1 Important items verified resolved. Minor residuals unchanged.
+
+## Sync
+
+- status: synced
+- trigger: skill-compliance round 2 APPROVED
+- artifacts updated: transcript, skill-compliance-review-request.md, skill-compliance-review.md
+- artifacts already current: design.md, specification-review.md, plan.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance APPROVED (0 Critical, 0 Important)
+  - commit state: `a1ddb03` on remote; round-2 review artifacts uncommitted
+  - publication state: PR #49 open
+  - next permitted action: continue
+- baseline conflicts: none
+- next permitted action: continue
+
+### User
+
+では揃えてください。揃え方はどうしますか？
+
+### Assistant
+
+Auth HTTP を `src/lib/auth-api.ts` に集約し、route は画面だけ、`auth.tsx` はセッション保存のままにした。`sign-out.ts` の削除は未了。
+
+## Sync
+
+- status: synced
+- trigger: align mobile auth API helpers
+- artifacts updated: transcript
+- artifacts already current: specification-review.md, plan.md, sign-out-specification.md, design.md, skill-compliance-review.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass; mobile tsc pass after auth-api extract
+  - review state: skill-compliance APPROVED; follow-up auth-api alignment uncommitted
+  - commit state: `a1ddb03` on remote; auth-api alignment uncommitted
+  - publication state: PR #49 open
+  - next permitted action: continue
+- baseline conflicts: none
+- next permitted action: continue
+
+### User
+
+テストして変更が問題ないことを担保し、PRを更新してくれ
+
+### Assistant
+
+Fresh verification: API `npm test` 172 pass / 0 fail; `npm run check` pass; mobile `npx tsc --noEmit` pass. Auth HTTP lives in `apps/mobile/src/lib/auth-api.ts`; `sign-out.ts` removed.
+
+## Sync
+
+- status: synced
+- trigger: pre-publish after auth-api alignment
+- artifacts updated: transcript
+- artifacts already current: skill-compliance-review.md, design.md, plan.md, sign-out-specification.md
+- cross-artifact matrix:
+  - task phase: implementation complete
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance APPROVED; auth-api follow-up verified
+  - commit state: auth-api alignment pending commit
+  - publication state: PR #49 open
+  - next permitted action: publish
+- baseline conflicts: none
+- next permitted action: publish
 

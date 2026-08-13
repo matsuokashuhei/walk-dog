@@ -8,22 +8,9 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { ApiError, apiRequest } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { startSignIn, verifySignIn, verifySignUp } from '@/lib/auth-api'
 import { useAuth } from '@/lib/auth'
-
-type VerifyResponse = {
-  requestId: string
-  accessToken: string
-  idToken: string
-  refreshToken: string
-  owner: {
-    ownerId: string
-    displayName: string | null
-    avatarUrl: string | null
-    createdAt: string
-    updatedAt: string
-  }
-}
 
 type ScreenState =
   | { kind: 'idle' }
@@ -85,10 +72,9 @@ function VerifyForm({
   const submit = async () => {
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<VerifyResponse>(flow === 'sign-in' ? '/v1/auth/sign-in/verify' : '/v1/auth/sign-up/verify', {
-        method: 'POST',
-        body: { username, session: challengeSession, code: code.trim() },
-      })
+      const input = { username, session: challengeSession, code: code.trim() }
+      const response =
+        flow === 'sign-in' ? await verifySignIn(input) : await verifySignUp(input)
       await setSession({
         accessToken: response.accessToken,
         idToken: response.idToken,
@@ -106,7 +92,7 @@ function VerifyForm({
   const resend = async () => {
     setState({ kind: 'loading' })
     try {
-      const response = await apiRequest<{ session: string }>('/v1/auth/sign-in', { method: 'POST', body: { email: username } })
+      const response = await startSignIn(username)
       setChallengeSession(response.session)
       setCode('')
       setState({ kind: 'idle' })

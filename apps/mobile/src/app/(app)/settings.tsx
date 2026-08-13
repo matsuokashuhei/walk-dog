@@ -12,7 +12,7 @@ import {
 import { hasActiveWalk } from '@/lib/active-walk'
 import { ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { signOutRequest } from '@/lib/sign-out'
+import { signOut } from '@/lib/auth-api'
 
 const LEGAL_URL = 'https://cacheandbuffer.com/'
 
@@ -32,7 +32,7 @@ export default function SettingsScreen() {
 
     setState({ kind: 'loading' })
     try {
-      await signOutRequest(session.accessToken)
+      await signOut(session.accessToken)
       await clearSession()
     } catch (error) {
       setState({

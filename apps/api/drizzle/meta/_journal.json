@@ -8,6 +8,13 @@
       "when": 1785679665614,
       "tag": "0000_create_owners",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786712979281,
+      "tag": "0001_create_dogs_and_goal_revisions",
+      "breakpoints": true
     }
   ]
 }

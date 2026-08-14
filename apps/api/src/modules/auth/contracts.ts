@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { errorSchema } from '../../shared/http/error-contract.js'
+import { ownerSchema } from '../owners/contracts.js'
 
 export { errorSchema as authErrorSchema }
 
@@ -33,20 +34,12 @@ export const signInVerifyRequestSchema = z.object({
   code: z.string().nonempty(),
 })
 
-const ownerResponseSchema = z.object({
-  ownerId: z.string(),
-  displayName: z.string().nullable(),
-  avatarUrl: z.string().nullable(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-})
-
 export const authenticationResponseSchema = z.object({
   requestId: z.string(),
   accessToken: z.string(),
   idToken: z.string(),
   refreshToken: z.string(),
-  owner: ownerResponseSchema,
+  owner: ownerSchema,
 })
 
 export const signOutRequestSchema = z.strictObject({})

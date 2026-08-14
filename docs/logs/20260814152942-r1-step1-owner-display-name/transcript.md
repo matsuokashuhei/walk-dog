@@ -107,6 +107,8 @@ OTP を取得して Verify を完了し、NAME-01 idle、NAME-04 invalid、HOME-
 
 Push と Pull Request 作成を選択。Publish 前にセッション成果物を同期し、スキル準拠レビューを依頼する。
 
+Round 1 は CHANGES_REQUESTED（Critical 0、Important 2）。PATCH invalid classes と OpenAPI PATCH schema を `1dbb32b` でロックした。Round 2 は APPROVED（Critical 0、Important 0）。
+
 ## Session events
 
 - `2026-08-14 15:29 JST`: Created worktree `.worktrees/agent/r1-step1-owner-display-name-20260814152942` from `origin/main` on branch `agent/r1-step1-owner-display-name-20260814152942`. Recorded baseline and session artifacts.
@@ -119,19 +121,21 @@ Push と Pull Request 作成を選択。Publish 前にセッション成果物�
 - `2026-08-14 16:09 JST`: User approved design and plan. Implementation started with executing-plans.
 - `2026-08-14 16:43 JST`: Tasks 1–5 complete. iOS E2E captured idle, invalid, and home. API tests 181/181. User chose push and PR.
 - `2026-08-14 16:50 JST`: Pre-publish sync. Skill-compliance review requested for `8bc6f67`..`a28651c`.
+- `2026-08-14 16:55 JST`: Round 1 CHANGES_REQUESTED (Critical 0, Important 2). Locked PATCH invalid classes and OpenAPI PATCH schema in `1dbb32b`.
+- `2026-08-14 17:05 JST`: Round 2 APPROVED (Critical 0, Important 0) for `8bc6f67`..`1dbb32b`. Pre-publish sync before push and PR.
 
 ## Sync
 
 - status: synced
-- trigger: pre-publish / pre-skill-compliance-review
-- artifacts updated: transcript.md, skill-compliance-review-request.md
-- artifacts already current: specification-review.md, design.md, plan.md, owner-display-name-spec-mockups.html, owner-display-name-api-spec.html, e2e-report.md, screenshots
+- trigger: pre-publish after skill-compliance APPROVED
+- artifacts updated: transcript.md, specification-review.md, skill-compliance-review.md, skill-compliance-review-request.md
+- artifacts already current: design.md, plan.md, owner-display-name-spec-mockups.html, owner-display-name-api-spec.html, e2e-report.md, screenshots
 - cross-artifact matrix:
-  - task phase: implementation complete, awaiting skill-compliance review then PR
-  - test totals: API `npm test` 181 pass; `npm run check` pass; mobile `npx tsc --noEmit` pass
-  - review state: skill-compliance review in progress
-  - commit state: HEAD `a28651c`, 12 commits ahead of `origin/main` (`8bc6f67`)
+  - task phase: implementation complete, skill-compliance APPROVED, awaiting PR
+  - test totals: API `npm test` 186 pass; `npm run check` pass; mobile `npx tsc --noEmit` pass
+  - review state: skill-compliance APPROVED (round 2), Critical 0, Important 0
+  - commit state: reviewed HEAD `1dbb32b`, 13 commits ahead of `origin/main` (`8bc6f67`)
   - publication state: not published
-  - next permitted action: crit
+  - next permitted action: publish
 - baseline conflicts: none
-- next permitted action: crit
+- next permitted action: publish

@@ -3,7 +3,7 @@
 - status: ready
 - Purpose: R1 Step 1 の Owner 表示名登録を API とモバイルで実装する
 - Active release: R1
-- next permitted action: crit
+- next permitted action: publish
 
 ## Sources
 
@@ -60,7 +60,7 @@
 
 - Release boundaries: アカウント縦切りが Owner表示名登録を所有する。Dog / Walk / Avatar / Owner編集は後続。
 - Specification preconditions: owners schema、Cognito トークン検証、モバイル認証状態、モバイル API クライアントは導入済み。永続送信キュー、位置情報、S3 はこのステップの前提ではない。
-- Implementation evidence: `display_name` 列、認証応答の `displayName`、BearerAuth、Settings Sign Out がある。更新 repository、Owner route、登録画面はこれから追加する。
+- Implementation evidence: `display_name` 列、`OwnerRepository.updateDisplayName`、`GET` / `PATCH /v1/owner`、モバイル `/owner/display-name` ゲート、Settings Sign Out がある。
 - Plan table: アカウント縦切りの PostgreSQL schema / migration は owners・表示名が必須で、列は導入済み。本セッションは更新 API と登録画面を追加する。
 - Product contract presentation: 画面は `owner-display-name-spec-mockups.html`、API は `owner-display-name-api-spec.html`。ユーザーが API HTML を LGTM した。
 

@@ -57,23 +57,32 @@ APIの仕様書もHTML形式で作成してください。指定フォーマッ�
 
 `owner-display-name-api-spec.html` に GET /v1/owner と PATCH /v1/owner の HTML 仕様を作成した。
 
+### User
+
+Exampleの内容が見れない。配色を改善して
+
+### Assistant
+
+コードブロック内の `code` がベージュ背景を継承していたため、Example を紙面上の暗い文字に直した。
+
 ## Session events
 
 - `2026-08-14 15:29 JST`: Created worktree `.worktrees/agent/r1-step1-owner-display-name-20260814152942` from `origin/main` on branch `agent/r1-step1-owner-display-name-20260814152942`. Recorded baseline and session artifacts.
 - `2026-08-14 15:31 JST`: Wrote specification-review.md (status: awaiting-confirmation) and owner-display-name-spec-mockups.html. Presented screen and API contracts.
 - `2026-08-14 15:43 JST`: Opened owner-display-name-spec-mockups.html in the default browser.
 - `2026-08-14 15:55 JST`: Wrote owner-display-name-api-spec.html for GET /v1/owner and PATCH /v1/owner.
+- `2026-08-14 15:58 JST`: Fixed Example code-block contrast (light paper background, dark text).
 
 ## Sync
 
 - status: synced
-- trigger: API specification HTML created
-- artifacts updated: transcript, specification-review.md, owner-display-name-api-spec.html
-- artifacts already current: owner-display-name-spec-mockups.html
+- trigger: API spec HTML contrast fix
+- artifacts updated: transcript, owner-display-name-api-spec.html
+- artifacts already current: specification-review.md, owner-display-name-spec-mockups.html
 - cross-artifact matrix:
   - task phase: specification confirmation
   - review state: awaiting-confirmation
-  - commit state: specification-review and mockups committed; API spec HTML pending commit
+  - commit state: API spec HTML contrast fix pending commit
   - publication state: not published
   - next permitted action: await plan-level confirmation
 - baseline conflicts: none

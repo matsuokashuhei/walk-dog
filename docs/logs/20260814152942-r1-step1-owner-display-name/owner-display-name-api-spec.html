@@ -14,7 +14,8 @@
       --accent: #2f5d50;
       --danger: #8a3b2c;
       --soft: #ece5da;
-      --code: #1f2430;
+      --code-bg: #f7f4ef;
+      --code-ink: #1c1a16;
     }
     * { box-sizing: border-box; }
     body {
@@ -109,17 +110,27 @@
     }
     code {
       background: var(--soft);
+      color: var(--ink);
       padding: 1px 5px;
       border-radius: 4px;
     }
     pre {
-      background: var(--code);
-      color: #e8e6e1;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border: 1px solid var(--line);
       border-radius: 12px;
       padding: 14px 16px;
       overflow-x: auto;
-      line-height: 1.45;
+      line-height: 1.5;
       margin: 8px 0 14px;
+      white-space: pre;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.85rem;
     }
     .status-list { list-style: none; padding: 0; margin: 0; }
     .status-list > li { margin: 0 0 16px; }

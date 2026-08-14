@@ -105,11 +105,8 @@ export default function RegisterDogScreen() {
   const [state, setState] = useState<ScreenState>({ kind: 'idle' })
   const submitting = state.kind === 'submitting'
   const parsedBirthday = parseBirthday(year, month, day)
-  const canSubmit =
-    trimmedLength(name) >= 1 &&
-    trimmedLength(name) <= 100 &&
-    gender !== null &&
-    parsedBirthday.ok
+  const nameLengthOk = trimmedLength(name) >= 1 && trimmedLength(name) <= 100
+  const canSubmit = nameLengthOk && gender !== null && parsedBirthday.ok
   const dirty =
     name.length > 0 || gender !== null || year.length > 0 || month.length > 0 || day.length > 0
   const errorMessage =
@@ -130,8 +127,11 @@ export default function RegisterDogScreen() {
     if (submitting) {
       return
     }
-    if (!canSubmit || gender === null) {
+    if (!nameLengthOk) {
       setState({ kind: 'invalid' })
+      return
+    }
+    if (gender === null || !parsedBirthday.ok) {
       return
     }
 
@@ -139,17 +139,12 @@ export default function RegisterDogScreen() {
       throw new Error('RegisterDog requires an authenticated session')
     }
 
-    const birthdayResult = parseBirthday(year, month, day)
-    if (!birthdayResult.ok) {
-      return
-    }
-
     setState({ kind: 'submitting' })
     try {
       await createDog(session.accessToken, {
         name: name.trim(),
         gender,
-        ...(birthdayResult.birthday === undefined ? {} : { birthday: birthdayResult.birthday }),
+        ...(parsedBirthday.birthday === undefined ? {} : { birthday: parsedBirthday.birthday }),
       })
       router.replace('/')
     } catch (error) {

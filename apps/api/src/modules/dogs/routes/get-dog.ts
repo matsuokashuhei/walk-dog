@@ -24,6 +24,15 @@ export const getDogRoute = createRoute({
   },
 })
 
+function notFoundBody(requestId: string) {
+  return {
+    code: 'NOT_FOUND' as const,
+    message: 'The requested resource was not found.',
+    requestId,
+    retryable: false as const,
+  }
+}
+
 export function registerGetDogRoute(app: App, getDog: GetDog): void {
   app.openapi(getDogRoute, async (ctx) => {
     const { dogId } = ctx.req.valid('param')
@@ -34,11 +43,11 @@ export function registerGetDogRoute(app: App, getDog: GetDog): void {
     if (result.ok) {
       return ctx.json(toDogResponse(ctx.get('requestId'), result.dog), 200)
     }
-    return ctx.json({
-      code: 'NOT_FOUND',
-      message: 'The requested resource was not found.',
-      requestId: ctx.get('requestId'),
-      retryable: false,
-    }, 404)
+    return ctx.json(notFoundBody(ctx.get('requestId')), 404)
+  }, (result, ctx) => {
+    if (result.success) {
+      return
+    }
+    return ctx.json(notFoundBody(ctx.get('requestId')), 404)
   })
 }

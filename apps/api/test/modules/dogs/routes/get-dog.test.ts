@@ -114,3 +114,21 @@ test('GET /v1/dogs/:dogId returns 404 NOT_FOUND when the dog is missing', async 
   assert.ok(body.requestId)
   assert.equal(body.retryable, false)
 })
+
+test('GET /v1/dogs/:dogId returns 404 NOT_FOUND for a non-UUID dogId', async () => {
+  const calls: string[] = []
+  const response = await createGetDogApp(async () => {
+    calls.push('getDog')
+    throw new Error('getDog should not run for a non-UUID dogId')
+  }).request('/v1/dogs/not-a-uuid', {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: 'Bearer access' },
+  })
+  const body = await response.json() as ErrorBody
+  assert.equal(response.status, 404)
+  assert.equal(body.code, 'NOT_FOUND')
+  assert.equal(body.message, 'The requested resource was not found.')
+  assert.ok(body.requestId)
+  assert.equal(body.retryable, false)
+  assert.deepEqual(calls, [])
+})

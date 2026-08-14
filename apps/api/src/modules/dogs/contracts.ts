@@ -55,5 +55,5 @@ export const dogListResponseSchema = z.object({
 })
 
 export const dogIdParamSchema = z.object({
-  dogId: z.string(),
+  dogId: z.uuid(),
 })

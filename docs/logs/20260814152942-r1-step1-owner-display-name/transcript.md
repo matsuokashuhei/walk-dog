@@ -14,6 +14,10 @@
   - `docs/logs/20260814152942-r1-step1-owner-display-name/specification-review.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/owner-display-name-spec-mockups.html`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/owner-display-name-api-spec.html`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/design.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/plan.md`
+  - `docs/development/2026-08-14-r1-step1-owner-display-name-plan.md`
+  - `docs/development/staged-development.md`
 
 ## Messages
 
@@ -73,6 +77,14 @@ Exampleの内容が見れない。配色を改善して
 
 Highlight.js を CDN で読み込み、cURL は bash、JSON は json としてハイライトした。
 
+### User
+
+LGTM!
+
+### Assistant
+
+API 仕様と画面契約を承認として扱い、計画レベルの判断を staged-development.md へ同期した。specification-review を ready にし、設計と Task 1–5 の実装計画を提示して承認を待つ。
+
 ## Session events
 
 - `2026-08-14 15:29 JST`: Created worktree `.worktrees/agent/r1-step1-owner-display-name-20260814152942` from `origin/main` on branch `agent/r1-step1-owner-display-name-20260814152942`. Recorded baseline and session artifacts.
@@ -81,18 +93,19 @@ Highlight.js を CDN で読み込み、cURL は bash、JSON は json として�
 - `2026-08-14 15:55 JST`: Wrote owner-display-name-api-spec.html for GET /v1/owner and PATCH /v1/owner.
 - `2026-08-14 15:58 JST`: Fixed Example code-block contrast (light paper background, dark text).
 - `2026-08-14 16:00 JST`: Added Highlight.js CDN highlighting for bash and JSON examples.
+- `2026-08-14 16:07 JST`: User LGTM on API spec. Synced GET/PATCH /v1/owner and `/owner/display-name` into staged-development.md. Wrote design.md and implementation plan.
 
 ## Sync
 
 - status: synced
-- trigger: API spec HTML syntax highlighting
-- artifacts updated: transcript, owner-display-name-api-spec.html
-- artifacts already current: specification-review.md, owner-display-name-spec-mockups.html
+- trigger: plan-level confirmation, design and plan written
+- artifacts updated: transcript, specification-review.md, design.md, plan.md, docs/development/2026-08-14-r1-step1-owner-display-name-plan.md, docs/development/staged-development.md
+- artifacts already current: owner-display-name-spec-mockups.html, owner-display-name-api-spec.html
 - cross-artifact matrix:
-  - task phase: specification confirmation
-  - review state: awaiting-confirmation
-  - commit state: syntax highlighting pending commit
+  - task phase: design and plan approval
+  - review state: ready
+  - commit state: design and plan pending commit
   - publication state: not published
-  - next permitted action: await plan-level confirmation
+  - next permitted action: await design-and-plan confirmation
 - baseline conflicts: none
-- next permitted action: await plan-level confirmation
+- next permitted action: await design-and-plan confirmation

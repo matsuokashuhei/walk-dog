@@ -29,3 +29,17 @@ export type CreateDogInput = {
   gender: Dog['gender']
   birthday: Birthday
 }
+
+export type ListDogs = (cognitoSubject: string) => Promise<Dog[]>
+
+export type CreateDog = (input: {
+  cognitoSubject: string
+  name: string
+  gender: Dog['gender']
+  birthday: Birthday
+}) => Promise<{ ok: true; dog: Dog } | { ok: false; error: 'duplicate_name' }>
+
+export type GetDog = (input: {
+  cognitoSubject: string
+  dogId: string
+}) => Promise<{ ok: true; dog: Dog } | { ok: false; error: 'not_found' }>

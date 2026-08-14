@@ -1,5 +1,4 @@
 export type {
-  Birthday,
   CreateDog,
   CreateDogInput,
   CurrentGoal,

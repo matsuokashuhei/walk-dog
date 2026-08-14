@@ -33,7 +33,7 @@ const currentGoalSchema = z.object({
   effectiveTo: z.string().nullable(),
 })
 
-export const dogSchema = z.object({
+const dogSchema = z.object({
   dogId: z.string(),
   ownerId: z.string(),
   name: z.string(),

@@ -1,4 +1,4 @@
-export type Birthday =
+type Birthday =
   | { precision: 'unknown' }
   | { precision: 'year'; year: number }
   | { precision: 'month'; year: number; month: number }

@@ -10,10 +10,11 @@ description: iOS 自動 E2E の実行結果、成功状態、入力エラー状�
 ## 手順
 
 1. 仕様とテストシナリオから、成功、入力エラー、主要な回復または認証後状態を一覧にする。
-2. 各状態が画面に表示された直後、`docs/logs/<timestamp>-<slug>/screenshots/` に `ios-<flow>-<state>.png` 形式で保存する。
-3. `e2e-report.md` に実行環境、実行コマンド、確認した画面状態、スクリーンショットを記載する。
-4. 成功状態は遷移完了を示す画面で、入力エラー状態は利用者が再試行できるメッセージと操作で、認証後状態は認証済み画面で撮影する。
-5. レポートの相対パスと保存済み画像を確認し、テスト結果と画面証跡を同じセッション成果物に含める。
+2. シナリオが Cognito email OTP を CloudWatch から取るとき、シミュレータを Verify へ進める前に `aws sts get-caller-identity --profile <profile>` で SSO セッションを確認する。失敗したら `aws sso login --profile <profile>` を出して停止する。
+3. 各状態が画面に表示された直後、`docs/logs/<timestamp>-<slug>/screenshots/` に `ios-<flow>-<state>.png` 形式で保存する。
+4. `e2e-report.md` に実行環境、実行コマンド、確認した画面状態、スクリーンショットを記載する。
+5. 成功状態は遷移完了を示す画面で、入力エラー状態は利用者が再試行できるメッセージと操作で、認証後状態は認証済み画面で撮影する。
+6. レポートの相対パスと保存済み画像を確認し、テスト結果と画面証跡を同じセッション成果物に含める。
 
 ## 記録形式
 
@@ -25,6 +26,7 @@ description: iOS 自動 E2E の実行結果、成功状態、入力エラー状�
 
 ## 検証
 
+- シナリオが CloudWatch OTP を使うとき、Verify 前に `aws sts get-caller-identity` が成功している。
 - 各必須状態に対応する PNG が `screenshots/` に存在する。
 - `e2e-report.md` は各 PNG を Markdown で添付し、実行結果を記載する。
 - E2E が返した結果と、画面で確認した状態を対応付ける。

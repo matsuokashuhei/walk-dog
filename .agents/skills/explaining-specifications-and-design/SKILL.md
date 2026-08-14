@@ -18,7 +18,7 @@ description: 仕様、設計、実装計画を WHAT → HOW → WHY の順で説
 ## 提示規則
 
 1. WHAT から始める。配線、path フィルター、ファイル一覧、実装手順から始めない。
-2. 対象がユーザー向け画面を含むとき、WHAT に HTML モック、コンポーネント一覧、イベント一覧を含める。対象が HTTP API を含むとき、WHAT にリクエスト、レスポンス、振る舞いを含める。ユーザーが頼む前に提示する。
+2. 対象がユーザー向け画面を含むとき、WHAT に HTML モック、コンポーネント一覧、イベント一覧を含める。対象が HTTP API を含むとき、WHAT にセッションの `*-api-spec.html`（エンドポイント、Request parameters、Response、Example cURL/JSON）を含める。ユーザーが頼む前に提示し、保存した HTML は `open` 済みである。
 3. 品質ゲートなど検証作業では、CI やファイル形状の前に、各チェックコマンドとその検証対象のテーブルを WHAT に含める。
 4. HOW は WHAT が判断できるあとで図を含めてよい。
 5. WHY は提案を `docs/development/staged-development.md`、`docs/specs/`、セッション目的、または明示された制約へ最短で結ぶ。
@@ -40,7 +40,7 @@ description: 仕様、設計、実装計画を WHAT → HOW → WHY の順で説
 設計または計画の承認を求める前に、次を確認する：
 
 - ユーザー向け要約が WHAT → HOW → WHY の順である
-- 画面の対象は HTML モック、コンポーネント一覧、イベント一覧を含み、HTTP API の対象はリクエスト、レスポンス、振る舞いを含む
+- 画面の対象は HTML モック、コンポーネント一覧、イベント一覧を含み、HTTP API の対象は `*-api-spec.html` のエンドポイント / Request parameters / Response / Example を含む
 - 目的が品質ゲートまたは CI を含むとき、検証対象が明示されている
 - HOW が欠けた WHAT の代わりになっていない
 - トップレベル計画 Task が設計節、成果物、受入条件に対応している

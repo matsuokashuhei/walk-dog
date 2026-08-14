@@ -21,7 +21,7 @@ description: Use when a session pull request has merged into main, or when the u
 
 ## 品質
 
-- すべての発見が少なくとも 1 つのスキル作成または更新に対応する
+- すべての発見がスキルの作成・更新、または AGENTS.md の規約変更に対応する
 - 修正を防げた最小の変更を優先する
 - 複数の発見が同じ根本原因なら、1 つの変更でカバーしてよい。その旨を書く
 

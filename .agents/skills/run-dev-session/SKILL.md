@@ -19,8 +19,8 @@ description: Use when starting or continuing a development session.
 6. **実装** — 承認済み計画を `subagent-driven-development`（サブエージェント可）または `executing-plans` で実行する。進捗はライブ todos。
 7. **レビュー** — `requesting-code-review`。Critical / Important が残るあいだ公開しない。指摘対応は `receiving-code-review`。
 8. **公開** — `finishing-a-development-branch` の PR 経路。完了主張の前に `verification-before-completion`。
-9. **マージ後** — `retrospecting-dev-session`。承認されたスキル変更だけ実装する。
-10. **片付け** — `finishing-a-development-branch` の cleanup。記録した所有ワークツリーを対象にする。
+9. **マージ後** — `retrospecting-dev-session`。承認されたスキル変更だけ実装し、変更があれば再度 `finishing-a-development-branch` の PR 経路で反映する。
+10. **片付け** — セッション記録にある所有ワークツリーを削除する。PR 経路はワークツリーを残すので、片付けは公開後に別途行う。
 
 ## ゲート
 

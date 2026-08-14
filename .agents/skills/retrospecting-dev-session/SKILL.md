@@ -21,7 +21,7 @@ Turn user corrections and review comments into skill changes. Soft advice is not
 
 ## Quality bar
 
-- Every finding maps to at least one skill create or update.
+- Every finding maps to a skill create or update, or to an AGENTS.md convention change.
 - Prefer the smallest change that would have prevented the correction.
 - When findings share a root cause, one change may cover them; say so.
 

@@ -41,26 +41,57 @@ function parseOptionalInt(value: string): number | null {
   return parsed
 }
 
-function parseBirthday(year: string, month: string, day: string): Birthday | undefined {
+function isFilled(value: string): boolean {
+  return value.trim() !== ''
+}
+
+type ParsedBirthday = { ok: true; birthday?: Birthday } | { ok: false }
+
+function parseBirthday(year: string, month: string, day: string): ParsedBirthday {
+  const yearFilled = isFilled(year)
+  const monthFilled = isFilled(month)
+  const dayFilled = isFilled(day)
+  if (!yearFilled && !monthFilled && !dayFilled) {
+    return { ok: true }
+  }
+
   const yearValue = parseOptionalInt(year)
   const monthValue = parseOptionalInt(month)
   const dayValue = parseOptionalInt(day)
-  if (yearValue === null && monthValue === null && dayValue === null) {
-    return undefined
+
+  if (yearFilled && !monthFilled && !dayFilled) {
+    if (yearValue === null) {
+      return { ok: false }
+    }
+    return { ok: true, birthday: { precision: 'year', year: yearValue } }
   }
-  if (yearValue === null) {
-    return undefined
+
+  if (yearFilled && monthFilled && !dayFilled) {
+    if (yearValue === null || monthValue === null || monthValue < 1 || monthValue > 12) {
+      return { ok: false }
+    }
+    return { ok: true, birthday: { precision: 'month', year: yearValue, month: monthValue } }
   }
-  if (monthValue === null && dayValue === null) {
-    return { precision: 'year', year: yearValue }
+
+  if (yearFilled && monthFilled && dayFilled) {
+    if (
+      yearValue === null ||
+      monthValue === null ||
+      dayValue === null ||
+      monthValue < 1 ||
+      monthValue > 12 ||
+      dayValue < 1 ||
+      dayValue > 31
+    ) {
+      return { ok: false }
+    }
+    return {
+      ok: true,
+      birthday: { precision: 'day', year: yearValue, month: monthValue, day: dayValue },
+    }
   }
-  if (monthValue === null) {
-    return undefined
-  }
-  if (dayValue === null) {
-    return { precision: 'month', year: yearValue, month: monthValue }
-  }
-  return { precision: 'day', year: yearValue, month: monthValue, day: dayValue }
+
+  return { ok: false }
 }
 
 export default function RegisterDogScreen() {
@@ -73,7 +104,12 @@ export default function RegisterDogScreen() {
   const [day, setDay] = useState('')
   const [state, setState] = useState<ScreenState>({ kind: 'idle' })
   const submitting = state.kind === 'submitting'
-  const canSubmit = trimmedLength(name) >= 1 && trimmedLength(name) <= 100 && gender !== null
+  const parsedBirthday = parseBirthday(year, month, day)
+  const canSubmit =
+    trimmedLength(name) >= 1 &&
+    trimmedLength(name) <= 100 &&
+    gender !== null &&
+    parsedBirthday.ok
   const dirty =
     name.length > 0 || gender !== null || year.length > 0 || month.length > 0 || day.length > 0
   const errorMessage =
@@ -99,13 +135,17 @@ export default function RegisterDogScreen() {
       throw new Error('RegisterDog requires an authenticated session')
     }
 
+    const birthdayResult = parseBirthday(year, month, day)
+    if (!birthdayResult.ok) {
+      return
+    }
+
     setState({ kind: 'submitting' })
-    const birthday = parseBirthday(year, month, day)
     try {
       await createDog(session.accessToken, {
         name: name.trim(),
         gender,
-        ...(birthday === undefined ? {} : { birthday }),
+        ...(birthdayResult.birthday === undefined ? {} : { birthday: birthdayResult.birthday }),
       })
       router.replace('/')
     } catch (error) {
@@ -199,9 +239,12 @@ export default function RegisterDogScreen() {
       <Text style={styles.birthdayLabel}>誕生日（任意）</Text>
       <View style={styles.birthdayRow}>
         <TextInput
-          style={styles.birthdayInput}
+          style={[styles.birthdayInput, parsedBirthday.ok ? null : styles.inputInvalid]}
           value={year}
-          onChangeText={setYear}
+          onChangeText={(value) => {
+            setYear(value)
+            clearStatus()
+          }}
           placeholder="年"
           keyboardType="number-pad"
           editable={!submitting}
@@ -209,9 +252,12 @@ export default function RegisterDogScreen() {
         />
         <Text style={styles.birthdaySlash}>/</Text>
         <TextInput
-          style={styles.birthdayInput}
+          style={[styles.birthdayInput, parsedBirthday.ok ? null : styles.inputInvalid]}
           value={month}
-          onChangeText={setMonth}
+          onChangeText={(value) => {
+            setMonth(value)
+            clearStatus()
+          }}
           placeholder="月"
           keyboardType="number-pad"
           editable={!submitting}
@@ -219,9 +265,12 @@ export default function RegisterDogScreen() {
         />
         <Text style={styles.birthdaySlash}>/</Text>
         <TextInput
-          style={styles.birthdayInput}
+          style={[styles.birthdayInput, parsedBirthday.ok ? null : styles.inputInvalid]}
           value={day}
-          onChangeText={setDay}
+          onChangeText={(value) => {
+            setDay(value)
+            clearStatus()
+          }}
           placeholder="日"
           keyboardType="number-pad"
           editable={!submitting}

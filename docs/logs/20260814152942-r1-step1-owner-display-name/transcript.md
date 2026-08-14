@@ -18,6 +18,12 @@
   - `docs/logs/20260814152942-r1-step1-owner-display-name/plan.md`
   - `docs/development/2026-08-14-r1-step1-owner-display-name-plan.md`
   - `docs/development/staged-development.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/e2e-report.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/screenshots/ios-display-name-idle.png`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/screenshots/ios-display-name-invalid.png`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/screenshots/ios-display-name-home.png`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review-request.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review.md`
 
 ## Messages
 
@@ -79,11 +85,27 @@ Highlight.js を CDN で読み込み、cURL は bash、JSON は json として�
 
 ### User
 
-LGTM!
+ok
 
 ### Assistant
 
-API 仕様と画面契約を承認として扱い、計画レベルの判断を staged-development.md へ同期した。specification-review を ready にし、設計と Task 1–5 の実装計画を提示して承認を待つ。
+設計と計画を承認として扱い、executing-plans で Task 1–5 を実装した。API は `GET` / `PATCH /v1/owner` を `/v1/owner` に載せ、モバイルは未設定 Owner を `/owner/display-name` にゲートする。iOS E2E は AWS SSO 期限切れで Verify 画面で停止した。
+
+### User
+
+OK. I'm done with aws sso login
+
+### Assistant
+
+OTP を取得して Verify を完了し、NAME-01 idle、NAME-04 invalid、HOME-01 を撮影した。`PATCH /v1/owner` は 200。API `npm test` は 181 件成功。finishing-a-development-branch で統合方法を提示した。
+
+### User
+
+2
+
+### Assistant
+
+Push と Pull Request 作成を選択。Publish 前にセッション成果物を同期し、スキル準拠レビューを依頼する。
 
 ## Session events
 
@@ -94,18 +116,22 @@ API 仕様と画面契約を承認として扱い、計画レベルの判断を 
 - `2026-08-14 15:58 JST`: Fixed Example code-block contrast (light paper background, dark text).
 - `2026-08-14 16:00 JST`: Added Highlight.js CDN highlighting for bash and JSON examples.
 - `2026-08-14 16:07 JST`: User LGTM on API spec. Synced GET/PATCH /v1/owner and `/owner/display-name` into staged-development.md. Wrote design.md and implementation plan.
+- `2026-08-14 16:09 JST`: User approved design and plan. Implementation started with executing-plans.
+- `2026-08-14 16:43 JST`: Tasks 1–5 complete. iOS E2E captured idle, invalid, and home. API tests 181/181. User chose push and PR.
+- `2026-08-14 16:50 JST`: Pre-publish sync. Skill-compliance review requested for `8bc6f67`..`a28651c`.
 
 ## Sync
 
 - status: synced
-- trigger: plan-level confirmation, design and plan written
-- artifacts updated: transcript, specification-review.md, design.md, plan.md, docs/development/2026-08-14-r1-step1-owner-display-name-plan.md, docs/development/staged-development.md
-- artifacts already current: owner-display-name-spec-mockups.html, owner-display-name-api-spec.html
+- trigger: pre-publish / pre-skill-compliance-review
+- artifacts updated: transcript.md, skill-compliance-review-request.md
+- artifacts already current: specification-review.md, design.md, plan.md, owner-display-name-spec-mockups.html, owner-display-name-api-spec.html, e2e-report.md, screenshots
 - cross-artifact matrix:
-  - task phase: design and plan approval
-  - review state: ready
-  - commit state: design and plan pending commit
+  - task phase: implementation complete, awaiting skill-compliance review then PR
+  - test totals: API `npm test` 181 pass; `npm run check` pass; mobile `npx tsc --noEmit` pass
+  - review state: skill-compliance review in progress
+  - commit state: HEAD `a28651c`, 12 commits ahead of `origin/main` (`8bc6f67`)
   - publication state: not published
-  - next permitted action: await design-and-plan confirmation
+  - next permitted action: crit
 - baseline conflicts: none
-- next permitted action: await design-and-plan confirmation
+- next permitted action: crit

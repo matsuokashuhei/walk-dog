@@ -77,6 +77,7 @@ PATCH /v1/owner
 | Zod OpenAPI | https://hono.dev/examples/zod-openapi | `createRoute` + `security: [{ BearerAuth: [] }]`。 |
 | Hono testing | https://hono.dev/docs/guides/testing | `app.request()` で契約テストする。 |
 | Node.js test runner | https://nodejs.org/api/test.html | `node --import tsx --test`。 |
+| Drizzle update | https://orm.drizzle.team/docs/update | `updateDisplayName` は `.update().set({ displayName }).where(...).returning()`。`updatedAt` は `$onUpdate`。 |
 
 ## WHY
 

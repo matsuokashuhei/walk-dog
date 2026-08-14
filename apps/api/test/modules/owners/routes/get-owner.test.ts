@@ -73,3 +73,15 @@ test('GET /v1/owner returns 200 owner', async () => {
   assert.ok(body.requestId)
   assert.deepEqual(calls, ['sub-1'])
 })
+
+test('GET /v1/owner returns 200 owner with displayName', async () => {
+  const named = { ...owner, displayName: 'Akira' }
+  const response = await createGetOwnerApp(async () => named).request('/v1/owner', {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: 'Bearer access' },
+  })
+  const body = await response.json() as { displayName: string | null; ownerId: string }
+  assert.equal(response.status, 200)
+  assert.equal(body.ownerId, named.ownerId)
+  assert.equal(body.displayName, 'Akira')
+})

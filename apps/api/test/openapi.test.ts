@@ -18,6 +18,7 @@ type PropertySchema = {
   type?: string
   format?: string
   minLength?: number
+  maxLength?: number
 }
 
 type JsonSchema = {
@@ -115,9 +116,9 @@ function pathMethodMap(document: OpenApiDocument): Record<string, string[]> {
   )
 }
 
-function requestSchema(document: OpenApiDocument, path: string): JsonSchema {
-  const requestBody = operationAt(document, path, 'post').requestBody
-  assert.ok(requestBody, `missing request body for ${path}`)
+function requestSchema(document: OpenApiDocument, path: string, method = 'post'): JsonSchema {
+  const requestBody = operationAt(document, path, method).requestBody
+  assert.ok(requestBody, `missing request body for ${method.toUpperCase()} ${path}`)
   return requestBody.content['application/json'].schema
 }
 
@@ -125,6 +126,13 @@ function assertEmailRequestSchema(schema: JsonSchema): void {
   assert.deepEqual(schema.required, ['email'])
   assert.equal(schema.properties.email.format, 'email')
   assert.equal(schema.properties.email.nullable, undefined)
+}
+
+function assertOwnerPatchRequestSchema(schema: JsonSchema): void {
+  assert.deepEqual(schema.required, ['displayName'])
+  assert.equal(schema.properties.displayName.minLength, 1)
+  assert.equal(schema.properties.displayName.maxLength, 100)
+  assert.equal(schema.properties.displayName.nullable, undefined)
 }
 
 function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean | undefined): void {
@@ -137,7 +145,7 @@ function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean 
   assert.equal(schema.properties.code.nullable, undefined)
 }
 
-test('GET /openapi.json characterizes health and auth operations', async () => {
+test('GET /openapi.json characterizes health, auth, and owner operations', async () => {
   const response = await createOpenApiApp().request('/openapi.json')
   const document = await response.json() as OpenApiDocument
 
@@ -180,4 +188,5 @@ test('GET /openapi.json characterizes health and auth operations', async () => {
   assertEmailRequestSchema(requestSchema(document, '/v1/auth/sign-in'))
   assertVerifyRequestSchema(requestSchema(document, '/v1/auth/sign-up/verify'), true)
   assertVerifyRequestSchema(requestSchema(document, '/v1/auth/sign-in/verify'), undefined)
+  assertOwnerPatchRequestSchema(requestSchema(document, '/v1/owner', 'patch'))
 })

@@ -35,6 +35,23 @@ const authorizedHeaders = {
   Accept: 'application/json',
 }
 
+type ErrorBody = {
+  code: string
+  message: string
+  requestId: string
+  retryable: boolean
+}
+
+async function assertInvalidInput(response: Response, calls: unknown[]) {
+  const body = await response.json() as ErrorBody
+  assert.equal(response.status, 400)
+  assert.equal(body.code, 'INVALID_INPUT')
+  assert.equal(body.message, '入力内容を確認してください。')
+  assert.ok(body.requestId)
+  assert.equal(body.retryable, false)
+  assert.deepEqual(calls, [])
+}
+
 test('PATCH /v1/owner returns 401 without Authorization', async () => {
   const calls: string[] = []
   const response = await createUpdateOwnerApp(async () => {
@@ -47,8 +64,12 @@ test('PATCH /v1/owner returns 401 without Authorization', async () => {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ displayName: 'Akira' }),
   })
+  const body = await response.json() as ErrorBody
   assert.equal(response.status, 401)
-  assert.equal((await response.json() as { code: string }).code, 'UNAUTHENTICATED')
+  assert.equal(body.code, 'UNAUTHENTICATED')
+  assert.equal(body.message, 'Authentication is required.')
+  assert.ok(body.requestId)
+  assert.equal(body.retryable, false)
   assert.deepEqual(calls, [])
 })
 
@@ -62,9 +83,59 @@ test('PATCH /v1/owner returns 400 for empty displayName', async () => {
     headers: authorizedHeaders,
     body: JSON.stringify({ displayName: '   ' }),
   })
-  assert.equal(response.status, 400)
-  assert.equal((await response.json() as { code: string }).code, 'INVALID_INPUT')
-  assert.deepEqual(calls, [])
+  await assertInvalidInput(response, calls)
+})
+
+test('PATCH /v1/owner returns 400 when displayName is missing', async () => {
+  const calls: string[] = []
+  const response = await createUpdateOwnerApp(async () => {
+    calls.push('update')
+    return owner
+  }).request('/v1/owner', {
+    method: 'PATCH',
+    headers: authorizedHeaders,
+    body: JSON.stringify({}),
+  })
+  await assertInvalidInput(response, calls)
+})
+
+test('PATCH /v1/owner returns 400 when displayName exceeds 100 characters', async () => {
+  const calls: string[] = []
+  const response = await createUpdateOwnerApp(async () => {
+    calls.push('update')
+    return owner
+  }).request('/v1/owner', {
+    method: 'PATCH',
+    headers: authorizedHeaders,
+    body: JSON.stringify({ displayName: 'a'.repeat(101) }),
+  })
+  await assertInvalidInput(response, calls)
+})
+
+test('PATCH /v1/owner returns 400 for unexpected body fields', async () => {
+  const calls: string[] = []
+  const response = await createUpdateOwnerApp(async () => {
+    calls.push('update')
+    return owner
+  }).request('/v1/owner', {
+    method: 'PATCH',
+    headers: authorizedHeaders,
+    body: JSON.stringify({ displayName: 'Akira', extra: true }),
+  })
+  await assertInvalidInput(response, calls)
+})
+
+test('PATCH /v1/owner returns 400 for a malformed JSON body', async () => {
+  const calls: string[] = []
+  const response = await createUpdateOwnerApp(async () => {
+    calls.push('update')
+    return owner
+  }).request('/v1/owner', {
+    method: 'PATCH',
+    headers: authorizedHeaders,
+    body: '{',
+  })
+  await assertInvalidInput(response, calls)
 })
 
 test('PATCH /v1/owner returns 200 with trimmed displayName', async () => {

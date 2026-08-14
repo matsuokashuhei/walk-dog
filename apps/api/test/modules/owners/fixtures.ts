@@ -2,7 +2,6 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { createApp } from '../../../src/app.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
 import { registerHealthRoutes } from '../../../src/modules/health/index.js'
-import { registerOwnerRoutes } from '../../../src/modules/owners/index.js'
 import type { GetOwner, UpdateOwnerDisplayName } from '../../../src/modules/owners/types.js'
 import type { AccessTokenVerifier } from '../../../src/shared/http/access-token.js'
 import type { App, AppVariables } from '../../../src/shared/http/types.js'
@@ -30,23 +29,5 @@ export function createOwnerApp(registerRoutes: (app: App) => void): App {
   return createApp(appDependencies, [
     { path: '/', app: registerHealthRoutes() },
     { path: '/v1/owner', app: ownerChild },
-  ])
-}
-
-export function createRegisteredOwnerApp(dependencies: {
-  getOwner?: GetOwner
-  updateOwnerDisplayName?: UpdateOwnerDisplayName
-  accessTokenVerifier?: AccessTokenVerifier
-} = {}): App {
-  return createApp(appDependencies, [
-    { path: '/', app: registerHealthRoutes() },
-    {
-      path: '/v1/owner',
-      app: registerOwnerRoutes({
-        getOwner: dependencies.getOwner ?? unusedGetOwner,
-        updateOwnerDisplayName: dependencies.updateOwnerDisplayName ?? unusedUpdateOwnerDisplayName,
-        accessTokenVerifier: dependencies.accessTokenVerifier ?? unusedAccessTokenVerifier,
-      }),
-    },
   ])
 }

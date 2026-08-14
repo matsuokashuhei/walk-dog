@@ -25,6 +25,14 @@ export function createDrizzleOwnerRepository(database: DbInstance): OwnerReposit
         return toOwner(existing[0])
       })
     },
+    updateDisplayName(cognitoSubject: string, displayName: string): Promise<Owner> {
+      return database
+        .update(owners)
+        .set({ displayName })
+        .where(eq(owners.cognitoSubject, cognitoSubject))
+        .returning()
+        .then((rows) => toOwner(rows[0]))
+    },
   }
 }
 

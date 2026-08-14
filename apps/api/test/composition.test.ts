@@ -9,7 +9,12 @@ import type { Logger } from '../src/infrastructure/observability/logger.js'
 import type { AuthRouteDependencies } from '../src/modules/auth/index.js'
 import type { AccessTokenVerifier } from '../src/shared/http/access-token.js'
 import type { AuthProvider } from '../src/modules/auth/provider.js'
-import type { OwnerRepository } from '../src/modules/owners/index.js'
+import type {
+  GetOwner,
+  OwnerRepository,
+  OwnerRouteDependencies,
+  UpdateOwnerDisplayName,
+} from '../src/modules/owners/index.js'
 import type { ActiveWalkCommands } from '../src/modules/walks/active-walk-commands.js'
 import type { AppVariables } from '../src/shared/http/types.js'
 import {
@@ -59,6 +64,12 @@ test('createApplication shares one database and Cognito client through the objec
   const ownerRepository = { kind: 'owner-repository' } as unknown as OwnerRepository
   const activeWalkCommands = { kind: 'active-walk-commands' } as unknown as ActiveWalkCommands
   const accessTokenVerifier = { kind: 'access-token-verifier' } as unknown as AccessTokenVerifier
+  const getOwner: GetOwner = async () => {
+    throw new Error('unused')
+  }
+  const updateOwnerDisplayName: UpdateOwnerDisplayName = async () => {
+    throw new Error('unused')
+  }
   const useCases = {
     startSignUp: async () => {
       throw new Error('unused')
@@ -76,8 +87,11 @@ test('createApplication shares one database and Cognito client through the objec
       throw new Error('unused')
     },
     accessTokenVerifier,
-  } satisfies AuthRouteDependencies
+    getOwner,
+    updateOwnerDisplayName,
+  } satisfies AuthRouteDependencies & OwnerRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
+  const ownerRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const healthRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const composedApp = new OpenAPIHono<{ Variables: AppVariables }>()
   let receivedDatabase: DbInstance | undefined
@@ -87,6 +101,7 @@ test('createApplication shares one database and Cognito client through the objec
   let receivedActiveWalkCommands: ActiveWalkCommands | undefined
   let receivedAccessTokenVerifier: AccessTokenVerifier | undefined
   let receivedUseCases: AuthRouteDependencies | undefined
+  let receivedOwnerRouteDependencies: OwnerRouteDependencies | undefined
   let receivedRoutes: ModuleRoute[] | undefined
 
   const factories: ApplicationFactories = {
@@ -145,6 +160,11 @@ test('createApplication shares one database and Cognito client through the objec
       receivedUseCases = dependencies
       return authRoutes
     },
+    createOwnerRoutes(dependencies) {
+      calls.push('owner-routes')
+      receivedOwnerRouteDependencies = dependencies
+      return ownerRoutes
+    },
     createHealthRoutes() {
       calls.push('health-routes')
       return healthRoutes
@@ -172,6 +192,7 @@ test('createApplication shares one database and Cognito client through the objec
     'access-token-verifier',
     'use-cases',
     'auth-routes',
+    'owner-routes',
     'health-routes',
     'app',
   ])
@@ -185,11 +206,13 @@ test('createApplication shares one database and Cognito client through the objec
   assert.equal(receivedActiveWalkCommands, activeWalkCommands)
   assert.equal(receivedAccessTokenVerifier, accessTokenVerifier)
   assert.equal(receivedUseCases, useCases)
+  assert.equal(receivedOwnerRouteDependencies, useCases)
   assert.deepEqual(
     receivedRoutes?.map((route) => ({ path: route.path, app: route.app })),
     [
       { path: '/', app: healthRoutes },
       { path: '/v1/auth', app: authRoutes },
+      { path: '/v1/owner', app: ownerRoutes },
     ],
   )
 })

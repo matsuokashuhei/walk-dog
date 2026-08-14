@@ -65,6 +65,7 @@ R1は次の縦切り順で進める。
 ## R1: 散歩記録の縦切り
 
 - Sign Up、Sign In、OTP確認、Owner表示名登録、Sign Outを実装する。
+- Owner表示名は認証直後は未設定でよい。未設定の認証済み Owner は `/owner/display-name` で登録し、成功後に認証済みホームへ進む。この画面から Settings の Sign Out へ進める。
 - Sign Outは、Active Walkがある場合に確認ダイアログを表示し、承諾後にActive WalkをFailedにしてからCognito sessionを無効化する。Active Walkがない場合は確認なしでSign Outする。
 - アカウント縦切りの Settings（`/settings`）は Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
 - Dog一覧、Dog登録、Dog選択を実装し、Dog登録時にDaily 30分のGoal Revisionを作成する。
@@ -92,6 +93,8 @@ R1は次の縦切り順で進める。
 ## 公開インターフェース
 
 - `/v1` 配下に認証、Owner、Dog、Goal、Walk、TrackPoint、Event、History、Contribution、Preference APIを段階ごとに追加する。
+- `GET /v1/owner` はAccess Tokenで認証し、現在のOwnerを返す。`displayName` は未設定時 `null`、設定後は保存した値。
+- `PATCH /v1/owner` はAccess Tokenで認証し、`displayName` を受けてOwnerを返す。`displayName` は前後空白除去後 1〜100 文字。
 - `POST /v1/auth/sign-out` はAccess Tokenで認証し、成功時に204を返す。Active Walkがある場合はFailedにしてからsessionを無効化する。
 - `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。
 - `eventId` はEventの冪等キー、`sequence` はWalk内のTrackPoint送信順序を表す。
@@ -102,7 +105,7 @@ R1は次の縦切り順で進める。
 - OpenAPI契約テストで成功、認証、入力不正、競合、再試行可能エラーを確認する。
 - API統合テストでOwner境界、Dog名一意性、Goal Revision、Active Walk一意性、Event冪等性、Completed集計を確認する。
 - SQSワーカーテストで重複、順不同、再配信、Finish時の連番確定を確認する。
-- モバイルテストで認証遷移、入力保持、Active Walk復元、失敗時Retry、単位・言語表示を確認する。
+- モバイルテストで認証遷移、Owner表示名登録、入力保持、Active Walk復元、失敗時Retry、単位・言語表示を確認する。
 - iPhone実機でforegroundとbackgroundの位置情報、通信復帰、位置情報許可変更、完了後の経路表示を確認する。
 
 ## リリース開始時に確定する判断

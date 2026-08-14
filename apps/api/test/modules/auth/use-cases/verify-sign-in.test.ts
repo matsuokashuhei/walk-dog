@@ -61,6 +61,9 @@ function createFakes(handlers: {
       }
       return handlers.resolveByCognitoSubject(cognitoSubject)
     },
+    async updateDisplayName() {
+      throw new Error('unexpected updateDisplayName')
+    },
   }
   return { provider, owners, calls }
 }

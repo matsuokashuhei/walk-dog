@@ -39,7 +39,13 @@ import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { createVerifySignIn } from './modules/auth/use-cases/verify-sign-in.js'
 import { createVerifySignUp } from './modules/auth/use-cases/verify-sign-up.js'
 import { registerHealthRoutes } from './modules/health/index.js'
-import type { OwnerRepository } from './modules/owners/index.js'
+import {
+  registerOwnerRoutes,
+  type OwnerRepository,
+  type OwnerRouteDependencies,
+} from './modules/owners/index.js'
+import { createGetOwner } from './modules/owners/use-cases/get-owner.js'
+import { createUpdateOwnerDisplayName } from './modules/owners/use-cases/update-owner-display-name.js'
 import type { ActiveWalkCommands } from './modules/walks/active-walk-commands.js'
 import type { AccessTokenVerifier } from './shared/http/access-token.js'
 import type { App } from './shared/http/types.js'
@@ -60,6 +66,8 @@ export type ApplicationResources = {
   closeSentry: () => Promise<void>
 }
 
+export type ApplicationUseCases = AuthRouteDependencies & OwnerRouteDependencies
+
 export type ApplicationFactories = {
   loadConfigs: (env: NodeJS.ProcessEnv) => ApplicationConfigs
   createLogger: (config: ApplicationConfigs['observability']) => Logger
@@ -74,8 +82,9 @@ export type ApplicationFactories = {
     ownerRepository: OwnerRepository
     activeWalkCommands: ActiveWalkCommands
     accessTokenVerifier: AccessTokenVerifier
-  }) => AuthRouteDependencies
+  }) => ApplicationUseCases
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
+  createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
   createHealthRoutes: () => App
   createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
 }
@@ -122,10 +131,15 @@ const defaultFactories: ApplicationFactories = {
       verifySignIn: createVerifySignIn(authProvider, ownerRepository),
       signOut: createSignOut(ownerRepository, activeWalkCommands, authProvider),
       accessTokenVerifier,
+      getOwner: createGetOwner(ownerRepository),
+      updateOwnerDisplayName: createUpdateOwnerDisplayName(ownerRepository),
     }
   },
   createAuthRoutes(dependencies) {
     return registerAuthRoutes(dependencies)
+  },
+  createOwnerRoutes(dependencies) {
+    return registerOwnerRoutes(dependencies)
   },
   createHealthRoutes() {
     return registerHealthRoutes()
@@ -154,12 +168,14 @@ export function createApplication(
     accessTokenVerifier,
   })
   const authRoutes = factories.createAuthRoutes(useCases)
+  const ownerRoutes = factories.createOwnerRoutes(useCases)
   const healthRoutes = factories.createHealthRoutes()
   const app = factories.createApp(
     { logger, setRequestId: setRequestIdTag },
     [
       { path: '/', app: healthRoutes },
       { path: '/v1/auth', app: authRoutes },
+      { path: '/v1/owner', app: ownerRoutes },
     ],
   )
 

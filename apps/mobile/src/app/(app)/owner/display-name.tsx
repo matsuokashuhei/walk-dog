@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -62,7 +64,11 @@ export default function DisplayNameScreen() {
   }
 
   return (
-    <View style={styles.container} testID="display-name-root">
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      testID="display-name-root"
+    >
       <Text style={styles.label}>owner</Text>
       <Text style={styles.title}>表示名を登録</Text>
       <Text style={styles.help}>散歩の記録に使う名前です。1〜100文字。</Text>
@@ -80,6 +86,7 @@ export default function DisplayNameScreen() {
         editable={!submitting}
         maxLength={100}
         autoCorrect={false}
+        returnKeyType="done"
       />
       {errorMessage ? (
         <Text style={styles.error} testID="display-name-error">
@@ -95,8 +102,8 @@ export default function DisplayNameScreen() {
         accessible
         accessibilityRole="button"
         accessibilityLabel="登録する"
-        accessibilityState={{ disabled: submitting || !canSubmit }}
-        disabled={submitting || !canSubmit}
+        accessibilityState={{ disabled: submitting }}
+        disabled={submitting}
         style={[
           styles.submit,
           canSubmit && !submitting ? styles.submitReady : styles.submitDisabled,
@@ -132,7 +139,7 @@ export default function DisplayNameScreen() {
           Settings
         </Text>
       </Pressable>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 

@@ -65,6 +65,14 @@ Exampleの内容が見れない。配色を改善して
 
 コードブロック内の `code` がベージュ背景を継承していたため、Example を紙面上の暗い文字に直した。
 
+### User
+
+見れた。ありがとう。コードブロックの内容をシンタックスハイライティングできる？独自実装するなら不要。簡単にできるならやって
+
+### Assistant
+
+Highlight.js を CDN で読み込み、cURL は bash、JSON は json としてハイライトした。
+
 ## Session events
 
 - `2026-08-14 15:29 JST`: Created worktree `.worktrees/agent/r1-step1-owner-display-name-20260814152942` from `origin/main` on branch `agent/r1-step1-owner-display-name-20260814152942`. Recorded baseline and session artifacts.
@@ -72,17 +80,18 @@ Exampleの内容が見れない。配色を改善して
 - `2026-08-14 15:43 JST`: Opened owner-display-name-spec-mockups.html in the default browser.
 - `2026-08-14 15:55 JST`: Wrote owner-display-name-api-spec.html for GET /v1/owner and PATCH /v1/owner.
 - `2026-08-14 15:58 JST`: Fixed Example code-block contrast (light paper background, dark text).
+- `2026-08-14 16:00 JST`: Added Highlight.js CDN highlighting for bash and JSON examples.
 
 ## Sync
 
 - status: synced
-- trigger: API spec HTML contrast fix
+- trigger: API spec HTML syntax highlighting
 - artifacts updated: transcript, owner-display-name-api-spec.html
 - artifacts already current: specification-review.md, owner-display-name-spec-mockups.html
 - cross-artifact matrix:
   - task phase: specification confirmation
   - review state: awaiting-confirmation
-  - commit state: API spec HTML contrast fix pending commit
+  - commit state: syntax highlighting pending commit
   - publication state: not published
   - next permitted action: await plan-level confirmation
 - baseline conflicts: none

@@ -132,6 +132,11 @@
       border-radius: 0;
       font-size: 0.85rem;
     }
+    pre code.hljs {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
     .status-list { list-style: none; padding: 0; margin: 0; }
     .status-list > li { margin: 0 0 16px; }
     .status-label {
@@ -149,6 +154,7 @@
     }
     ul.field-list li { margin: 4px 0; }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" />
 </head>
 <body>
   <main>
@@ -267,7 +273,7 @@
       <h3>Example</h3>
 
       <h4>Request</h4>
-      <pre><code>curl -X GET "$API_BASE_URL/v1/owner" \
+      <pre><code class="language-bash">curl -X GET "$API_BASE_URL/v1/owner" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
 
@@ -275,7 +281,7 @@
       <ul class="status-list">
         <li>
           <div class="status-label">Status: 200（displayName 未設定）</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
   "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
   "displayName": null,
@@ -286,7 +292,7 @@
         </li>
         <li>
           <div class="status-label">Status: 200（displayName 設定済み）</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
   "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
   "displayName": "Akira",
@@ -297,7 +303,7 @@
         </li>
         <li>
           <div class="status-label">Status: 401</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "code": "UNAUTHENTICATED",
   "message": "Authentication is required.",
   "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
@@ -306,7 +312,7 @@
         </li>
         <li>
           <div class="status-label">Status: 500</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "code": "INTERNAL_ERROR",
   "message": "An unexpected error occurred.",
   "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
@@ -389,7 +395,7 @@
           </tr>
         </tbody>
       </table>
-      <pre><code>{
+      <pre><code class="language-json">{
   "displayName": "Akira"
 }</code></pre>
 
@@ -430,7 +436,7 @@
       <h3>Example</h3>
 
       <h4>Request</h4>
-      <pre><code>curl -X PATCH "$API_BASE_URL/v1/owner" \
+      <pre><code class="language-bash">curl -X PATCH "$API_BASE_URL/v1/owner" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
@@ -440,7 +446,7 @@
       <ul class="status-list">
         <li>
           <div class="status-label">Status: 200</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
   "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
   "displayName": "Akira",
@@ -451,7 +457,7 @@
         </li>
         <li>
           <div class="status-label">Status: 400</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "code": "INVALID_INPUT",
   "message": "入力内容を確認してください。",
   "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
@@ -460,7 +466,7 @@
         </li>
         <li>
           <div class="status-label">Status: 401</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "code": "UNAUTHENTICATED",
   "message": "Authentication is required.",
   "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
@@ -469,7 +475,7 @@
         </li>
         <li>
           <div class="status-label">Status: 500</div>
-          <pre><code>{
+          <pre><code class="language-json">{
   "code": "INTERNAL_ERROR",
   "message": "An unexpected error occurred.",
   "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
@@ -479,5 +485,7 @@
       </ul>
     </article>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>

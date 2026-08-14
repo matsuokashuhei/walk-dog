@@ -127,7 +127,11 @@ export default function RegisterDogScreen() {
   }
 
   const submit = async () => {
-    if (submitting || !canSubmit || gender === null) {
+    if (submitting) {
+      return
+    }
+    if (!canSubmit || gender === null) {
+      setState({ kind: 'invalid' })
       return
     }
 
@@ -289,8 +293,8 @@ export default function RegisterDogScreen() {
         accessible
         accessibilityRole="button"
         accessibilityLabel="登録する"
-        accessibilityState={{ disabled: submitting || !canSubmit }}
-        disabled={submitting || !canSubmit}
+        accessibilityState={{ disabled: submitting }}
+        disabled={submitting}
         style={[
           styles.submit,
           canSubmit && !submitting ? styles.submitReady : styles.submitDisabled,

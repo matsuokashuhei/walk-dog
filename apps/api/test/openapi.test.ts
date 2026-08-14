@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createRegisteredAuthApp } from './modules/auth/fixtures.js'
+import { createApp } from '../src/app.js'
+import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
+import { registerAuthRoutes } from '../src/modules/auth/index.js'
+import { registerHealthRoutes } from '../src/modules/health/index.js'
+import { registerOwnerRoutes } from '../src/modules/owners/index.js'
+import { unusedAuthRouteDependencies } from './modules/auth/fixtures.js'
+import {
+  unusedAccessTokenVerifier,
+  unusedGetOwner,
+  unusedUpdateOwnerDisplayName,
+} from './modules/owners/fixtures.js'
+import { testLogger } from './support/test-logger.js'
 
 type PropertySchema = {
   nullable?: boolean
@@ -42,6 +53,7 @@ const expectedOperations = {
   '/v1/auth/sign-in': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-in/verify': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-out': { post: ['204', '400', '401', '429', '500'] },
+  '/v1/owner': { get: ['200', '401', '500'], patch: ['200', '400', '401', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -52,6 +64,7 @@ const expectedPathMethods = {
   '/v1/auth/sign-in': ['post'],
   '/v1/auth/sign-in/verify': ['post'],
   '/v1/auth/sign-out': ['post'],
+  '/v1/owner': ['get', 'patch'],
 } as const
 
 const publicAuthPaths = [
@@ -62,7 +75,21 @@ const publicAuthPaths = [
 ] as const
 
 function createOpenApiApp() {
-  return createRegisteredAuthApp()
+  return createApp(
+    { logger: testLogger, setRequestId: setRequestIdTag },
+    [
+      { path: '/', app: registerHealthRoutes() },
+      { path: '/v1/auth', app: registerAuthRoutes(unusedAuthRouteDependencies) },
+      {
+        path: '/v1/owner',
+        app: registerOwnerRoutes({
+          getOwner: unusedGetOwner,
+          updateOwnerDisplayName: unusedUpdateOwnerDisplayName,
+          accessTokenVerifier: unusedAccessTokenVerifier,
+        }),
+      },
+    ],
+  )
 }
 
 function operationAt(document: OpenApiDocument, path: string, method: string): OpenApiOperation {
@@ -130,9 +157,19 @@ test('GET /openapi.json characterizes health and auth operations', async () => {
   assertOperationStatuses(document, '/v1/auth/sign-in', 'post', expectedOperations['/v1/auth/sign-in'].post)
   assertOperationStatuses(document, '/v1/auth/sign-in/verify', 'post', expectedOperations['/v1/auth/sign-in/verify'].post)
   assertOperationStatuses(document, '/v1/auth/sign-out', 'post', expectedOperations['/v1/auth/sign-out'].post)
+  assertOperationStatuses(document, '/v1/owner', 'get', expectedOperations['/v1/owner'].get)
+  assertOperationStatuses(document, '/v1/owner', 'patch', expectedOperations['/v1/owner'].patch)
 
   assert.deepEqual(
     operationAt(document, '/v1/auth/sign-out', 'post').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/owner', 'get').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/owner', 'patch').security,
     [{ BearerAuth: [] }],
   )
   for (const path of publicAuthPaths) {

@@ -21,6 +21,7 @@ import {
   createDbClient,
   type DbInstance,
 } from './infrastructure/database/client.js'
+import { createDrizzleDogRepository } from './infrastructure/database/repositories/drizzle-dog-repository.js'
 import { createDrizzleOwnerRepository } from './infrastructure/database/repositories/drizzle-owner-repository.js'
 import {
   createLogger as createProductionLogger,
@@ -38,6 +39,14 @@ import { createStartSignIn } from './modules/auth/use-cases/start-sign-in.js'
 import { createStartSignUp } from './modules/auth/use-cases/start-sign-up.js'
 import { createVerifySignIn } from './modules/auth/use-cases/verify-sign-in.js'
 import { createVerifySignUp } from './modules/auth/use-cases/verify-sign-up.js'
+import {
+  registerDogRoutes,
+  type DogRepository,
+  type DogRouteDependencies,
+} from './modules/dogs/index.js'
+import { createCreateDog } from './modules/dogs/use-cases/create-dog.js'
+import { createGetDog } from './modules/dogs/use-cases/get-dog.js'
+import { createListDogs } from './modules/dogs/use-cases/list-dogs.js'
 import { registerHealthRoutes } from './modules/health/index.js'
 import {
   registerOwnerRoutes,
@@ -66,7 +75,7 @@ export type ApplicationResources = {
   closeSentry: () => Promise<void>
 }
 
-export type ApplicationUseCases = AuthRouteDependencies & OwnerRouteDependencies
+export type ApplicationUseCases = AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies
 
 export type ApplicationFactories = {
   loadConfigs: (env: NodeJS.ProcessEnv) => ApplicationConfigs
@@ -75,16 +84,19 @@ export type ApplicationFactories = {
   createCognitoClient: (config: CognitoConfig) => CognitoClient
   createAuthProvider: (client: CognitoClient) => AuthProvider
   createOwnerRepository: (db: DbInstance) => OwnerRepository
+  createDogRepository: (db: DbInstance) => DogRepository
   createActiveWalkCommands: () => ActiveWalkCommands
   createAccessTokenVerifier: (config: CognitoConfig) => AccessTokenVerifier
   createUseCases: (dependencies: {
     authProvider: AuthProvider
     ownerRepository: OwnerRepository
+    dogRepository: DogRepository
     activeWalkCommands: ActiveWalkCommands
     accessTokenVerifier: AccessTokenVerifier
   }) => ApplicationUseCases
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
   createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
+  createDogRoutes: (dependencies: DogRouteDependencies) => App
   createHealthRoutes: () => App
   createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
 }
@@ -112,6 +124,9 @@ const defaultFactories: ApplicationFactories = {
   createOwnerRepository(database) {
     return createDrizzleOwnerRepository(database)
   },
+  createDogRepository(database) {
+    return createDrizzleDogRepository(database)
+  },
   createActiveWalkCommands() {
     return createAbsentActiveWalkCommands()
   },
@@ -121,6 +136,7 @@ const defaultFactories: ApplicationFactories = {
   createUseCases({
     authProvider,
     ownerRepository,
+    dogRepository,
     activeWalkCommands,
     accessTokenVerifier,
   }) {
@@ -133,6 +149,9 @@ const defaultFactories: ApplicationFactories = {
       accessTokenVerifier,
       getOwner: createGetOwner(ownerRepository),
       updateOwnerDisplayName: createUpdateOwnerDisplayName(ownerRepository),
+      listDogs: createListDogs(ownerRepository, dogRepository),
+      createDog: createCreateDog(ownerRepository, dogRepository),
+      getDog: createGetDog(ownerRepository, dogRepository),
     }
   },
   createAuthRoutes(dependencies) {
@@ -140,6 +159,9 @@ const defaultFactories: ApplicationFactories = {
   },
   createOwnerRoutes(dependencies) {
     return registerOwnerRoutes(dependencies)
+  },
+  createDogRoutes(dependencies) {
+    return registerDogRoutes(dependencies)
   },
   createHealthRoutes() {
     return registerHealthRoutes()
@@ -159,16 +181,19 @@ export function createApplication(
   const cognitoClient = factories.createCognitoClient(configs.cognito)
   const authProvider = factories.createAuthProvider(cognitoClient)
   const ownerRepository = factories.createOwnerRepository(database)
+  const dogRepository = factories.createDogRepository(database)
   const activeWalkCommands = factories.createActiveWalkCommands()
   const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
   const useCases = factories.createUseCases({
     authProvider,
     ownerRepository,
+    dogRepository,
     activeWalkCommands,
     accessTokenVerifier,
   })
   const authRoutes = factories.createAuthRoutes(useCases)
   const ownerRoutes = factories.createOwnerRoutes(useCases)
+  const dogRoutes = factories.createDogRoutes(useCases)
   const healthRoutes = factories.createHealthRoutes()
   const app = factories.createApp(
     { logger, setRequestId: setRequestIdTag },
@@ -176,6 +201,7 @@ export function createApplication(
       { path: '/', app: healthRoutes },
       { path: '/v1/auth', app: authRoutes },
       { path: '/v1/owner', app: ownerRoutes },
+      { path: '/v1/dogs', app: dogRoutes },
     ],
   )
 

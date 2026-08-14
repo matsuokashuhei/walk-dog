@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { DrizzleQueryError } from 'drizzle-orm/errors'
 import type { DbInstance } from '../../../src/infrastructure/database/client.js'
 import { createDrizzleDogRepository } from '../../../src/infrastructure/database/repositories/drizzle-dog-repository.js'
 import { dogs } from '../../../src/infrastructure/database/schema/dog.js'
@@ -150,7 +151,8 @@ test('createWithDailyGoal returns the dog with a daily 30-minute current goal', 
 })
 
 test('createWithDailyGoal throws DogNameDuplicateError on unique violation', async () => {
-  const uniqueViolation = Object.assign(new Error('duplicate key'), { code: '23505' })
+  const pgError = Object.assign(new Error('duplicate key'), { code: '23505' })
+  const uniqueViolation = new DrizzleQueryError('insert into "dogs"', [], pgError)
   const { database } = createDatabaseFake({ insertError: uniqueViolation })
   const repository = createDrizzleDogRepository(database)
 

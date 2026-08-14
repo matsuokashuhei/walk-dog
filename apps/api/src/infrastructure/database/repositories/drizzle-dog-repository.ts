@@ -101,5 +101,9 @@ function toDog(dog: DogRow, revision: GoalRevisionRow): Dog {
 }
 
 function isUniqueViolation(error: unknown): boolean {
-  return error instanceof Error && 'code' in error && error.code === '23505'
+  return hasPostgresCode(error, '23505') || (error instanceof Error && hasPostgresCode(error.cause, '23505'))
+}
+
+function hasPostgresCode(error: unknown, code: string): boolean {
+  return error instanceof Error && 'code' in error && error.code === code
 }

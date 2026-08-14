@@ -36,6 +36,8 @@ function AppStack() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!needsDisplayName}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="dogs/new" />
+        <Stack.Screen name="dogs/[dogId]" />
       </Stack.Protected>
       <Stack.Protected guard={needsDisplayName}>
         <Stack.Screen name="owner/display-name" />

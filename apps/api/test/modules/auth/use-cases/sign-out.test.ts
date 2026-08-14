@@ -33,6 +33,9 @@ function createFakes(handlers: {
       }
       return handlers.resolveByCognitoSubject(cognitoSubject)
     },
+    async updateDisplayName() {
+      throw new Error('unexpected updateDisplayName')
+    },
   }
   const activeWalkCommands: ActiveWalkCommands = {
     async failIfPresent(input) {

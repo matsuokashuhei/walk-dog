@@ -28,17 +28,24 @@ function createDatabaseFake(options: {
   insertResult?: typeof insertedRow[]
   selectResult?: typeof insertedRow[]
   insertError?: Error
+  updateResult?: typeof insertedRow[]
+  updateError?: Error
 }): {
   database: DbInstance
   calls: string[]
   insertValues: unknown[]
   onConflictConfigs: unknown[]
+  updateSets: unknown[]
+  updateTargets: unknown[]
 } {
   const calls: string[] = []
   const insertValues: unknown[] = []
   const onConflictConfigs: unknown[] = []
+  const updateSets: unknown[] = []
+  const updateTargets: unknown[] = []
   const insertResult = options.insertResult ?? [insertedRow]
   const selectResult = options.selectResult ?? []
+  const updateResult = options.updateResult ?? []
 
   const returning = async () => {
     if (options.insertError) {
@@ -65,16 +72,38 @@ function createDatabaseFake(options: {
   const from = () => ({ where })
   const select = () => ({ from })
 
+  const updateWhere = (target: unknown) => {
+    updateTargets.push(target)
+    return {
+      returning: async () => {
+        if (options.updateError) {
+          throw options.updateError
+        }
+        return updateResult
+      },
+    }
+  }
+  const set = (value: unknown) => {
+    updateSets.push(value)
+    return { where: updateWhere }
+  }
+  const update = () => {
+    calls.push('update')
+    return { set }
+  }
+
   const transaction = async (callback: (trx: { insert: typeof insert; select: typeof select }) => Promise<unknown>) => {
     calls.push('transaction')
     return callback({ insert, select })
   }
 
   return {
-    database: { transaction } as unknown as DbInstance,
+    database: { transaction, update } as unknown as DbInstance,
     calls,
     insertValues,
     onConflictConfigs,
+    updateSets,
+    updateTargets,
   }
 }
 
@@ -125,6 +154,39 @@ test('resolveByCognitoSubject propagates unexpected query errors by identity', a
 
   await assert.rejects(
     () => repository.resolveByCognitoSubject('subject-1'),
+    (error: unknown) => error === unexpected,
+  )
+})
+
+test('updateDisplayName returns the updated owner', async () => {
+  const updatedRow = {
+    ...insertedRow,
+    displayName: 'Akira',
+    updatedAt: new Date('2026-08-14T06:40:11.000Z'),
+  }
+  const { database, updateSets, updateTargets } = createDatabaseFake({
+    updateResult: [updatedRow],
+  })
+  const repository = createDrizzleOwnerRepository(database)
+
+  assert.deepEqual(await repository.updateDisplayName('subject-1', 'Akira'), {
+    ownerId: updatedRow.ownerId,
+    displayName: 'Akira',
+    avatarUrl: null,
+    createdAt,
+    updatedAt: updatedRow.updatedAt,
+  })
+  assert.deepEqual(updateSets, [{ displayName: 'Akira' }])
+  assert.equal(updateTargets.length, 1)
+})
+
+test('updateDisplayName propagates unexpected query errors by identity', async () => {
+  const unexpected = new Error('update failed')
+  const { database } = createDatabaseFake({ updateError: unexpected })
+  const repository = createDrizzleOwnerRepository(database)
+
+  await assert.rejects(
+    () => repository.updateDisplayName('subject-1', 'Akira'),
     (error: unknown) => error === unexpected,
   )
 })

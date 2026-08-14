@@ -26,6 +26,8 @@
   - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review-request.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective-skill-compliance-review-request.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective-skill-compliance-review.md`
 
 ## Messages
 
@@ -143,20 +145,21 @@ ok
 - `2026-08-14 17:05 JST`: Round 2 APPROVED (Critical 0, Important 0) for `8bc6f67`..`1dbb32b`. Pre-publish sync before push and PR.
 - `2026-08-14 17:07 JST`: Opened PR https://github.com/matsuokashuhei/walk-dog/pull/53.
 - `2026-08-14 17:13 JST`: Merged PR #53 into `main` (`07314a367c30df36044db9561379f8a2b6f854d4`). Wrote retrospective.md.
-- `2026-08-14 17:16 JST`: User approved skill updates. Applied five skill edits. Follow-up branch `agent/r1-step1-owner-display-name-retrospective-20260814171500`.
+- `2026-08-14 17:16 JST`: User approved skill updates. Applied skill edits. Follow-up branch `agent/r1-step1-owner-display-name-retrospective-20260814171500`.
+- `2026-08-14 17:20 JST`: Skill-compliance round 1 CHANGES_REQUESTED (Important: unconditional HTML `open`). Fixed in `8c49d10`. Round 2 APPROVED.
 
 ## Sync
 
 - status: synced
-- trigger: approved skill edits after session merge
-- artifacts updated: transcript.md, specification-review.md, retrospective.md, five `.agents/skills/` files
-- artifacts already current: design.md, plan.md, owner-display-name-spec-mockups.html, owner-display-name-api-spec.html, e2e-report.md, screenshots, skill-compliance-review.md, skill-compliance-review-request.md
+- trigger: pre-publish follow-up PR after skill-compliance APPROVED
+- artifacts updated: transcript.md, retrospective.md, retrospective-skill-compliance-review.md, retrospective-skill-compliance-review-request.md
+- artifacts already current: specification-review.md, design.md, plan.md
 - cross-artifact matrix:
-  - task phase: retrospective implemented; follow-up PR in progress
-  - test totals: API `npm test` 186 pass; `npm run check` pass; mobile `npx tsc --noEmit` pass
-  - review state: skill-compliance APPROVED (round 2) on #53; follow-up skill-compliance pending
-  - commit state: merge commit `07314a367c30df36044db9561379f8a2b6f854d4` on `main`; follow-up branch from that SHA
-  - publication state: session PR merged; follow-up not published
+  - task phase: retrospective implemented; follow-up PR ready
+  - test totals: no production code change; skill-library links unchanged
+  - review state: follow-up skill-compliance APPROVED (round 2), Critical 0, Important 0
+  - commit state: HEAD `8c49d10` on `agent/r1-step1-owner-display-name-retrospective-20260814171500`
+  - publication state: follow-up not published
   - next permitted action: open-follow-up-pr
 - baseline conflicts: none
 - next permitted action: open-follow-up-pr

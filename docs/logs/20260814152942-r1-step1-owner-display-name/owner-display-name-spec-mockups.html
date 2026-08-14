@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Owner display name — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card h3 {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f7f4ef;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+    }
+    .screen { padding: 8px 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h4 { margin: 0; font-size: 1.35rem; }
+    .help { color: var(--muted); font-size: 0.9rem; margin: 0; }
+    .field {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      color: var(--ink);
+    }
+    .field.placeholder { color: #b0a89c; }
+    .field.invalid { border-color: var(--danger); }
+    .spacer { flex: 1; }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.disabled { background: var(--soft); color: var(--muted); }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .error {
+      color: var(--danger);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      background: #f8ece8;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .busy {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+    .caption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Owner 表示名登録 画面モック</h1>
+    <p class="lede">
+      OTP 成功後およびセッション復元時に displayName が未設定なら、この画面で表示名を登録する。
+      登録成功後は認証済みホームへ進む。Settings の Sign Out はこの画面から到達できる。
+    </p>
+
+    <div class="note">
+      Route: <code>/owner/display-name</code> → 成功時 認証済みホーム。
+      API: <code>GET /v1/owner</code>（復元時照合）、<code>PATCH /v1/owner</code>（<code>{ displayName }</code>）。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>DisplayNameScreen</code> — 登録画面の枠</li>
+        <li><code>Title</code> — 「表示名を登録」</li>
+        <li><code>HelpText</code> — 1〜100文字の案内</li>
+        <li><code>DisplayNameField</code> — 表示名入力</li>
+        <li><code>SubmitButton</code> — 登録する</li>
+        <li><code>ValidationMessage</code> — 入力エラー</li>
+        <li><code>RetryableError</code> — API 再試行可能な失敗</li>
+        <li><code>SubmittingStatus</code> — 送信中</li>
+        <li><code>SettingsLink</code> — Settings（Sign Out）へ</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onChangeDisplayName</code> — 入力値を更新する</li>
+        <li><code>onSubmit</code> — 前後空白を除去して <code>PATCH /v1/owner</code> を送る</li>
+        <li><code>onRetry</code> — 同じ表示名で再送信する</li>
+        <li><code>onOpenSettings</code> — <code>/settings</code> へ進む</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>NAME-01 · Idle</h3>
+        <div class="phone" aria-label="Display name idle">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">owner</div>
+            <h4>表示名を登録</h4>
+            <p class="help">散歩の記録に使う名前です。1〜100文字。</p>
+            <div class="field placeholder">表示名</div>
+            <div class="spacer"></div>
+            <div class="btn disabled">登録する</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">/owner/display-name · 未入力では送信しない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>NAME-02 · Ready</h3>
+        <div class="phone" aria-label="Display name ready">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">owner</div>
+            <h4>表示名を登録</h4>
+            <p class="help">散歩の記録に使う名前です。1〜100文字。</p>
+            <div class="field">Akira</div>
+            <div class="spacer"></div>
+            <div class="btn primary">登録する</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">前後空白除去後 1〜100 文字で送信できる</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>NAME-03 · Submitting</h3>
+        <div class="phone" aria-label="Display name submitting">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">owner</div>
+            <h4>表示名を登録</h4>
+            <p class="help">散歩の記録に使う名前です。1〜100文字。</p>
+            <div class="field">Akira</div>
+            <div class="spacer"></div>
+            <div class="busy">登録しています…</div>
+            <div class="btn primary" style="opacity:0.45">登録する</div>
+            <div class="btn ghost" style="opacity:0.45">Settings</div>
+          </div>
+        </div>
+        <p class="caption">API 呼び出し中 · 再操作を受け付けない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>NAME-04 · Invalid input</h3>
+        <div class="phone" aria-label="Display name invalid">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">owner</div>
+            <h4>表示名を登録</h4>
+            <p class="help">散歩の記録に使う名前です。1〜100文字。</p>
+            <div class="field invalid"></div>
+            <div class="error">表示名は1〜100文字で入力してください。</div>
+            <div class="spacer"></div>
+            <div class="btn disabled">登録する</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">400 · 入力を保持し、同じ画面で直す</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>NAME-05 · Retryable error</h3>
+        <div class="phone" aria-label="Display name retryable error">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">owner</div>
+            <h4>表示名を登録</h4>
+            <p class="help">散歩の記録に使う名前です。1〜100文字。</p>
+            <div class="field">Akira</div>
+            <div class="error">登録に失敗しました。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">登録する</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">入力を保持し、同じ送信で再試行する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>HOME-01 · After registration</h3>
+        <div class="phone" aria-label="Home after display name">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">home</div>
+            <h4>walk / dog</h4>
+            <p class="help">Signed in. Dogs List arrives in Step 2.</p>
+            <div class="spacer"></div>
+            <div class="btn primary">Settings</div>
+          </div>
+        </div>
+        <p class="caption">登録成功後の認証済みホーム</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

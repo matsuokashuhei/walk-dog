@@ -1,0 +1,19 @@
+name: walk-dog
+version: 1.0.0
+description: APM project for walk-dog
+author: matsuokashuhei
+# Which agent platforms to deploy to.
+# Resolution order: --target flag > this field > auto-detect from filesystem.
+# Accepted values: vscode, agents, copilot, claude, cursor, opencode, codex,
+# gemini, antigravity, windsurf, kiro, agent-skills, all
+targets:
+- codex
+- cursor
+dependencies:
+  apm:
+    - github.com/expo/skills/plugins/expo
+    - github.com/obra/superpowers
+    - herdrdev/herdr/skills/herdr
+  mcp: []
+includes: auto
+scripts: {}

@@ -1,0 +1,41 @@
+{
+  "PostToolUse": [
+    {
+      "matcher": "Skill",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \".codex/hooks/expo/skills/expo-skill-feedback/scripts/skill-event.cjs\" --skill auto --initiator ai --plugin-root \"${CLAUDE_PLUGIN_ROOT}\" --detach --quiet",
+          "timeout": 5
+        }
+      ],
+      "_apm_source": "expo/skills/plugins/expo"
+    }
+  ],
+  "UserPromptExpansion": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \".codex/hooks/expo/skills/expo-skill-feedback/scripts/skill-event.cjs\" --skill auto --initiator user --plugin-root \"${CLAUDE_PLUGIN_ROOT}\" --detach --quiet",
+          "timeout": 5
+        }
+      ],
+      "_apm_source": "expo/skills/plugins/expo"
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "startup|clear|compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\".codex/hooks/superpowers/hooks/run-hook.cmd\" session-start",
+          "shell": "bash",
+          "async": false
+        }
+      ],
+      "_apm_source": "obra/superpowers"
+    }
+  ]
+}

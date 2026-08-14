@@ -43,6 +43,7 @@ test/
 到達可能なuse case result/errorごとにstatus、`code`、`message`、`requestId`、`retryable`を対応付けたoutcome-to-HTTP matrixを定義する。statusが同じでも、到達可能なresult-union memberごとにroute caseを1件置く。
 
 - success statusと完全な公開response
+- missing、malformed、境界値を含む入力不正
 - JSON body を持つ POST/PATCH は次をそれぞれ 1 case にする: 必須フィールド欠如、余剰キー、不正 JSON、trim 後空、最大長超過（min があるときは未満）
 - matrixの各reachable outcomeに対応するHTTP case
 - 各 400/401 は `code`、`message`、`requestId`、`retryable` を assert する

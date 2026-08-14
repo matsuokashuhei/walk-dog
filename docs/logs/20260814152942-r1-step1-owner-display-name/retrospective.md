@@ -57,8 +57,9 @@
 
 | Action | Path | Result |
 | --- | --- | --- |
-| Update | `.agents/skills/confirming-development-specifications/SKILL.md` | API HTML 節構成、保存直後の `open`、Example 可読性と CDN Highlight.js |
+| Update | `.agents/skills/confirming-development-specifications/SKILL.md` | API HTML 節構成、保存直後の `open`、Example 可読性と CDN Highlight.js。`ready` の `open` は HTML を作ったときだけ。 |
 | Update | `.agents/skills/explaining-specifications-and-design/SKILL.md` | WHAT の HTTP API 成果物を同じ HTML 節構成にする |
 | Update | `.agents/skills/recording-ios-e2e-evidence/SKILL.md` | CloudWatch OTP 前の AWS SSO 確認 |
 | Update | `.agents/skills/testing-hono-apis/SKILL.md` | 不正入力クラスと envelope / OpenAPI request schema を完了条件にする |
 | Update | `.agents/skills/documenting-hono-openapi/SKILL.md` | OpenAPI test が request required / minLength / maxLength を assert する |
+| Update | `.agents/skills/run-dev-session/SKILL.md` | 仕様提示を API HTML 節構成と `open` に揃える |

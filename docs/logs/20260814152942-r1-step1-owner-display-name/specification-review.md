@@ -3,7 +3,7 @@
 - status: ready
 - Purpose: R1 Step 1 の Owner 表示名登録を API とモバイルで実装する
 - Active release: R1
-- next permitted action: publish
+- next permitted action: open-follow-up-pr
 
 ## Sources
 

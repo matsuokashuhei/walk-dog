@@ -9,6 +9,7 @@
 - Approved foundations affecting this purpose: iOS先行; OpenAPI契約; R1焦点; 未完了R0は縦切り直前に実装; アカウント縦切りは PostgreSQL owners・表示名、Cognito API トークン検証、モバイル認証状態、モバイル API クライアントを必須とする
 - Worktrees:
   - `.worktrees/agent/r1-step1-owner-display-name-20260814152942`
+  - `.worktrees/agent/r1-step1-owner-display-name-retrospective-20260814171500`
 - Artifact List:
   - `docs/logs/20260814152942-r1-step1-owner-display-name/transcript.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/specification-review.md`
@@ -24,6 +25,9 @@
   - `docs/logs/20260814152942-r1-step1-owner-display-name/screenshots/ios-display-name-home.png`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review-request.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/skill-compliance-review.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective-skill-compliance-review-request.md`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/retrospective-skill-compliance-review.md`
 
 ## Messages
 
@@ -107,7 +111,23 @@ OTP を取得して Verify を完了し、NAME-01 idle、NAME-04 invalid、HOME-
 
 Push と Pull Request 作成を選択。Publish 前にセッション成果物を同期し、スキル準拠レビューを依頼する。
 
-Round 1 は CHANGES_REQUESTED（Critical 0、Important 2）。PATCH invalid classes と OpenAPI PATCH schema を `1dbb32b` でロックした。Round 2 は APPROVED（Critical 0、Important 0）。
+Round 1 は CHANGES_REQUESTED（Critical 0、Important 2）。PATCH invalid classes と OpenAPI PATCH schema を `1dbb32b` でロックした。Round 2 は APPROVED（Critical 0、Important 0）。PR #53 を作成した。
+
+### User
+
+LGTM! Merge the PR
+
+### Assistant
+
+PR #53 を merge commit `07314a367c30df36044db9561379f8a2b6f854d4` で `main` へマージした。振り返りを `retrospective.md` に書き、スキル更新の承認を待つ。
+
+### User
+
+ok
+
+### Assistant
+
+承認されたスキル更新を 5 ファイルへ適用し、振り返りを `implemented` にした。フォローアップ PR を `origin/main` から開く。
 
 ## Session events
 
@@ -123,19 +143,23 @@ Round 1 は CHANGES_REQUESTED（Critical 0、Important 2）。PATCH invalid clas
 - `2026-08-14 16:50 JST`: Pre-publish sync. Skill-compliance review requested for `8bc6f67`..`a28651c`.
 - `2026-08-14 16:55 JST`: Round 1 CHANGES_REQUESTED (Critical 0, Important 2). Locked PATCH invalid classes and OpenAPI PATCH schema in `1dbb32b`.
 - `2026-08-14 17:05 JST`: Round 2 APPROVED (Critical 0, Important 0) for `8bc6f67`..`1dbb32b`. Pre-publish sync before push and PR.
+- `2026-08-14 17:07 JST`: Opened PR https://github.com/matsuokashuhei/walk-dog/pull/53.
+- `2026-08-14 17:13 JST`: Merged PR #53 into `main` (`07314a367c30df36044db9561379f8a2b6f854d4`). Wrote retrospective.md.
+- `2026-08-14 17:16 JST`: User approved skill updates. Applied skill edits. Follow-up branch `agent/r1-step1-owner-display-name-retrospective-20260814171500`.
+- `2026-08-14 17:20 JST`: Skill-compliance round 1 CHANGES_REQUESTED (Important: unconditional HTML `open`). Fixed in `8c49d10`. Round 2 APPROVED.
 
 ## Sync
 
 - status: synced
-- trigger: pre-publish after skill-compliance APPROVED
-- artifacts updated: transcript.md, specification-review.md, skill-compliance-review.md, skill-compliance-review-request.md
-- artifacts already current: design.md, plan.md, owner-display-name-spec-mockups.html, owner-display-name-api-spec.html, e2e-report.md, screenshots
+- trigger: pre-publish follow-up PR after skill-compliance APPROVED
+- artifacts updated: transcript.md, retrospective.md, retrospective-skill-compliance-review.md, retrospective-skill-compliance-review-request.md
+- artifacts already current: specification-review.md, design.md, plan.md
 - cross-artifact matrix:
-  - task phase: implementation complete, skill-compliance APPROVED, awaiting PR
-  - test totals: API `npm test` 186 pass; `npm run check` pass; mobile `npx tsc --noEmit` pass
-  - review state: skill-compliance APPROVED (round 2), Critical 0, Important 0
-  - commit state: reviewed HEAD `1dbb32b`, 13 commits ahead of `origin/main` (`8bc6f67`)
-  - publication state: not published
-  - next permitted action: publish
+  - task phase: retrospective implemented; follow-up PR ready
+  - test totals: no production code change; skill-library links unchanged
+  - review state: follow-up skill-compliance APPROVED (round 2), Critical 0, Important 0
+  - commit state: HEAD `8c49d10` on `agent/r1-step1-owner-display-name-retrospective-20260814171500`
+  - publication state: follow-up not published
+  - next permitted action: open-follow-up-pr
 - baseline conflicts: none
-- next permitted action: publish
+- next permitted action: open-follow-up-pr

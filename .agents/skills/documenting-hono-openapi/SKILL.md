@@ -57,7 +57,7 @@ schema shapeを変更するときは`$zod:defining-zod-schemas`、validation res
 4. endpoint routeでoperationを定義し、同じschemaをruntime validationへ接続する。
 5. `src/app.ts`のdocument metadataとsecurity schemeを維持する。
 6. handlerのbody/statusとdocumentのresponseを対応付ける。
-7. `/openapi.json`のpath、method、request、response、component、securityをassertする。
+7. `/openapi.json`のpath、method、request、response、component、securityをassertする。JSON body がある operation は required と、Zod が課す minLength / maxLength / non-nullable を assert する。
 
 ## 完了条件
 
@@ -66,4 +66,4 @@ schema shapeを変更するときは`$zod:defining-zod-schemas`、validation res
 - successと実装が返す全error statusがresponse schemaを持つ。
 - protected routeが`BearerAuth`を持ち、公開routeが公開状態で表現される。
 - schema component名と`$ref`が安定している。
-- `$testing-hono-apis`のOpenAPI契約test、型検査、lintが成功する。
+- `$testing-hono-apis`のOpenAPI契約testが path/method に加え request required / minLength / maxLength / non-nullable を通し、型検査、lintが成功する。

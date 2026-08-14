@@ -44,8 +44,9 @@ test/
 
 - success statusと完全な公開response
 - missing、malformed、境界値を含む入力不正
+- JSON body を持つ POST/PATCH は次をそれぞれ 1 case にする: 必須フィールド欠如、余剰キー、不正 JSON、trim 後空、最大長超過（min があるときは未満）
 - matrixの各reachable outcomeに対応するHTTP case
-- `code`、`message`、`requestId`、`retryable`
+- 各 400/401 は `code`、`message`、`requestId`、`retryable` を assert する
 - dependencyが受け取る検証済みinput
 - invalid requestでuse caseが呼ばれないこと
 
@@ -77,7 +78,7 @@ SDKまたはquery builderの巨大な部分mockを作らず、module interface�
 
 - `<feature>-routes.test.ts`: `register…Routes`が各endpointを一度登録することをOpenAPI path/methodで確認する。
 - `app.test.ts`: 共通middleware、health、not-found、global error、module mountを確認する。
-- OpenAPI test: 生成されたpath-to-method mapと期待集合の完全一致、version、operation、request/responseのrequiredとnullable、component、security schemeを確認する。
+- OpenAPI test: 生成されたpath-to-method mapと期待集合の完全一致、version、operation、request/responseのrequiredとnullable、JSON body の required と Zod が課す minLength/maxLength、component、security schemeを確認する。
 - `composition.test.ts`: factory順序、同一client/DB instanceの伝播、use case/route注入、import時の副作用を確認する。
 - entry境界: import-only完了とdirect entry起動を別subprocessの観測結果で証明する。
 - `server.test.ts`: listener→Pool→外部client→observabilityのclose順序、各一回、冪等shutdown、signal、および各failure位置でも後続closeが実行されることを確認する。
@@ -118,8 +119,8 @@ walk-dog APIのPR2 baselineは45件である。移行前後のmethod、path、st
 ## 完了条件
 
 - test配置がmodulesとinfrastructureの責務へ対応する。
-- route testがreachable outcome-to-HTTP matrixと各outcomeのHTTP caseを持ち、use case testが処理順序、infrastructure testが技術変換とcleanup時のhandle closeを検証する。
-- aggregate、OpenAPI path-to-method完全一致、required/nullable、composition、subprocess entry、server failure-positionの重複しないtestがある。
+- route testがreachable outcome-to-HTTP matrixと各outcomeのHTTP caseを持ち、POST/PATCH の欠如・余剰キー・不正 JSON・空・境界長と 400/401 envelope を含み、use case testが処理順序、infrastructure testが技術変換とcleanup時のhandle closeを検証する。
+- aggregate、OpenAPI path-to-method完全一致、request required/minLength/maxLength/nullable、composition、subprocess entry、server failure-positionの重複しないtestがある。
 - nested testがrecursive discoveryで実行される。
 - 挙動維持migrationで既存baseline test名とassertionが残る。
 - 対象test、全test、型検査、lintが成功する。

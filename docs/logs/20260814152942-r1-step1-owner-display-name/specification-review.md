@@ -62,9 +62,9 @@
 - Specification preconditions: owners schema、Cognito トークン検証、モバイル認証状態、モバイル API クライアントは導入済み。永続送信キュー、位置情報、S3 はこのステップの前提ではない。
 - Implementation evidence: `display_name` 列と認証応答の `displayName` がある。更新 repository、Owner route、登録画面は未実装。
 - Plan table: アカウント縦切りの PostgreSQL schema / migration は owners・表示名が必須で、列は導入済み。本セッションは更新 API と登録画面を追加する。
-- Product contract presentation: `owner-display-name-spec-mockups.html` に画面モック、コンポーネント一覧、イベント一覧を保存した。API のリクエスト、レスポンス、振る舞いはこのレビューとユーザー提示に含める。
+- Product contract presentation: `owner-display-name-spec-mockups.html` に画面モック、コンポーネント一覧、イベント一覧を保存した。`owner-display-name-api-spec.html` に `GET /v1/owner` と `PATCH /v1/owner` のリクエスト、レスポンス、振る舞いを保存した。
 
 ## Product contract presentation
 
 - Screen: presented in `owner-display-name-spec-mockups.html` (HTML mockups, components, events)
-- HTTP API: `GET /v1/owner` and `PATCH /v1/owner` request, response, and behavior recorded above
+- HTTP API: presented in `owner-display-name-api-spec.html` (`GET /v1/owner`, `PATCH /v1/owner` request, response, and behavior)

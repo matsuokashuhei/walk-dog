@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Owner display name — API specification</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --code: #1f2430;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.5;
+    }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 24px; max-width: 68ch; }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 36px;
+    }
+    nav a { color: var(--accent); }
+    nav ul { margin: 8px 0 0; padding-left: 1.2em; }
+    article.endpoint {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 24px 28px;
+      margin: 0 0 28px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    h2 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 1.2rem;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .method {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      vertical-align: 2px;
+      margin-right: 8px;
+    }
+    .summary { color: var(--muted); margin: 0 0 20px; }
+    h3 {
+      font-size: 1.05rem;
+      margin: 22px 0 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+    h4 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+    }
+    code {
+      background: var(--soft);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code);
+      color: #e8e6e1;
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.45;
+      margin: 8px 0 14px;
+    }
+    .status-list { list-style: none; padding: 0; margin: 0; }
+    .status-list > li { margin: 0 0 16px; }
+    .status-label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .empty { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.88rem; }
+    ul.field-list {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.9rem;
+      margin: 0;
+      padding-left: 1.2em;
+    }
+    ul.field-list li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Owner 表示名登録 API</h1>
+    <p class="lede">
+      認証済み Owner の現在値を取得し、表示名を登録する。
+      Base URL は <code>/v1</code>。日時は ISO 8601 UTC、JSON は camelCase。
+    </p>
+    <div class="note">
+      認証は <code>Authorization: Bearer &lt;access_token&gt;</code>。
+      <code>displayName</code> は前後空白除去後 1〜100 文字。認証直後は <code>null</code>。
+    </div>
+    <nav>
+      エンドポイント
+      <ul>
+        <li><a href="#get-owner">GET /v1/owner</a></li>
+        <li><a href="#patch-owner">PATCH /v1/owner</a></li>
+      </ul>
+    </nav>
+
+    <article class="endpoint" id="get-owner">
+      <h2><span class="method">GET</span>/v1/owner</h2>
+      <p class="summary">Access Token に対応する Owner を返す。セッション復元時の displayName 照合に使う。</p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Header</h4>
+      <ul class="field-list">
+        <li><code>accept</code> — <code>application/json</code> を要求する。</li>
+        <li><code>authorization</code> — Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</li>
+        <li><code>x-request-id</code> — 相関 ID。未指定時は API が生成する。</li>
+      </ul>
+
+      <h4>Path</h4>
+      <p class="empty">なし</p>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <p class="empty">なし</p>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>現在の Owner</td><td>—</td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>200 は Owner リソース。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>ownerId</code></td><td>string (UUID)</td><td>Owner を一意に識別する</td></tr>
+          <tr>
+            <td><code>displayName</code></td>
+            <td>string | null</td>
+            <td>認証直後は <code>null</code>。設定後は前後空白除去済みの 1〜100 文字</td>
+          </tr>
+          <tr><td><code>avatarUrl</code></td><td>string | null</td><td>Avatar の参照</td></tr>
+          <tr><td><code>createdAt</code></td><td>string (date-time)</td><td>作成日時（ISO 8601 UTC）</td></tr>
+          <tr><td><code>updatedAt</code></td><td>string (date-time)</td><td>更新日時（ISO 8601 UTC）</td></tr>
+        </tbody>
+      </table>
+      <p>401 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>code</code></td><td>string</td><td><code>UNAUTHENTICATED</code> または <code>INTERNAL_ERROR</code></td></tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code>curl -X GET "$API_BASE_URL/v1/owner" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 200（displayName 未設定）</div>
+          <pre><code>{
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "displayName": null,
+  "avatarUrl": null,
+  "createdAt": "2026-08-14T06:12:03.000Z",
+  "updatedAt": "2026-08-14T06:12:03.000Z"
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 200（displayName 設定済み）</div>
+          <pre><code>{
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "displayName": "Akira",
+  "avatarUrl": null,
+  "createdAt": "2026-08-14T06:12:03.000Z",
+  "updatedAt": "2026-08-14T06:40:11.000Z"
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 401</div>
+          <pre><code>{
+  "code": "UNAUTHENTICATED",
+  "message": "Authentication is required.",
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 500</div>
+          <pre><code>{
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+
+    <article class="endpoint" id="patch-owner">
+      <h2><span class="method">PATCH</span>/v1/owner</h2>
+      <p class="summary">表示名を登録し、更新後の Owner を返す。登録画面の送信がこのエンドポイントを使う。</p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>content-type</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+          <tr>
+            <td><code>displayName</code></td>
+            <td>body</td>
+            <td>required</td>
+            <td>前後空白除去後、1〜100 文字の表示名。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Header</h4>
+      <ul class="field-list">
+        <li><code>accept</code> — <code>application/json</code> を要求する。</li>
+        <li><code>authorization</code> — Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</li>
+        <li><code>content-type</code> — <code>application/json</code>。</li>
+        <li><code>x-request-id</code> — 相関 ID。未指定時は API が生成する。</li>
+      </ul>
+
+      <h4>Path</h4>
+      <p class="empty">なし</p>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>displayName</code></td>
+            <td>string</td>
+            <td>required</td>
+            <td>前後空白を除去したあと、空文字ではなく 1〜100 文字。</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code>{
+  "displayName": "Akira"
+}</code></pre>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>更新後の Owner</td><td>—</td></tr>
+          <tr><td><code>400</code></td><td>入力不正（欠如、空、空白のみ、101 文字以上）</td><td><code>false</code></td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>200 は GET と同じ Owner リソース。設定後の <code>displayName</code> は保存した値。</p>
+      <p>400 / 401 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>code</code></td>
+            <td>string</td>
+            <td><code>INVALID_INPUT</code>、<code>UNAUTHENTICATED</code>、または <code>INTERNAL_ERROR</code></td>
+          </tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code>curl -X PATCH "$API_BASE_URL/v1/owner" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Akira"}'</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 200</div>
+          <pre><code>{
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "displayName": "Akira",
+  "avatarUrl": null,
+  "createdAt": "2026-08-14T06:12:03.000Z",
+  "updatedAt": "2026-08-14T06:40:11.000Z"
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 400</div>
+          <pre><code>{
+  "code": "INVALID_INPUT",
+  "message": "入力内容を確認してください。",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 401</div>
+          <pre><code>{
+  "code": "UNAUTHENTICATED",
+  "message": "Authentication is required.",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 500</div>
+          <pre><code>{
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

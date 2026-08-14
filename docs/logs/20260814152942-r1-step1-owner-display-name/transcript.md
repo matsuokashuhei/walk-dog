@@ -13,6 +13,7 @@
   - `docs/logs/20260814152942-r1-step1-owner-display-name/transcript.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/specification-review.md`
   - `docs/logs/20260814152942-r1-step1-owner-display-name/owner-display-name-spec-mockups.html`
+  - `docs/logs/20260814152942-r1-step1-owner-display-name/owner-display-name-api-spec.html`
 
 ## Messages
 
@@ -38,23 +39,41 @@ ok
 
 ### Assistant
 
-目的承認後、セッション基盤（ワークツリー、トランスクリプト）を作成し、仕様確認を開始した。
+目的承認後、セッション基盤（ワークツリー、トランスクリプト）を作成し、仕様確認を開始した。画面モックと API 契約を提示し、計画レベルの確認を待った。
+
+### User
+
+docs/logs/20260814152942-r1-step1-owner-display-name/owner-display-name-spec-mockups.html を`open`で開いてください
+
+### Assistant
+
+セッションワークツリー上の画面モックをデフォルトブラウザで開いた。
+
+### User
+
+APIの仕様書もHTML形式で作成してください。指定フォーマット（エンドポイント、Request parameters、Response、Example cURL / JSON）で作成する。
+
+### Assistant
+
+`owner-display-name-api-spec.html` に GET /v1/owner と PATCH /v1/owner の HTML 仕様を作成した。
 
 ## Session events
 
 - `2026-08-14 15:29 JST`: Created worktree `.worktrees/agent/r1-step1-owner-display-name-20260814152942` from `origin/main` on branch `agent/r1-step1-owner-display-name-20260814152942`. Recorded baseline and session artifacts.
 - `2026-08-14 15:31 JST`: Wrote specification-review.md (status: awaiting-confirmation) and owner-display-name-spec-mockups.html. Presented screen and API contracts.
+- `2026-08-14 15:43 JST`: Opened owner-display-name-spec-mockups.html in the default browser.
+- `2026-08-14 15:55 JST`: Wrote owner-display-name-api-spec.html for GET /v1/owner and PATCH /v1/owner.
 
 ## Sync
 
 - status: synced
-- trigger: specification-review and screen mockups created
-- artifacts updated: transcript, specification-review.md, owner-display-name-spec-mockups.html
-- artifacts already current: none
+- trigger: API specification HTML created
+- artifacts updated: transcript, specification-review.md, owner-display-name-api-spec.html
+- artifacts already current: owner-display-name-spec-mockups.html
 - cross-artifact matrix:
   - task phase: specification confirmation
   - review state: awaiting-confirmation
-  - commit state: session start committed; specification-review and mockups pending commit
+  - commit state: specification-review and mockups committed; API spec HTML pending commit
   - publication state: not published
   - next permitted action: await plan-level confirmation
 - baseline conflicts: none

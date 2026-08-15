@@ -40,7 +40,7 @@ R1は次の縦切り順で進める。
 | R1 縦切り | PostgreSQL schema / migration | Cognito（API側トークン検証） | モバイル認証状態 | モバイル API クライアント | 永続送信キュー | iOS 位置情報権限 | S3/SQS/DynamoDB 接続 | Compose（ElasticMQ / DynamoDB Local / S3互換） | worker骨格 + ヘルス | Docker / ECR |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **1. アカウント**（Sign Up / Sign In / OTP / Owner 表示名 / Sign Out） | 必須（owners・表示名） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
-| **2. Dog**（一覧・登録・選択、登録時 Daily 30分 Goal Revision） | 必須（Dog / Goal Revision） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
+| **2. Dog**（一覧・登録・プロフィール Detail、登録時 Daily 30分 Goal Revision） | 必須（Dog / Goal Revision） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
 | **3. Active Walk**（Ready → Starting → Recording → Completed / Failed を API と同期） | 必須（Walk / Participant） | 必須 | 必須 | 必須 | — | 必須（foreground / background） | — | — | — | 配布・VPS反映 |
 | **4. TrackPoint**（10秒ごと連番送信 → SQS → worker → DynamoDB） | — | 必須 | 必須 | 必須 | 必須 | 必須（取得元） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
 | **5. Finish**（受理済み連番の処理確定後に Completed） | — | 必須 | 必須 | 必須 | 必須（未送信の吐き出し） | 必須（記録継続） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
@@ -68,7 +68,8 @@ R1は次の縦切り順で進める。
 - Owner表示名は認証直後は未設定でよい。未設定の認証済み Owner は `/owner/display-name` で登録し、成功後に認証済みホームへ進む。この画面から Settings の Sign Out へ進める。
 - Sign Outは、Active Walkがある場合に確認ダイアログを表示し、承諾後にActive WalkをFailedにしてからCognito sessionを無効化する。Active Walkがない場合は確認なしでSign Outする。
 - アカウント縦切りの Settings（`/settings`）は Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
-- Dog一覧、Dog登録、Dog選択を実装し、Dog登録時にDaily 30分のGoal Revisionを作成する。
+- 認証済みホームは Dogs List を表示する。Empty と追加操作から `/dogs/new` で Name と Gender を登録し、Birthday は任意とする。登録時に Daily 30分の Goal Revision を作成する。一覧の行から `/dogs/:dogId` で名前、Gender、Birthday、currentGoal を表示する。
+- Walk Ready は同じ Owner の Dog を1頭以上選択して開始する。
 - Ready、Starting、Recording、Completed、Failedを、APIのActive Walkと同期して表示する。
 - 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。
 - Finishは受理済み連番までのTrackPoint処理が確定した後にCompletedへ遷移する。
@@ -96,6 +97,9 @@ R1は次の縦切り順で進める。
 - `GET /v1/owner` はAccess Tokenで認証し、現在のOwnerを返す。`displayName` は未設定時 `null`、設定後は保存した値。
 - `PATCH /v1/owner` はAccess Tokenで認証し、`displayName` を受けてOwnerを返す。`displayName` は前後空白除去後 1〜100 文字。
 - `POST /v1/auth/sign-out` はAccess Tokenで認証し、成功時に204を返す。Active Walkがある場合はFailedにしてからsessionを無効化する。
+- `GET /v1/dogs` はAccess Tokenで認証し、そのOwnerが管理するDogと各DogのcurrentGoalを返す。0件は空配列。
+- `POST /v1/dogs` はAccess Tokenで認証し、`name` と `gender` を必須、`birthday` を任意として受け、DogとDaily 30分のGoal Revisionを返す。`name` は同一Owner内で一意、前後空白除去後 1〜100 文字。`gender` は `male` / `female` / `unknown`。`birthday` 省略時の精度は `unknown`。同一OwnerのName重複は 409 `DOG_NAME_DUPLICATE`。
+- `GET /v1/dogs/:dogId` はAccess Tokenで認証し、そのOwnerが管理するDogとcurrentGoalを返す。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
 - `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。
 - `eventId` はEventの冪等キー、`sequence` はWalk内のTrackPoint送信順序を表す。
 - PostgreSQLはOwner、Dog、Goal Revision、Walk、Participant、Event、Preferenceを扱い、DynamoDBはTrackPointを扱う。

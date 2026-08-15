@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dog list and register — API specification</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --code-bg: #f7f4ef;
+      --code-ink: #1c1a16;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.5;
+    }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 24px; max-width: 68ch; }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 36px;
+    }
+    nav a { color: var(--accent); }
+    nav ul { margin: 8px 0 0; padding-left: 1.2em; }
+    article.endpoint {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 24px 28px;
+      margin: 0 0 28px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    h2 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 1.2rem;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .method {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      vertical-align: 2px;
+      margin-right: 8px;
+    }
+    .summary { color: var(--muted); margin: 0 0 20px; }
+    h3 {
+      font-size: 1.05rem;
+      margin: 22px 0 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+    h4 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+    }
+    code {
+      background: var(--soft);
+      color: var(--ink);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin: 8px 0 14px;
+      white-space: pre;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.85rem;
+    }
+    pre code.hljs {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+    .status-list { list-style: none; padding: 0; margin: 0; }
+    .status-list > li { margin: 0 0 16px; }
+    .status-label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .empty { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.88rem; }
+    ul.field-list {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.9rem;
+      margin: 0;
+      padding-left: 1.2em;
+    }
+    ul.field-list li { margin: 4px 0; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" />
+</head>
+<body>
+  <main>
+    <h1>Dog 一覧・登録 API</h1>
+    <p class="lede">
+      認証済み Owner の Dog を一覧し、Name と Gender で登録する。登録と同時に Daily 30分の Goal Revision を作成する。
+      Base URL は <code>/v1</code>。日時は ISO 8601 UTC、JSON は camelCase。
+    </p>
+    <div class="note">
+      認証は <code>Authorization: Bearer &lt;access_token&gt;</code>。
+      <code>name</code> は同一 Owner 内で一意、前後空白除去後 1〜100 文字。
+      <code>gender</code> は <code>male</code> / <code>female</code> / <code>unknown</code>。
+      <code>birthday</code> 省略時の精度は <code>unknown</code>。
+      <code>avatarUrl</code> は応答に含め、登録時のアップロードはこの API に含めない。
+    </div>
+    <nav>
+      エンドポイント
+      <ul>
+        <li><a href="#get-dogs">GET /v1/dogs</a></li>
+        <li><a href="#post-dogs">POST /v1/dogs</a></li>
+        <li><a href="#get-dog">GET /v1/dogs/:dogId</a></li>
+      </ul>
+    </nav>
+
+    <article class="endpoint" id="get-dogs">
+      <h2><span class="method">GET</span>/v1/dogs</h2>
+      <p class="summary">Access Token に対応する Owner が管理する Dog と、各 Dog の現在 Goal を返す。一覧画面の取得に使う。</p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Header</h4>
+      <ul class="field-list">
+        <li><code>accept</code> — <code>application/json</code> を要求する。</li>
+        <li><code>authorization</code> — Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</li>
+        <li><code>x-request-id</code> — 相関 ID。未指定時は API が生成する。</li>
+      </ul>
+
+      <h4>Path</h4>
+      <p class="empty">なし</p>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <p class="empty">なし</p>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>Dog 一覧。0件は空配列</td><td>—</td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>200 は <code>requestId</code> と <code>dogs</code>。各要素は Dog と <code>currentGoal</code>。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>dogs</code></td><td>array</td><td>Owner が管理する Dog。0件は <code>[]</code></td></tr>
+          <tr><td><code>dogs[].dogId</code></td><td>string (UUID)</td><td>Dog を一意に識別する</td></tr>
+          <tr><td><code>dogs[].ownerId</code></td><td>string (UUID)</td><td>管理 Owner</td></tr>
+          <tr><td><code>dogs[].name</code></td><td>string</td><td>前後空白除去済みの 1〜100 文字</td></tr>
+          <tr><td><code>dogs[].gender</code></td><td>string</td><td><code>male</code> / <code>female</code> / <code>unknown</code></td></tr>
+          <tr><td><code>dogs[].birthday</code></td><td>object</td><td>Partial Birthday。精度と入力した年月日</td></tr>
+          <tr><td><code>dogs[].avatarUrl</code></td><td>string | null</td><td>Avatar の参照。このセッションの登録では <code>null</code></td></tr>
+          <tr><td><code>dogs[].createdAt</code></td><td>string (date-time)</td><td>作成日時（ISO 8601 UTC）</td></tr>
+          <tr><td><code>dogs[].updatedAt</code></td><td>string (date-time)</td><td>更新日時（ISO 8601 UTC）</td></tr>
+          <tr><td><code>dogs[].currentGoal.goalRevisionId</code></td><td>string (UUID)</td><td>現在の Goal Revision</td></tr>
+          <tr><td><code>dogs[].currentGoal.period</code></td><td>string</td><td>登録時は <code>daily</code></td></tr>
+          <tr><td><code>dogs[].currentGoal.minutes</code></td><td>integer</td><td>登録時は <code>30</code></td></tr>
+          <tr><td><code>dogs[].currentGoal.effectiveFrom</code></td><td>string (date-time)</td><td>適用開始日時</td></tr>
+          <tr><td><code>dogs[].currentGoal.effectiveTo</code></td><td>string (date-time) | null</td><td>次 Revision 直前まで。登録直後は <code>null</code></td></tr>
+        </tbody>
+      </table>
+      <p>401 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>code</code></td><td>string</td><td><code>UNAUTHENTICATED</code> または <code>INTERNAL_ERROR</code></td></tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code class="language-bash">curl -X GET "$API_BASE_URL/v1/dogs" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 200（0件）</div>
+          <pre><code class="language-json">{
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "dogs": []
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 200（1件以上）</div>
+          <pre><code class="language-json">{
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "dogs": [
+    {
+      "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+      "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+      "name": "Mugi",
+      "gender": "female",
+      "birthday": { "precision": "day", "year": 2020, "month": 4, "day": 12 },
+      "avatarUrl": null,
+      "createdAt": "2026-08-14T12:40:11.000Z",
+      "updatedAt": "2026-08-14T12:40:11.000Z",
+      "currentGoal": {
+        "goalRevisionId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e71",
+        "period": "daily",
+        "minutes": 30,
+        "effectiveFrom": "2026-08-14T12:40:11.000Z",
+        "effectiveTo": null
+      }
+    }
+  ]
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 401</div>
+          <pre><code class="language-json">{
+  "code": "UNAUTHENTICATED",
+  "message": "Authentication is required.",
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 500</div>
+          <pre><code class="language-json">{
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "requestId": "4c8f2a1e-9b3d-4e10-8c7a-2f91d6b0a111",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+
+    <article class="endpoint" id="post-dogs">
+      <h2><span class="method">POST</span>/v1/dogs</h2>
+      <p class="summary">Dog を登録し、Daily 30分の Goal Revision を作成して返す。登録画面の送信がこのエンドポイントを使う。</p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>content-type</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+          <tr>
+            <td><code>name</code></td>
+            <td>body</td>
+            <td>required</td>
+            <td>前後空白除去後、1〜100 文字。同一 Owner 内で一意。</td>
+          </tr>
+          <tr>
+            <td><code>gender</code></td>
+            <td>body</td>
+            <td>required</td>
+            <td><code>male</code> / <code>female</code> / <code>unknown</code>。</td>
+          </tr>
+          <tr>
+            <td><code>birthday</code></td>
+            <td>body</td>
+            <td>optional</td>
+            <td>Partial Birthday。省略時の精度は <code>unknown</code>。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Header</h4>
+      <ul class="field-list">
+        <li><code>accept</code> — <code>application/json</code> を要求する。</li>
+        <li><code>authorization</code> — Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</li>
+        <li><code>content-type</code> — <code>application/json</code>。</li>
+        <li><code>x-request-id</code> — 相関 ID。未指定時は API が生成する。</li>
+      </ul>
+
+      <h4>Path</h4>
+      <p class="empty">なし</p>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>name</code></td>
+            <td>string</td>
+            <td>required</td>
+            <td>前後空白を除去したあと、空文字ではなく 1〜100 文字。同一 Owner 内で一意。</td>
+          </tr>
+          <tr>
+            <td><code>gender</code></td>
+            <td>string</td>
+            <td>required</td>
+            <td><code>male</code> / <code>female</code> / <code>unknown</code>。</td>
+          </tr>
+          <tr>
+            <td><code>birthday</code></td>
+            <td>object</td>
+            <td>optional</td>
+            <td>
+              <code>precision</code> は <code>unknown</code> / <code>year</code> / <code>month</code> / <code>day</code>。
+              <code>year</code> は year 以上、<code>month</code> は month 以上、<code>day</code> は day で必須。
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code class="language-json">{
+  "name": "Mugi",
+  "gender": "female",
+  "birthday": { "precision": "day", "year": 2020, "month": 4, "day": 12 }
+}</code></pre>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>201</code></td><td>作成した Dog と Daily 30分 Goal Revision</td><td>—</td></tr>
+          <tr><td><code>400</code></td><td>入力不正（欠如、空、空白のみ、101 文字、gender / birthday 不正）</td><td><code>false</code></td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>409</code></td><td>同一 Owner 内の Name 重複</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>201 は Dog と、登録時に作成した Daily 30分の <code>currentGoal</code>。GET の配列要素と同じ形。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>dogId</code></td><td>string (UUID)</td><td>Dog を一意に識別する</td></tr>
+          <tr><td><code>ownerId</code></td><td>string (UUID)</td><td>管理 Owner</td></tr>
+          <tr><td><code>name</code></td><td>string</td><td>前後空白除去済みの 1〜100 文字</td></tr>
+          <tr><td><code>gender</code></td><td>string</td><td><code>male</code> / <code>female</code> / <code>unknown</code></td></tr>
+          <tr><td><code>birthday</code></td><td>object</td><td>Partial Birthday。精度と入力した年月日。省略時は <code>{ "precision": "unknown" }</code></td></tr>
+          <tr><td><code>avatarUrl</code></td><td>string | null</td><td>Avatar の参照。このセッションの登録では <code>null</code></td></tr>
+          <tr><td><code>createdAt</code></td><td>string (date-time)</td><td>作成日時（ISO 8601 UTC）</td></tr>
+          <tr><td><code>updatedAt</code></td><td>string (date-time)</td><td>更新日時（ISO 8601 UTC）</td></tr>
+          <tr><td><code>currentGoal.goalRevisionId</code></td><td>string (UUID)</td><td>登録時に発行する Goal Revision</td></tr>
+          <tr><td><code>currentGoal.period</code></td><td>string</td><td><code>daily</code></td></tr>
+          <tr><td><code>currentGoal.minutes</code></td><td>integer</td><td><code>30</code></td></tr>
+          <tr><td><code>currentGoal.effectiveFrom</code></td><td>string (date-time)</td><td>適用開始日時。登録日時</td></tr>
+          <tr><td><code>currentGoal.effectiveTo</code></td><td>string (date-time) | null</td><td>次 Revision 直前まで。登録直後は <code>null</code></td></tr>
+        </tbody>
+      </table>
+      <p>400 / 401 / 409 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>code</code></td>
+            <td>string</td>
+            <td><code>INVALID_INPUT</code>、<code>UNAUTHENTICATED</code>、<code>DOG_NAME_DUPLICATE</code>、または <code>INTERNAL_ERROR</code></td>
+          </tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由。重複時は「同じ名前のDogが既に存在します。」</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code class="language-bash">curl -X POST "$API_BASE_URL/v1/dogs" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Mugi","gender":"female","birthday":{"precision":"day","year":2020,"month":4,"day":12}}'</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 201</div>
+          <pre><code class="language-json">{
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "name": "Mugi",
+  "gender": "female",
+  "birthday": { "precision": "day", "year": 2020, "month": 4, "day": 12 },
+  "avatarUrl": null,
+  "createdAt": "2026-08-14T12:40:11.000Z",
+  "updatedAt": "2026-08-14T12:40:11.000Z",
+  "currentGoal": {
+    "goalRevisionId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e71",
+    "period": "daily",
+    "minutes": 30,
+    "effectiveFrom": "2026-08-14T12:40:11.000Z",
+    "effectiveTo": null
+  }
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 400</div>
+          <pre><code class="language-json">{
+  "code": "INVALID_INPUT",
+  "message": "入力内容を確認してください。",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 401</div>
+          <pre><code class="language-json">{
+  "code": "UNAUTHENTICATED",
+  "message": "Authentication is required.",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 409</div>
+          <pre><code class="language-json">{
+  "code": "DOG_NAME_DUPLICATE",
+  "message": "同じ名前のDogが既に存在します。",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 500</div>
+          <pre><code class="language-json">{
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "requestId": "7e21b904-0c55-4a18-b2d1-88aa01c3e902",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+
+    <article class="endpoint" id="get-dog">
+      <h2><span class="method">GET</span>/v1/dogs/:dogId</h2>
+      <p class="summary">指定した Dog と現在 Goal を返す。プロフィール Detail の取得に使う。履歴と Goal 変更はこの応答に含めない。</p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+          <tr>
+            <td><code>dogId</code></td>
+            <td>path</td>
+            <td>required</td>
+            <td>対象 Dog の UUID。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Header</h4>
+      <ul class="field-list">
+        <li><code>accept</code> — <code>application/json</code> を要求する。</li>
+        <li><code>authorization</code> — Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</li>
+        <li><code>x-request-id</code> — 相関 ID。未指定時は API が生成する。</li>
+      </ul>
+
+      <h4>Path</h4>
+      <ul class="field-list">
+        <li><code>dogId</code> — 対象 Dog の UUID。</li>
+      </ul>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <p class="empty">なし</p>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>Dog と currentGoal</td><td>—</td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>404</code></td><td>別 Owner または存在しない dogId</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>200 は POST 201 と同じ Dog + <code>currentGoal</code>。</p>
+      <p>401 / 404 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>code</code></td>
+            <td>string</td>
+            <td><code>UNAUTHENTICATED</code>、<code>NOT_FOUND</code>、または <code>INTERNAL_ERROR</code></td>
+          </tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code class="language-bash">curl -X GET "$API_BASE_URL/v1/dogs/$DOG_ID" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 200</div>
+          <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "name": "Mugi",
+  "gender": "female",
+  "birthday": { "precision": "day", "year": 2020, "month": 4, "day": 12 },
+  "avatarUrl": null,
+  "createdAt": "2026-08-14T12:40:11.000Z",
+  "updatedAt": "2026-08-14T12:40:11.000Z",
+  "currentGoal": {
+    "goalRevisionId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e71",
+    "period": "daily",
+    "minutes": 30,
+    "effectiveFrom": "2026-08-14T12:40:11.000Z",
+    "effectiveTo": null
+  }
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 401</div>
+          <pre><code class="language-json">{
+  "code": "UNAUTHENTICATED",
+  "message": "Authentication is required.",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 404</div>
+          <pre><code class="language-json">{
+  "code": "NOT_FOUND",
+  "message": "The requested resource was not found.",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 500</div>
+          <pre><code class="language-json">{
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>

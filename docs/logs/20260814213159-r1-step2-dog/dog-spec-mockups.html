@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dog list and register — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card h3 {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f7f4ef;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+    }
+    .screen { padding: 8px 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h4 { margin: 0; font-size: 1.35rem; }
+    .help { color: var(--muted); font-size: 0.9rem; margin: 0; }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .add {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 18px;
+      background: var(--soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .row b { display: block; font-size: 0.95rem; }
+    .row p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+    .chevron { margin-left: auto; color: var(--muted); }
+    .field {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      color: var(--ink);
+    }
+    .field.placeholder { color: #b0a89c; }
+    .field.invalid { border-color: var(--danger); }
+    .choice {
+      display: flex;
+      gap: 6px;
+    }
+    .chip {
+      flex: 1;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 0;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      background: #fff;
+    }
+    .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .spacer { flex: 1; }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.disabled { background: var(--soft); color: var(--muted); }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .error {
+      color: var(--danger);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      background: #f8ece8;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .busy {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+    .dialog {
+      margin-top: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+    }
+    .dialog b { display: block; margin-bottom: 6px; }
+    .dialog-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .dialog-actions span { flex: 1; text-align: center; padding: 8px; border-radius: 8px; }
+    .caption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Dog 一覧・登録 画面モック</h1>
+    <p class="lede">
+      認証済みホームは Dogs List を表示する。Empty から、または追加操作で Register Dog へ進み、
+      Name と Gender を登録する。成功時に Daily 30分の Goal Revision が作られ、一覧へ戻る。
+      一覧の行からプロフィール Detail を開く。
+    </p>
+
+    <div class="note">
+      Routes: Dogs List（認証済みホーム） → <code>/dogs/new</code> または <code>/dogs/:dogId</code>。
+      API: <code>GET /v1/dogs</code>、<code>POST /v1/dogs</code>（<code>{ name, gender, birthday? }</code>）、<code>GET /v1/dogs/:dogId</code>。
+      Walk 開始時の選択、Edit、Avatar、タブ（Walk / Me）、履歴はこのセッションの画面に含めない。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>DogsListScreen</code> — 一覧の枠</li>
+        <li><code>Title</code> — 「Dogs」</li>
+        <li><code>AddDogButton</code> — 登録へ進む</li>
+        <li><code>EmptyState</code> — 0件と登録操作</li>
+        <li><code>LoadingState</code> — 取得中</li>
+        <li><code>DogRow</code> — 名前と Daily 30分 Goal。タップで Detail へ</li>
+        <li><code>RetryableError</code> — 一覧または Detail の再試行</li>
+        <li><code>SettingsLink</code> — Settings（Sign Out）へ</li>
+        <li><code>DogDetailScreen</code> — プロフィール Detail の枠</li>
+        <li><code>ProfileFields</code> — 名前、Gender、Birthday、Daily 30分 Goal</li>
+        <li><code>RegisterDogScreen</code> — 登録画面の枠</li>
+        <li><code>NameField</code> — 名前入力</li>
+        <li><code>GenderChoice</code> — Male / Female / Unknown</li>
+        <li><code>BirthdayField</code> — 任意。精度 Unknown / 年 / 年月 / 年月日</li>
+        <li><code>GoalHint</code> — 登録時に Daily 30分を作成する案内</li>
+        <li><code>SubmitButton</code> — 登録する</li>
+        <li><code>DiscardDialog</code> — 未保存入力の破棄確認</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onOpenRegister</code> — <code>/dogs/new</code> へ進む</li>
+        <li><code>onOpenDetail</code> — <code>/dogs/:dogId</code> へ進む</li>
+        <li><code>onRetryList</code> — <code>GET /v1/dogs</code> を再実行する</li>
+        <li><code>onRetryDetail</code> — <code>GET /v1/dogs/:dogId</code> を再実行する</li>
+        <li><code>onBackToList</code> — List へ戻る</li>
+        <li><code>onOpenSettings</code> — <code>/settings</code> へ進む</li>
+        <li><code>onChangeName</code> — 名前を更新する</li>
+        <li><code>onChangeGender</code> — Gender を更新する</li>
+        <li><code>onChangeBirthday</code> — Birthday の精度と値を更新する</li>
+        <li><code>onSubmit</code> — 前後空白を除去して <code>POST /v1/dogs</code> を送る</li>
+        <li><code>onRetrySubmit</code> — 同じ入力で再送信する</li>
+        <li><code>onBack</code> — 未保存があれば確認し、なければ List へ戻る</li>
+        <li><code>onConfirmDiscard</code> — 入力を捨てて List へ戻る</li>
+        <li><code>onCancelDiscard</code> — 入力を保持して登録画面に残る</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>DOG-01 · Empty</h3>
+        <div class="phone" aria-label="Dogs list empty">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="header-row">
+              <h4>Dogs</h4>
+              <div class="add">＋</div>
+            </div>
+            <p class="help">まだ Dog がいません。登録すると散歩に選べます。</p>
+            <div class="spacer"></div>
+            <div class="btn primary">Dog を登録</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">GET /v1/dogs · dogs: [] · Empty は Loading / Error と区別する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-01 · Loading</h3>
+        <div class="phone" aria-label="Dogs list loading">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="header-row">
+              <h4>Dogs</h4>
+              <div class="add">＋</div>
+            </div>
+            <div class="busy">読み込み中…</div>
+            <div class="spacer"></div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">初回取得中。Empty を出さない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-01 · List</h3>
+        <div class="phone" aria-label="Dogs list populated">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="header-row">
+              <h4>Dogs</h4>
+              <div class="add">＋</div>
+            </div>
+            <div class="row">
+              <div class="avatar">M</div>
+              <div><b>Mugi</b><p>30 min daily goal</p></div>
+              <span class="chevron">›</span>
+            </div>
+            <div class="row">
+              <div class="avatar">S</div>
+              <div><b>Sora</b><p>30 min daily goal</p></div>
+              <span class="chevron">›</span>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">登録成功後の一覧。行タップでプロフィール Detail へ</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-01 · Retryable error</h3>
+        <div class="phone" aria-label="Dogs list error">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="header-row">
+              <h4>Dogs</h4>
+              <div class="add">＋</div>
+            </div>
+            <div class="error">一覧を取得できませんでした。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">再試行</div>
+            <div class="btn ghost">Settings</div>
+          </div>
+        </div>
+        <p class="caption">同じ GET で再試行する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Idle</h3>
+        <div class="phone" aria-label="Register dog idle">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field placeholder">名前</div>
+            <div class="choice">
+              <div class="chip">Male</div>
+              <div class="chip">Female</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="field placeholder">誕生日（任意）</div>
+            <div class="spacer"></div>
+            <div class="btn disabled">登録する</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">/dogs/new · Name と Gender が揃うまで送信しない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Ready</h3>
+        <div class="phone" aria-label="Register dog ready">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field">Mugi</div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="field">2020 / 4 / 12</div>
+            <div class="spacer"></div>
+            <div class="btn primary">登録する</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">birthday は任意。省略時の精度は unknown</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Submitting</h3>
+        <div class="phone" aria-label="Register dog submitting">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field">Mugi</div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="field">2020 / 4 / 12</div>
+            <div class="spacer"></div>
+            <div class="busy">登録しています…</div>
+            <div class="btn primary" style="opacity:0.45">登録する</div>
+            <div class="btn ghost" style="opacity:0.45">戻る</div>
+          </div>
+        </div>
+        <p class="caption">API 呼び出し中 · 再操作を受け付けない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Invalid input</h3>
+        <div class="phone" aria-label="Register dog invalid">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field invalid"></div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="error">名前は1〜100文字で入力してください。</div>
+            <div class="spacer"></div>
+            <div class="btn disabled">登録する</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">400 · 入力を保持し、同じ画面で直す</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Duplicate name</h3>
+        <div class="phone" aria-label="Register dog duplicate">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field invalid">Mugi</div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="error">同じ名前のDogが既に存在します。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">登録する</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">409 DOG_NAME_DUPLICATE · 入力を保持する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Retryable error</h3>
+        <div class="phone" aria-label="Register dog retryable">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field">Mugi</div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="error">登録に失敗しました。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">登録する</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">入力を保持し、同じ送信で再試行する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-03 · Discard confirm</h3>
+        <div class="phone" aria-label="Register dog discard">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">new dog</div>
+            <h4>Dog を登録</h4>
+            <p class="help">名前は 1〜100 文字。Goal は Daily 30分で作成します。</p>
+            <div class="field">Mugi</div>
+            <div class="choice">
+              <div class="chip on">Female</div>
+              <div class="chip">Male</div>
+              <div class="chip">Unknown</div>
+            </div>
+            <div class="dialog">
+              <b>入力を破棄しますか？</b>
+              戻ると入力した内容は消えます。
+              <div class="dialog-actions">
+                <span class="btn ghost">キャンセル</span>
+                <span class="btn primary">破棄する</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="caption">キャンセル時は入力を保持する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-02 · Profile</h3>
+        <div class="phone" aria-label="Dog detail profile">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">dog</div>
+            <div class="header-row">
+              <div class="avatar">M</div>
+              <h4>Mugi</h4>
+            </div>
+            <div class="row"><div><b>Gender</b><p>Female</p></div></div>
+            <div class="row"><div><b>Birthday</b><p>2020 / 4 / 12</p></div></div>
+            <div class="row"><div><b>Goal</b><p>30 min daily</p></div></div>
+            <div class="spacer"></div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">/dogs/:dogId · プロフィールと currentGoal。履歴と Edit は後続</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-02 · Loading</h3>
+        <div class="phone" aria-label="Dog detail loading">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">dog</div>
+            <div class="busy">読み込み中…</div>
+            <div class="spacer"></div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">GET /v1/dogs/:dogId の取得中</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-02 · Not found</h3>
+        <div class="phone" aria-label="Dog detail not found">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">dog</div>
+            <h4>見つかりません</h4>
+            <p class="help">この Dog は表示できません。</p>
+            <div class="spacer"></div>
+            <div class="btn primary">一覧へ戻る</div>
+          </div>
+        </div>
+        <p class="caption">404 · 別 Owner または存在しない dogId</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>DOG-02 · Retryable error</h3>
+        <div class="phone" aria-label="Dog detail error">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">dog</div>
+            <div class="error">読み込めませんでした。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">再試行</div>
+            <div class="btn ghost">戻る</div>
+          </div>
+        </div>
+        <p class="caption">同じ GET で再試行する</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

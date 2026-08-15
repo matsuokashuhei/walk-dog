@@ -3,9 +3,14 @@ import test from 'node:test'
 import { createApp } from '../src/app.js'
 import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
 import { registerAuthRoutes } from '../src/modules/auth/index.js'
+import { registerDogRoutes, type ListDogs } from '../src/modules/dogs/index.js'
 import { registerHealthRoutes } from '../src/modules/health/index.js'
 import { registerOwnerRoutes } from '../src/modules/owners/index.js'
 import { unusedAuthRouteDependencies } from './modules/auth/fixtures.js'
+import {
+  unusedCreateDog,
+  unusedGetDog,
+} from './modules/dogs/fixtures.js'
 import {
   unusedAccessTokenVerifier,
   unusedGetOwner,
@@ -55,6 +60,8 @@ const expectedOperations = {
   '/v1/auth/sign-in/verify': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-out': { post: ['204', '400', '401', '429', '500'] },
   '/v1/owner': { get: ['200', '401', '500'], patch: ['200', '400', '401', '500'] },
+  '/v1/dogs': { get: ['200', '401', '500'], post: ['201', '400', '401', '409', '500'] },
+  '/v1/dogs/{dogId}': { get: ['200', '401', '404', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -66,6 +73,8 @@ const expectedPathMethods = {
   '/v1/auth/sign-in/verify': ['post'],
   '/v1/auth/sign-out': ['post'],
   '/v1/owner': ['get', 'patch'],
+  '/v1/dogs': ['get', 'post'],
+  '/v1/dogs/{dogId}': ['get'],
 } as const
 
 const publicAuthPaths = [
@@ -74,6 +83,10 @@ const publicAuthPaths = [
   '/v1/auth/sign-in',
   '/v1/auth/sign-in/verify',
 ] as const
+
+const unusedListDogs: ListDogs = async () => {
+  throw new Error('listDogs should not run during OpenAPI document generation')
+}
 
 function createOpenApiApp() {
   return createApp(
@@ -86,6 +99,15 @@ function createOpenApiApp() {
         app: registerOwnerRoutes({
           getOwner: unusedGetOwner,
           updateOwnerDisplayName: unusedUpdateOwnerDisplayName,
+          accessTokenVerifier: unusedAccessTokenVerifier,
+        }),
+      },
+      {
+        path: '/v1/dogs',
+        app: registerDogRoutes({
+          listDogs: unusedListDogs,
+          createDog: unusedCreateDog,
+          getDog: unusedGetDog,
           accessTokenVerifier: unusedAccessTokenVerifier,
         }),
       },
@@ -135,6 +157,13 @@ function assertOwnerPatchRequestSchema(schema: JsonSchema): void {
   assert.equal(schema.properties.displayName.nullable, undefined)
 }
 
+function assertCreateDogRequestSchema(schema: JsonSchema): void {
+  assert.deepEqual(schema.required, ['name', 'gender'])
+  assert.equal(schema.properties.name.minLength, 1)
+  assert.equal(schema.properties.name.maxLength, 100)
+  assert.equal(schema.properties.name.nullable, undefined)
+}
+
 function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean | undefined): void {
   assert.deepEqual(schema.required, ['username', 'session', 'code'])
   assert.equal(schema.properties.username.minLength, 1)
@@ -145,7 +174,7 @@ function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean 
   assert.equal(schema.properties.code.nullable, undefined)
 }
 
-test('GET /openapi.json characterizes health, auth, and owner operations', async () => {
+test('GET /openapi.json characterizes health, auth, owner, and dog operations', async () => {
   const response = await createOpenApiApp().request('/openapi.json')
   const document = await response.json() as OpenApiDocument
 
@@ -167,6 +196,9 @@ test('GET /openapi.json characterizes health, auth, and owner operations', async
   assertOperationStatuses(document, '/v1/auth/sign-out', 'post', expectedOperations['/v1/auth/sign-out'].post)
   assertOperationStatuses(document, '/v1/owner', 'get', expectedOperations['/v1/owner'].get)
   assertOperationStatuses(document, '/v1/owner', 'patch', expectedOperations['/v1/owner'].patch)
+  assertOperationStatuses(document, '/v1/dogs', 'get', expectedOperations['/v1/dogs'].get)
+  assertOperationStatuses(document, '/v1/dogs', 'post', expectedOperations['/v1/dogs'].post)
+  assertOperationStatuses(document, '/v1/dogs/{dogId}', 'get', expectedOperations['/v1/dogs/{dogId}'].get)
 
   assert.deepEqual(
     operationAt(document, '/v1/auth/sign-out', 'post').security,
@@ -180,6 +212,18 @@ test('GET /openapi.json characterizes health, auth, and owner operations', async
     operationAt(document, '/v1/owner', 'patch').security,
     [{ BearerAuth: [] }],
   )
+  assert.deepEqual(
+    operationAt(document, '/v1/dogs', 'get').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/dogs', 'post').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/dogs/{dogId}', 'get').security,
+    [{ BearerAuth: [] }],
+  )
   for (const path of publicAuthPaths) {
     assert.equal(operationAt(document, path, 'post').security, undefined)
   }
@@ -189,4 +233,5 @@ test('GET /openapi.json characterizes health, auth, and owner operations', async
   assertVerifyRequestSchema(requestSchema(document, '/v1/auth/sign-up/verify'), true)
   assertVerifyRequestSchema(requestSchema(document, '/v1/auth/sign-in/verify'), undefined)
   assertOwnerPatchRequestSchema(requestSchema(document, '/v1/owner', 'patch'))
+  assertCreateDogRequestSchema(requestSchema(document, '/v1/dogs'))
 })

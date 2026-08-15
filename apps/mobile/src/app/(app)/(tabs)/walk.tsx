@@ -93,6 +93,10 @@ function sameIds(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((id, index) => id === right[index])
 }
 
+function isLoadableKind(kind: ScreenState['kind']): boolean {
+  return kind === 'loading' || kind === 'ready' || kind === 'load_error'
+}
+
 export default function WalkScreen() {
   const router = useRouter()
   const { session } = useAuth()
@@ -102,6 +106,8 @@ export default function WalkScreen() {
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
+  const startingRef = useRef(false)
+  const loadGeneration = useRef(0)
   stateRef.current = state
 
   const applyLocation = useCallback(async (granted: boolean) => {
@@ -122,18 +128,46 @@ export default function WalkScreen() {
       if (!session) {
         throw new Error('Walk requires an authenticated session')
       }
-      if (mode === 'full') {
+      const generation = ++loadGeneration.current
+      const originKind = stateRef.current.kind
+      if (mode === 'full' && originKind !== 'failed') {
         setState({ kind: 'loading' })
       }
+
+      const shouldApply = (): boolean => {
+        if (generation !== loadGeneration.current || startingRef.current) {
+          return false
+        }
+        if (originKind === 'failed' || originKind === 'completed') {
+          return true
+        }
+        return isLoadableKind(stateRef.current.kind)
+      }
+
       try {
         const [walk, dogsResult, granted] = await Promise.all([
           getActiveWalk(session.accessToken),
           listDogs(session.accessToken),
           isLocationFullyGranted(),
         ])
+        if (!shouldApply()) {
+          return
+        }
+        if (originKind === 'failed' && walk !== null) {
+          setState({ kind: 'failed' })
+          return
+        }
         await applyLocation(granted)
+        if (!shouldApply()) {
+          return
+        }
+        if (originKind === 'failed' && walk !== null) {
+          setState({ kind: 'failed' })
+          return
+        }
         if (walk !== null) {
           finishingRef.current = false
+          startingRef.current = false
           setState({ kind: 'recording', walk, finishError: false, finishKey: null })
           return
         }
@@ -147,6 +181,7 @@ export default function WalkScreen() {
           current.kind === 'ready' &&
           current.startKey !== null &&
           sameIds(current.selectedDogIds, selectedDogIds)
+        startingRef.current = false
         setState({
           kind: 'ready',
           dogs: dogsResult.dogs,
@@ -155,6 +190,13 @@ export default function WalkScreen() {
           startKey: keepStartKey ? current.startKey : null,
         })
       } catch {
+        if (!shouldApply()) {
+          return
+        }
+        if (originKind === 'failed') {
+          setState({ kind: 'failed' })
+          return
+        }
         setState({ kind: 'load_error' })
       }
     },
@@ -247,12 +289,13 @@ export default function WalkScreen() {
         ...current,
         selectedDogIds: selected,
         startKey: null,
+        startError: false,
       }
     })
   }
 
   const onStart = () => {
-    if (!session || state.kind !== 'ready') {
+    if (!session || state.kind !== 'ready' || startingRef.current) {
       return
     }
     if (state.dogs.length === 0 || state.selectedDogIds.length === 0 || !locationGranted) {
@@ -261,6 +304,8 @@ export default function WalkScreen() {
     const startKey = state.startKey ?? crypto.randomUUID()
     const selectedDogIds = state.selectedDogIds
     const dogs = state.dogs
+    startingRef.current = true
+    loadGeneration.current += 1
     setState({ kind: 'starting', dogs, selectedDogIds, startKey })
     void startWalk(session.accessToken, {
       participantDogIds: selectedDogIds,
@@ -268,9 +313,11 @@ export default function WalkScreen() {
     })
       .then((walk) => {
         finishingRef.current = false
+        startingRef.current = false
         setState({ kind: 'recording', walk, finishError: false, finishKey: null })
       })
       .catch(() => {
+        startingRef.current = false
         setState({
           kind: 'ready',
           dogs,

@@ -46,11 +46,13 @@ export type ApiRequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
   body?: unknown
   accessToken?: string
+  headers?: Record<string, string>
 }
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
+    ...options.headers,
   }
   if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'

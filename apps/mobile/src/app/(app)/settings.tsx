@@ -9,10 +9,10 @@ import {
   Text,
   View,
 } from 'react-native'
-import { hasActiveWalk } from '@/lib/active-walk'
 import { ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { signOut } from '@/lib/auth-api'
+import { getActiveWalk } from '@/lib/walk-api'
 
 const LEGAL_URL = 'https://cacheandbuffer.com/'
 
@@ -49,32 +49,48 @@ export default function SettingsScreen() {
     if (state.kind === 'loading') {
       return
     }
-
-    if (hasActiveWalk()) {
-      Alert.alert(
-        'Active Walk を破棄しますか？',
-        'サインアウトすると、記録中の散歩は Failed になります。',
-        [
-          {
-            text: 'キャンセル',
-            style: 'cancel',
-            onPress: () => {
-              setState({ kind: 'idle' })
-            },
-          },
-          {
-            text: '破棄して Sign Out',
-            style: 'destructive',
-            onPress: () => {
-              void runSignOut()
-            },
-          },
-        ],
-      )
-      return
+    if (!session) {
+      throw new Error('Settings requires an authenticated session')
     }
 
-    void runSignOut()
+    setState({ kind: 'loading' })
+    void getActiveWalk(session.accessToken)
+      .then((walk) => {
+        if (walk !== null) {
+          setState({ kind: 'idle' })
+          Alert.alert(
+            'Active Walk を破棄しますか？',
+            'サインアウトすると、記録中の散歩は Failed になります。',
+            [
+              {
+                text: 'キャンセル',
+                style: 'cancel',
+                onPress: () => {
+                  setState({ kind: 'idle' })
+                },
+              },
+              {
+                text: '破棄して Sign Out',
+                style: 'destructive',
+                onPress: () => {
+                  void runSignOut()
+                },
+              },
+            ],
+          )
+          return
+        }
+        return runSignOut()
+      })
+      .catch((error) => {
+        setState({
+          kind: 'error',
+          message:
+            error instanceof ApiError
+              ? error.message
+              : 'サインアウトに失敗しました。再試行してください。',
+        })
+      })
   }
 
   const openLegal = () => {

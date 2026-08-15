@@ -1,11 +1,9 @@
 export type {
-  CompletedWalk,
   FinishWalk,
   GetActiveWalk,
-  RecordingWalk,
   StartWalk,
-  Walk,
 } from './types.js'
+export type { ActiveWalkCommands } from './active-walk-commands.js'
 export type { WalkRepository } from './repository.js'
 export {
   registerWalkRoutes,

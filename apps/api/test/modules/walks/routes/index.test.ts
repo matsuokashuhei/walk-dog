@@ -4,7 +4,6 @@ import { registerWalkRoutes } from '../../../../src/modules/walks/routes/index.j
 import {
   createWalkApp,
   unusedFinishWalk,
-  unusedGetActiveWalk,
   unusedStartWalk,
 } from '../fixtures.js'
 

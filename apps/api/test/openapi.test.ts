@@ -6,6 +6,7 @@ import { registerAuthRoutes } from '../src/modules/auth/index.js'
 import { registerDogRoutes, type ListDogs } from '../src/modules/dogs/index.js'
 import { registerHealthRoutes } from '../src/modules/health/index.js'
 import { registerOwnerRoutes } from '../src/modules/owners/index.js'
+import { registerWalkRoutes } from '../src/modules/walks/index.js'
 import { unusedAuthRouteDependencies } from './modules/auth/fixtures.js'
 import {
   unusedCreateDog,
@@ -16,6 +17,11 @@ import {
   unusedGetOwner,
   unusedUpdateOwnerDisplayName,
 } from './modules/owners/fixtures.js'
+import {
+  unusedFinishWalk,
+  unusedGetActiveWalk,
+  unusedStartWalk,
+} from './modules/walks/fixtures.js'
 import { testLogger } from './support/test-logger.js'
 
 type PropertySchema = {
@@ -24,11 +30,13 @@ type PropertySchema = {
   format?: string
   minLength?: number
   maxLength?: number
+  minItems?: number
 }
 
 type JsonSchema = {
-  required: string[]
+  required?: string[]
   properties: Record<string, PropertySchema>
+  additionalProperties?: boolean
 }
 
 type OpenApiOperation = {
@@ -62,6 +70,9 @@ const expectedOperations = {
   '/v1/owner': { get: ['200', '401', '500'], patch: ['200', '400', '401', '500'] },
   '/v1/dogs': { get: ['200', '401', '500'], post: ['201', '400', '401', '409', '500'] },
   '/v1/dogs/{dogId}': { get: ['200', '401', '404', '500'] },
+  '/v1/walks/active': { get: ['200', '204', '401', '500'] },
+  '/v1/walks': { post: ['201', '400', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -75,6 +86,9 @@ const expectedPathMethods = {
   '/v1/owner': ['get', 'patch'],
   '/v1/dogs': ['get', 'post'],
   '/v1/dogs/{dogId}': ['get'],
+  '/v1/walks/active': ['get'],
+  '/v1/walks': ['post'],
+  '/v1/walks/{walkId}/finish': ['post'],
 } as const
 
 const publicAuthPaths = [
@@ -108,6 +122,15 @@ function createOpenApiApp() {
           listDogs: unusedListDogs,
           createDog: unusedCreateDog,
           getDog: unusedGetDog,
+          accessTokenVerifier: unusedAccessTokenVerifier,
+        }),
+      },
+      {
+        path: '/v1/walks',
+        app: registerWalkRoutes({
+          getActiveWalk: unusedGetActiveWalk,
+          startWalk: unusedStartWalk,
+          finishWalk: unusedFinishWalk,
           accessTokenVerifier: unusedAccessTokenVerifier,
         }),
       },
@@ -164,6 +187,15 @@ function assertCreateDogRequestSchema(schema: JsonSchema): void {
   assert.equal(schema.properties.name.nullable, undefined)
 }
 
+function assertStartWalkRequestSchema(schema: JsonSchema): void {
+  assert.deepEqual(schema.required, ['participantDogIds'])
+  assert.equal(schema.properties.participantDogIds.minItems, 1)
+}
+
+function assertFinishWalkRequestSchema(schema: JsonSchema): void {
+  assert.equal(schema.additionalProperties, false)
+}
+
 function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean | undefined): void {
   assert.deepEqual(schema.required, ['username', 'session', 'code'])
   assert.equal(schema.properties.username.minLength, 1)
@@ -174,7 +206,7 @@ function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean 
   assert.equal(schema.properties.code.nullable, undefined)
 }
 
-test('GET /openapi.json characterizes health, auth, owner, and dog operations', async () => {
+test('GET /openapi.json characterizes health, auth, owner, dog, and walk operations', async () => {
   const response = await createOpenApiApp().request('/openapi.json')
   const document = await response.json() as OpenApiDocument
 
@@ -199,6 +231,9 @@ test('GET /openapi.json characterizes health, auth, owner, and dog operations', 
   assertOperationStatuses(document, '/v1/dogs', 'get', expectedOperations['/v1/dogs'].get)
   assertOperationStatuses(document, '/v1/dogs', 'post', expectedOperations['/v1/dogs'].post)
   assertOperationStatuses(document, '/v1/dogs/{dogId}', 'get', expectedOperations['/v1/dogs/{dogId}'].get)
+  assertOperationStatuses(document, '/v1/walks/active', 'get', expectedOperations['/v1/walks/active'].get)
+  assertOperationStatuses(document, '/v1/walks', 'post', expectedOperations['/v1/walks'].post)
+  assertOperationStatuses(document, '/v1/walks/{walkId}/finish', 'post', expectedOperations['/v1/walks/{walkId}/finish'].post)
 
   assert.deepEqual(
     operationAt(document, '/v1/auth/sign-out', 'post').security,
@@ -224,6 +259,18 @@ test('GET /openapi.json characterizes health, auth, owner, and dog operations', 
     operationAt(document, '/v1/dogs/{dogId}', 'get').security,
     [{ BearerAuth: [] }],
   )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks/active', 'get').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks', 'post').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks/{walkId}/finish', 'post').security,
+    [{ BearerAuth: [] }],
+  )
   for (const path of publicAuthPaths) {
     assert.equal(operationAt(document, path, 'post').security, undefined)
   }
@@ -234,4 +281,6 @@ test('GET /openapi.json characterizes health, auth, owner, and dog operations', 
   assertVerifyRequestSchema(requestSchema(document, '/v1/auth/sign-in/verify'), undefined)
   assertOwnerPatchRequestSchema(requestSchema(document, '/v1/owner', 'patch'))
   assertCreateDogRequestSchema(requestSchema(document, '/v1/dogs'))
+  assertStartWalkRequestSchema(requestSchema(document, '/v1/walks'))
+  assertFinishWalkRequestSchema(requestSchema(document, '/v1/walks/{walkId}/finish'))
 })

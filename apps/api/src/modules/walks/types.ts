@@ -1,5 +1,3 @@
-export type WalkState = 'recording' | 'completed' | 'failed'
-
 export type WalkParticipant = {
   walkParticipantId: string
   dogId: string
@@ -26,8 +24,6 @@ export type CompletedWalk = {
   paceSecondsPerMeter: null
   participants: WalkParticipant[]
 }
-
-export type Walk = RecordingWalk | CompletedWalk
 
 export type CommandNamespace = 'start' | 'finish'
 

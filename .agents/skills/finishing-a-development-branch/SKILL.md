@@ -125,6 +125,8 @@ present, and report the URL to your human partner.
 
 Keep the worktree — your human partner iterates on PR feedback there.
 
+When your human partner confirms the PR merged, continue with `run-dev-session` phase 9 (`retrospecting-dev-session`). Merge is not session complete.
+
 ### Option 3: Keep As-Is
 
 Report: "Keeping branch <name>. Worktree preserved at <path>."
@@ -223,3 +225,4 @@ place. If your platform provides a workspace-exit tool, use it.
 | "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
 | "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
 | "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
+| "The PR merged, so the session is done" | Merge starts `run-dev-session` phase 9. Write the retrospective next. |

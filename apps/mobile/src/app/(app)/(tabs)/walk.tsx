@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/lib/auth'
 import { listDogs, type DogResponse } from '@/lib/dog-api'
 import {
@@ -93,6 +94,10 @@ function sameIds(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((id, index) => id === right[index])
 }
 
+function newIdempotencyKey(): string {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 function isLoadableKind(kind: ScreenState['kind']): boolean {
   return kind === 'loading' || kind === 'ready' || kind === 'load_error'
 }
@@ -100,6 +105,7 @@ function isLoadableKind(kind: ScreenState['kind']): boolean {
 export default function WalkScreen() {
   const router = useRouter()
   const { session } = useAuth()
+  const insets = useSafeAreaInsets()
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [locationGranted, setLocationGranted] = useState(false)
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | undefined>()
@@ -301,7 +307,7 @@ export default function WalkScreen() {
     if (state.dogs.length === 0 || state.selectedDogIds.length === 0 || !locationGranted) {
       return
     }
-    const startKey = state.startKey ?? crypto.randomUUID()
+    const startKey = state.startKey ?? newIdempotencyKey()
     const selectedDogIds = state.selectedDogIds
     const dogs = state.dogs
     startingRef.current = true
@@ -332,7 +338,7 @@ export default function WalkScreen() {
     if (!session || state.kind !== 'recording' || finishingRef.current) {
       return
     }
-    const finishKey = state.finishKey ?? crypto.randomUUID()
+    const finishKey = state.finishKey ?? newIdempotencyKey()
     const walk = state.walk
     finishingRef.current = true
     setState({ kind: 'recording', walk, finishError: false, finishKey })
@@ -369,12 +375,19 @@ export default function WalkScreen() {
       {showMap ? (
         <AppleMaps.View
           style={styles.map}
-          properties={{ isMyLocationEnabled: true }}
+          properties={{
+            isMyLocationEnabled: true,
+            selectionEnabled: false,
+            pointsOfInterest: { including: [] },
+          }}
           cameraPosition={cameraPosition}
         />
       ) : null}
 
-      <View style={styles.screen}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.screen, { paddingBottom: 24 + insets.bottom + 64 }]}
+      >
         {state.kind === 'loading' ? (
           <>
             <Text style={styles.label}>walk</Text>
@@ -457,7 +470,9 @@ export default function WalkScreen() {
               </Text>
             ) : null}
             {state.dogs.length > 0 && state.selectedDogIds.length > 0 && !locationGranted ? (
-              <Text style={styles.error}>位置情報（使用中および常に）を許可してください。</Text>
+              <Text style={styles.error} testID="walk-location-required">
+                位置情報（使用中および常に）を許可してください。
+              </Text>
             ) : null}
             {state.startError ? (
               <Text style={styles.error} testID="walk-start-error">

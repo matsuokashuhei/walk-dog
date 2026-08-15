@@ -44,3 +44,23 @@ export type FinishWalkInput = {
   idempotencyKey: string
   bodyHash: string
 }
+
+export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>
+
+export type StartWalk = (input: {
+  cognitoSubject: string
+  participantDogIds: string[]
+  idempotencyKey: string
+}) => Promise<
+  | { ok: true; walk: RecordingWalk }
+  | { ok: false; error: 'not_found' | 'active_walk_exists' | 'idempotency_conflict' }
+>
+
+export type FinishWalk = (input: {
+  cognitoSubject: string
+  walkId: string
+  idempotencyKey: string
+}) => Promise<
+  | { ok: true; walk: CompletedWalk }
+  | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
+>

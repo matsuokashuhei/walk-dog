@@ -1,6 +1,6 @@
 ---
 name: run-dev-session
-description: Use when starting or continuing a development session, including immediately after the session pull request merges.
+description: Use when starting or continuing a development session.
 ---
 
 # 開発セッションの実行

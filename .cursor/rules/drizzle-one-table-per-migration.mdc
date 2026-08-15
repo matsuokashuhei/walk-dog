@@ -1,0 +1,26 @@
+---
+description: One CREATE TABLE per Drizzle SQL migration file
+globs: apps/api/drizzle/**/*.sql
+alwaysApply: false
+---
+
+# One CREATE TABLE per migration file
+
+Each `apps/api/drizzle/*.sql` file contains exactly one `CREATE TABLE`.
+
+Name the file after that table: `0001_create_dogs.sql`, `0002_create_goal_revisions.sql`.
+
+Enums, indexes, unique constraints, and foreign keys for that table stay in the same file.
+
+```sql
+-- Prefer
+CREATE TYPE "public"."dog_gender" AS ENUM('male', 'female', 'unknown');
+CREATE TABLE "dogs" ( ... );
+ALTER TABLE "dogs" ADD CONSTRAINT ...;
+
+-- Avoid
+CREATE TABLE "dogs" ( ... );
+CREATE TABLE "goal_revisions" ( ... );
+```
+
+After `drizzle-kit generate`, if the SQL has more than one `CREATE TABLE`, split it into one file per table and add a journal entry plus snapshot for each file. Do not leave multiple tables in one generated file.

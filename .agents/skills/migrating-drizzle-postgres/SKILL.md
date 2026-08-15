@@ -38,13 +38,15 @@ Run this sequence for a database shape change. Do not skip review.
 ## Migration naming
 
 - Use `drizzle-kit generate --name=<meaningful_name>` instead of relying on Drizzle's auto-generated random names. The generated file will use the provided name (e.g. `--name=create_owners` produces `0000_create_owners.sql`).
+- Each SQL file contains exactly one `CREATE TABLE`. Name it after that table (`0001_create_dogs.sql`). Enums, indexes, unique constraints, and foreign keys for that table stay in the same file.
+- After generate, if the SQL has more than one `CREATE TABLE`, split it into one file per table and add a `_journal.json` entry plus snapshot for each file.
 
 ## Undeployed tables
 
 - When a table from a pending migration has not been deployed to any environment, do not create a new migration for changes. Instead:
   1. Delete the pending migration SQL file and its snapshot in `drizzle/meta/`.
   2. Delete the corresponding `_journal.json` entry.
-  3. Run `drizzle-kit generate --name=<meaningful_name>` to produce a single migration with the current schema.
+  3. Run `drizzle-kit generate --name=<meaningful_name>` and split the result so each SQL file still has exactly one `CREATE TABLE`.
 
 ## Workflow
 

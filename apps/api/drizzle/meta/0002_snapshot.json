@@ -1,6 +1,6 @@
 {
-  "id": "32057ea6-45d0-4b87-ab0b-7a65fd9d19e0",
-  "prevId": "5c7fbb57-4ce3-420e-88df-fa3e72ebf330",
+  "id": "3dbadbed-5299-4a08-be88-10150d5571e9",
+  "prevId": "32057ea6-45d0-4b87-ab0b-7a65fd9d19e0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -85,6 +85,77 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.goal_revisions": {
+      "name": "goal_revisions",
+      "schema": "",
+      "columns": {
+        "goal_revision_id": {
+          "name": "goal_revision_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dog_id": {
+          "name": "dog_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period": {
+          "name": "period",
+          "type": "goal_period",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minutes": {
+          "name": "minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_to": {
+          "name": "effective_to",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "goal_revisions_dog_id_dogs_dog_id_fk": {
+          "name": "goal_revisions_dog_id_dogs_dog_id_fk",
+          "tableFrom": "goal_revisions",
+          "tableTo": "dogs",
+          "columnsFrom": [
+            "dog_id"
+          ],
+          "columnsTo": [
+            "dog_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.owners": {
       "name": "owners",
       "schema": "",
@@ -147,6 +218,14 @@
         "male",
         "female",
         "unknown"
+      ]
+    },
+    "public.goal_period": {
+      "name": "goal_period",
+      "schema": "public",
+      "values": [
+        "daily",
+        "weekly"
       ]
     }
   },

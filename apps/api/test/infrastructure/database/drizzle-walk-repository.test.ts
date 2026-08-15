@@ -51,6 +51,7 @@ const expectedCompletedWalk = {
 }
 const startInput = { ownerId, participantDogIds: [dogId1, dogId2], idempotencyKey: startKey, bodyHash: startHash }
 const finishInput = { ownerId, walkId, idempotencyKey: finishKey, bodyHash: finishHash }
+const ownedDogs = [{ dogId: dogId1, name: 'Mugi' }, { dogId: dogId2, name: 'Sora' }]
 const startCommandKeyRow = {
   walkCommandKeyId: '019fc322-aaaa-73c4-9351-2a6ea25e4f01',
   ownerId, namespace: 'start' as const, key: startKey, bodyHash: startHash, walkId, createdAt: startedAt,
@@ -65,15 +66,8 @@ function createDatabaseFake(options: {
   insertResults?: unknown[][]
   updateResult?: unknown[]
   insertError?: Error
-}): {
-  database: DbInstance
-  calls: string[]
-  insertTables: unknown[]
-  insertValues: unknown[]
-  selectTables: unknown[]
-  updateTables: unknown[]
-  updateSets: unknown[]
-} {
+  insertErrorAtIndex?: number
+}) {
   const calls: string[] = []
   const insertTables: unknown[] = []
   const insertValues: unknown[] = []
@@ -113,7 +107,7 @@ function createDatabaseFake(options: {
     calls.push('insert')
     return {
       returning: async () => {
-        if (options.insertError && insertCallIndex === 0) {
+        if (options.insertError && insertCallIndex === (options.insertErrorAtIndex ?? 0)) {
           throw options.insertError
         }
         const result = insertResults[insertCallIndex] ?? []
@@ -157,9 +151,10 @@ function createDatabaseFake(options: {
   }
 }
 
-function uniqueViolation(constraint: string): DrizzleQueryError {
-  return new DrizzleQueryError('insert', [], Object.assign(new Error('duplicate key'), { code: '23505', constraint }))
-}
+const uniqueViolation = (constraint: string) =>
+  new DrizzleQueryError('insert', [], Object.assign(new Error('duplicate key'), { code: '23505', constraint }))
+const commandKeyUnique = uniqueViolation('walk_command_keys_owner_id_namespace_key_unique')
+
 
 test('getActiveByOwner returns the recording walk with participants in position order', async () => {
   const { database, calls } = createDatabaseFake({
@@ -177,7 +172,7 @@ test('getActiveByOwner returns null when no recording walk exists', async () => 
 
 test('start inserts a recording walk, request-order participants, and a start command key', async () => {
   const { database, calls, insertTables, insertValues, selectTables } = createDatabaseFake({
-    selectResults: [[], [{ dogId: dogId2, name: 'Sora' }, { dogId: dogId1, name: 'Mugi' }]],
+    selectResults: [[], [ownedDogs[1], ownedDogs[0]]],
     insertResults: [[recordingWalkRow], [participantRow1, participantRow2], [startCommandKeyRow]],
   })
   assert.deepEqual(await createDrizzleWalkRepository(database).start(startInput), expectedRecordingWalk)
@@ -215,12 +210,34 @@ test('start throws IdempotencyConflictError when the start key matches with a di
 
 test('start throws ActiveWalkExistsError on recording unique violation', async () => {
   const { database } = createDatabaseFake({
-    selectResults: [[], [{ dogId: dogId1, name: 'Mugi' }, { dogId: dogId2, name: 'Sora' }]],
+    selectResults: [[], ownedDogs],
     insertError: uniqueViolation('walks_owner_id_recording_unique'),
   })
   await assert.rejects(
     () => createDrizzleWalkRepository(database).start(startInput),
     (error: unknown) => error instanceof ActiveWalkExistsError,
+  )
+})
+
+test('start replays the original walk when command-key unique violates with the same hash', async () => {
+  const { database } = createDatabaseFake({
+    selectResults: [[], ownedDogs, [startCommandKeyRow], [recordingWalkRow], [participantRow1, participantRow2]],
+    insertResults: [[recordingWalkRow], [participantRow1, participantRow2]],
+    insertError: commandKeyUnique, insertErrorAtIndex: 2,
+  })
+  assert.deepEqual(await createDrizzleWalkRepository(database).start(startInput), expectedRecordingWalk)
+})
+
+
+test('start throws IdempotencyConflictError when command-key unique violates with a different hash', async () => {
+  const { database } = createDatabaseFake({
+    selectResults: [[], ownedDogs, [{ ...startCommandKeyRow, bodyHash: 'other-hash' }]],
+    insertResults: [[recordingWalkRow], [participantRow1, participantRow2]],
+    insertError: commandKeyUnique, insertErrorAtIndex: 2,
+  })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(database).start(startInput),
+    (error: unknown) => error instanceof IdempotencyConflictError,
   )
 })
 

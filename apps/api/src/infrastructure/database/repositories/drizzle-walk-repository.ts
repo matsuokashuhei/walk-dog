@@ -31,9 +31,33 @@ const COMMAND_KEY_UNIQUE = 'walk_command_keys_owner_id_namespace_key_unique'
 export function createDrizzleWalkRepository(database: DbInstance): WalkRepositorySatisfiesActiveWalkCommands {
   return {
     getActiveByOwner: (ownerId) => getActiveByOwner(database, ownerId),
-    start: (input) => withWalkUniques(() => database.transaction((trx) => startWalk(trx, input))),
-    finish: (input) => withWalkUniques(() => database.transaction((trx) => finishWalk(trx, input))),
+    start: (input) => startWithRecovery(database, input),
+    finish: (input) => finishWithRecovery(database, input),
     failIfPresent: (input) => failIfPresent(database, input),
+  }
+}
+
+async function startWithRecovery(database: DbInstance, input: StartWalkInput): Promise<RecordingWalk> {
+  try {
+    return await database.transaction((trx) => startWalk(trx, input))
+  } catch (error) {
+    throwIfRecordingUnique(error)
+    if (isCommandKeyUnique(error)) {
+      return replayRecordingWalk(database, input)
+    }
+    throw error
+  }
+}
+
+async function finishWithRecovery(database: DbInstance, input: FinishWalkInput): Promise<CompletedWalk> {
+  try {
+    return await database.transaction((trx) => finishWalk(trx, input))
+  } catch (error) {
+    throwIfRecordingUnique(error)
+    if (isCommandKeyUnique(error)) {
+      return replayCompletedWalk(database, input)
+    }
+    throw error
   }
 }
 
@@ -87,12 +111,20 @@ async function failIfPresent(database: WalkDb, input: { ownerId: string }): Prom
     .where(and(eq(walks.ownerId, input.ownerId), eq(walks.state, 'recording')))
 }
 
-async function withWalkUniques<Result>(work: () => Promise<Result>): Promise<Result> {
-  try {
-    return await work()
-  } catch (error) {
-    throw mapUniqueViolation(error)
+async function replayRecordingWalk(database: WalkDb, input: StartWalkInput): Promise<RecordingWalk> {
+  const existing = await resolveCommand(database, input.ownerId, 'start', input.idempotencyKey, input.bodyHash)
+  if (existing) {
+    return loadRecordingWalk(database, existing.walkId)
   }
+  throw new IdempotencyConflictError()
+}
+
+async function replayCompletedWalk(database: WalkDb, input: FinishWalkInput): Promise<CompletedWalk> {
+  const existing = await resolveCommand(database, input.ownerId, 'finish', input.idempotencyKey, input.bodyHash)
+  if (existing) {
+    return loadCompletedWalk(database, existing.walkId)
+  }
+  throw new IdempotencyConflictError()
 }
 
 async function resolveCommand(
@@ -229,18 +261,14 @@ function toParticipant(row: WalkParticipantRow): WalkParticipant {
   return { walkParticipantId: row.walkParticipantId, dogId: row.dogId, name: row.name }
 }
 
-function mapUniqueViolation(error: unknown): unknown {
-  if (!isUniqueViolation(error)) {
-    return error
+function throwIfRecordingUnique(error: unknown): void {
+  if (isUniqueViolation(error) && uniqueConstraint(error) === RECORDING_UNIQUE) {
+    throw new ActiveWalkExistsError()
   }
-  const constraint = uniqueConstraint(error)
-  if (constraint === RECORDING_UNIQUE) {
-    return new ActiveWalkExistsError()
-  }
-  if (constraint === COMMAND_KEY_UNIQUE) {
-    return new IdempotencyConflictError()
-  }
-  return error
+}
+
+function isCommandKeyUnique(error: unknown): boolean {
+  return isUniqueViolation(error) && uniqueConstraint(error) === COMMAND_KEY_UNIQUE
 }
 
 function isUniqueViolation(error: unknown): boolean {

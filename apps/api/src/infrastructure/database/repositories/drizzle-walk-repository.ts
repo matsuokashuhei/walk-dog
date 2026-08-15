@@ -97,8 +97,11 @@ async function finishWalk(trx: WalkDb, input: FinishWalkInput): Promise<Complete
   const updatedWalks = await trx
     .update(walks)
     .set({ state: 'completed', completedAt })
-    .where(and(eq(walks.walkId, input.walkId), eq(walks.ownerId, input.ownerId)))
+    .where(and(eq(walks.walkId, input.walkId), eq(walks.ownerId, input.ownerId), eq(walks.state, 'recording')))
     .returning()
+  if (updatedWalks.length === 0) {
+    throw new WalkNotRecordingError()
+  }
   const participantRows = await selectParticipants(trx, input.walkId)
   await rememberCommand(trx, input.ownerId, 'finish', input.idempotencyKey, input.bodyHash, input.walkId)
   return toCompletedWalk(updatedWalks[0], participantRows)

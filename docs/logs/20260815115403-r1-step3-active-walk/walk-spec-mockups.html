@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Active Walk — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f7f4ef;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+    }
+    .screen { padding: 8px 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 10px; position: relative; }
+    .screen.has-map { background: #e7efe4; }
+    .map-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 40% at 18% 22%, #cfe8c8 0 42%, transparent 43%),
+        radial-gradient(ellipse 50% 35% at 82% 70%, #cfe8c8 0 40%, transparent 41%),
+        radial-gradient(ellipse 55% 28% at 70% 18%, #b7d7ea 0 46%, transparent 47%),
+        #f3eee4;
+    }
+    .map-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(#fff 0 0) 12% 0 / 10px 100%,
+        linear-gradient(#fff 0 0) 48% 0 / 7px 100%,
+        linear-gradient(#fff 0 0) 78% 0 / 8px 100%,
+        linear-gradient(#fff 0 0) 0 28% / 100% 8px,
+        linear-gradient(#fff 0 0) 0 62% / 100% 6px,
+        linear-gradient(#fff 0 0) 0 84% / 100% 7px;
+      background-repeat: no-repeat;
+      opacity: 0.9;
+    }
+    .puck {
+      position: absolute;
+      left: 52%;
+      top: 46%;
+      z-index: 1;
+      width: 14px;
+      height: 14px;
+      margin: -7px 0 0 -7px;
+      background: #007aff;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 10px rgba(0, 122, 255, 0.22);
+    }
+    .screen.has-map > :not(.map-layer):not(.puck) { position: relative; z-index: 2; }
+    .screen.has-map .row,
+    .screen.has-map .metric,
+    .screen.has-map .error,
+    .screen.has-map .busy {
+      background: rgb(255 253 248 / 92%);
+    }
+    .screen.has-map h4,
+    .screen.has-map .help,
+    .screen.has-map .label {
+      text-shadow: 0 1px 0 rgb(255 255 255 / 80%);
+    }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h4 { margin: 0; font-size: 1.35rem; }
+    .help { color: var(--muted); font-size: 0.9rem; margin: 0; }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .row b { display: block; font-size: 0.95rem; }
+    .row p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+    .check {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      color: #fff;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .check.on { background: var(--accent); border-color: var(--accent); }
+    .spacer { flex: 1; }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.disabled { background: var(--soft); color: var(--muted); }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .btn.warn { background: var(--danger); color: #fff; }
+    .error {
+      color: var(--danger);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      background: #f8ece8;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .busy {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .metric {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .metric b { display: block; font-size: 1.15rem; }
+    .metric span { color: var(--muted); font-size: 0.72rem; }
+    .tabs {
+      display: flex;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .tabs span {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .tabs span.on { color: var(--accent); font-weight: 700; }
+    .caption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Active Walk 画面モック</h1>
+    <p class="lede">
+      認証済みシェルの Walk タブは Ready / Starting / Recording / Completed / Failed を表示する。
+      同じ Owner の Dog を1頭以上選び、foreground と background の位置情報を許可すると Start できる。
+      位置情報を許可しているときは、画面背景を Apple MapKit の地図にし、現在地を表示する。
+      開始成功後は Recording、Finish 成功後は Completed、破棄時は Failed。
+    </p>
+
+    <div class="note">
+      Route: <code>/(tabs)/walk</code>。タブは Dogs と Walk。
+      API: <code>GET /v1/walks/active</code>、<code>POST /v1/walks</code>、<code>POST /v1/walks/:walkId/finish</code>、<code>DELETE /v1/walks/:walkId</code>。
+      位置情報許可時の地図は Apple MapKit。現在地のみ表示し、TrackPoint の経路は描かない。
+      TrackPoint、Event、Walk Detail、Goal progress、Owner タブはこのセッションの画面に含めない。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>WalkTabs</code> — Dogs / Walk</li>
+        <li><code>WalkScreen</code> — Walk タブの枠</li>
+        <li><code>ReadyState</code> — Dog 選択と Start</li>
+        <li><code>DogPickRow</code> — 選択できる Dog</li>
+        <li><code>StartCondition</code> — 不足理由（未選択 / 位置情報）</li>
+        <li><code>AllowLocationButton</code> — foreground / background 許可を求める</li>
+        <li><code>MapBackground</code> — 許可済みのとき Apple MapKit を背景にする</li>
+        <li><code>CurrentLocation</code> — 端末の現在地</li>
+        <li><code>StartButton</code> — 開始条件が揃ったとき有効</li>
+        <li><code>StartingState</code> — 開始要求中</li>
+        <li><code>RecordingState</code> — Participant 名と経過時間、Finish</li>
+        <li><code>ElapsedTime</code> — startedAt からの経過</li>
+        <li><code>FinishButton</code> — Completed への遷移を要求</li>
+        <li><code>CompletedState</code> — 所要時間、距離 0、Participant</li>
+        <li><code>FailedState</code> — 破棄後の理由と Ready へ戻る操作</li>
+        <li><code>RetryableError</code> — 同じ操作の再試行</li>
+        <li><code>EmptyDogs</code> — Dog 0件と登録導線</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onOpenWalk</code> — Walk タブを開き <code>GET /v1/walks/active</code> と Dog 一覧を照合する</li>
+        <li><code>onToggleDog</code> — Participant 候補の選択を切り替える</li>
+        <li><code>onAllowLocation</code> — foreground / background 位置情報の許可を求める</li>
+        <li><code>onStart</code> — 選択した <code>participantDogIds</code> で <code>POST /v1/walks</code> を送る</li>
+        <li><code>onRetryStart</code> — 同じ選択で開始を再送する</li>
+        <li><code>onFinish</code> — <code>POST /v1/walks/:walkId/finish</code> を送る</li>
+        <li><code>onRetryFinish</code> — 同じ Finish を再送する</li>
+        <li><code>onBackToReady</code> — Completed / Failed から Ready へ戻る</li>
+        <li><code>onRetryLoad</code> — Ready の取得を再実行する</li>
+        <li><code>onOpenRegister</code> — Dog 0件から <code>/dogs/new</code> へ進む</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>WALK-01 · Loading</h3>
+        <div class="phone" aria-label="Walk ready loading">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <div class="busy">読み込み中…</div>
+            <div class="spacer"></div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">GET /v1/walks/active と Dog 一覧の取得中。Empty を出さない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · Empty dogs</h3>
+        <div class="phone" aria-label="Walk ready empty dogs">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <p class="help">散歩に連れて行く Dog を登録してください。</p>
+            <div class="spacer"></div>
+            <div class="btn disabled">開始する</div>
+            <div class="btn primary">Dog を登録</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">位置情報許可済み · Dog 0件のため Start は無効 · 未許可なら地図は出さない</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · No dog selected</h3>
+        <div class="phone" aria-label="Walk ready no selection">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <p class="help">連れて行く Dog を選んでください。</p>
+            <div class="row">
+              <div class="check"></div>
+              <div><b>Mugi</b></div>
+            </div>
+            <div class="row">
+              <div class="check"></div>
+              <div><b>Sora</b></div>
+            </div>
+            <div class="error">Dog を1頭以上選んでください。</div>
+            <div class="spacer"></div>
+            <div class="btn disabled">開始する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">位置情報許可済み · Apple MapKit と現在地 · 未選択のため Start は無効</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · Location required</h3>
+        <div class="phone" aria-label="Walk ready location required">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <p class="help">連れて行く Dog を選んでください。</p>
+            <div class="row">
+              <div class="check on">✓</div>
+              <div><b>Mugi</b></div>
+            </div>
+            <div class="row">
+              <div class="check"></div>
+              <div><b>Sora</b></div>
+            </div>
+            <div class="error">位置情報（使用中および常に）を許可してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">位置情報を許可</div>
+            <div class="btn disabled">開始する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">未許可のため地図と現在地は出さない · foreground と background の許可が Start の条件</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · Startable</h3>
+        <div class="phone" aria-label="Walk ready startable">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <p class="help">連れて行く Dog を選んでください。</p>
+            <div class="row">
+              <div class="check on">✓</div>
+              <div><b>Mugi</b></div>
+            </div>
+            <div class="row">
+              <div class="check on">✓</div>
+              <div><b>Sora</b></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn primary">開始する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Dog 1頭以上 + 位置情報許可 · Apple MapKit と現在地 · POST /v1/walks</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · Start failed</h3>
+        <div class="phone" aria-label="Walk ready start failed">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <p class="help">連れて行く Dog を選んでください。</p>
+            <div class="row">
+              <div class="check on">✓</div>
+              <div><b>Mugi</b></div>
+            </div>
+            <div class="error">開始に失敗しました。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">開始する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">API 開始失敗 · 地図と現在地は維持し、同じ送信で Retry</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-01 · Retryable error</h3>
+        <div class="phone" aria-label="Walk ready load error">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">walk</div>
+            <h4>Ready</h4>
+            <div class="error">読み込めませんでした。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn primary">再試行</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">GET /v1/walks/active または Dog 一覧の再試行</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-02 · Starting</h3>
+        <div class="phone" aria-label="Walk starting">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">walk status</div>
+            <h4>開始しています</h4>
+            <p class="help">選択した Dog で散歩を開始します。</p>
+            <div class="row"><div><b>Mugi</b><p>participant</p></div></div>
+            <div class="row"><div><b>Sora</b><p>participant</p></div></div>
+            <div class="busy">開始しています…</div>
+            <div class="spacer"></div>
+            <div class="btn primary" style="opacity:0.45">開始する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">POST /v1/walks の要求中 · 地図と現在地を維持する</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Recording</h3>
+        <div class="phone" aria-label="Walk recording">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">recording</div>
+            <h4>記録中</h4>
+            <div class="metrics">
+              <div class="metric"><b>12:04</b><span>経過</span></div>
+            </div>
+            <div class="row"><div><b>Mugi</b><p>participant</p></div></div>
+            <div class="row"><div><b>Sora</b><p>participant</p></div></div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Apple MapKit と現在地 · 経路と Event は後続</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Finish failed</h3>
+        <div class="phone" aria-label="Walk finish failed">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen has-map">
+            <div class="map-layer" aria-hidden="true"></div>
+            <div class="puck" title="現在地"></div>
+            <div class="label">recording</div>
+            <h4>記録中</h4>
+            <div class="metrics">
+              <div class="metric"><b>12:04</b><span>経過</span></div>
+            </div>
+            <div class="row"><div><b>Mugi</b><p>participant</p></div></div>
+            <div class="error">終了に失敗しました。再試行してください。</div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Finish 失敗 · Recording と地図・現在地を維持し、同じ Finish を Retry</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Completed</h3>
+        <div class="phone" aria-label="Walk completed">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">walk complete</div>
+            <h4>散歩が完了しました</h4>
+            <div class="metrics">
+              <div class="metric"><b>32分</b><span>時間</span></div>
+              <div class="metric"><b>0 m</b><span>距離</span></div>
+            </div>
+            <div class="row"><div><b>Participants</b><p>Mugi, Sora</p></div></div>
+            <div class="spacer"></div>
+            <div class="btn primary">Ready へ戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Finish 成功 · TrackPoint 0件は距離 0 · Walk Detail は後続</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Failed</h3>
+        <div class="phone" aria-label="Walk failed">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="label">walk status</div>
+            <h4>記録に失敗しました</h4>
+            <p class="help">この散歩は破棄されました。</p>
+            <div class="spacer"></div>
+            <div class="btn primary">Ready へ戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">位置情報許可の取り消し、または API 上の Active Walk 消失</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

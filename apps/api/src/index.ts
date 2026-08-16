@@ -23,12 +23,12 @@ import {
 } from './infrastructure/database/client.js'
 import { createDrizzleDogRepository } from './infrastructure/database/repositories/drizzle-dog-repository.js'
 import { createDrizzleOwnerRepository } from './infrastructure/database/repositories/drizzle-owner-repository.js'
+import { createDrizzleWalkRepository } from './infrastructure/database/repositories/drizzle-walk-repository.js'
 import {
   createLogger as createProductionLogger,
   type Logger,
 } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
-import { createAbsentActiveWalkCommands } from './infrastructure/walks/absent-active-walk-commands.js'
 import {
   registerAuthRoutes,
   type AuthRouteDependencies,
@@ -55,7 +55,16 @@ import {
 } from './modules/owners/index.js'
 import { createGetOwner } from './modules/owners/use-cases/get-owner.js'
 import { createUpdateOwnerDisplayName } from './modules/owners/use-cases/update-owner-display-name.js'
-import type { ActiveWalkCommands } from './modules/walks/active-walk-commands.js'
+import {
+  registerWalkRoutes,
+  type ActiveWalkCommands,
+  type WalkRepository,
+  type WalkRouteDependencies,
+} from './modules/walks/index.js'
+import { createDeleteWalk } from './modules/walks/use-cases/delete-walk.js'
+import { createFinishWalk } from './modules/walks/use-cases/finish-walk.js'
+import { createGetActiveWalk } from './modules/walks/use-cases/get-active-walk.js'
+import { createStartWalk } from './modules/walks/use-cases/start-walk.js'
 import type { AccessTokenVerifier } from './shared/http/access-token.js'
 import type { App } from './shared/http/types.js'
 
@@ -75,7 +84,7 @@ export type ApplicationResources = {
   closeSentry: () => Promise<void>
 }
 
-export type ApplicationUseCases = AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies
+export type ApplicationUseCases = AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies & WalkRouteDependencies
 
 export type ApplicationFactories = {
   loadConfigs: (env: NodeJS.ProcessEnv) => ApplicationConfigs
@@ -85,18 +94,21 @@ export type ApplicationFactories = {
   createAuthProvider: (client: CognitoClient) => AuthProvider
   createOwnerRepository: (db: DbInstance) => OwnerRepository
   createDogRepository: (db: DbInstance) => DogRepository
-  createActiveWalkCommands: () => ActiveWalkCommands
+  createWalkRepository: (db: DbInstance) => WalkRepository
+  createActiveWalkCommands: (walks: WalkRepository) => ActiveWalkCommands
   createAccessTokenVerifier: (config: CognitoConfig) => AccessTokenVerifier
   createUseCases: (dependencies: {
     authProvider: AuthProvider
     ownerRepository: OwnerRepository
     dogRepository: DogRepository
+    walkRepository: WalkRepository
     activeWalkCommands: ActiveWalkCommands
     accessTokenVerifier: AccessTokenVerifier
   }) => ApplicationUseCases
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
   createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
   createDogRoutes: (dependencies: DogRouteDependencies) => App
+  createWalkRoutes: (dependencies: WalkRouteDependencies) => App
   createHealthRoutes: () => App
   createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
 }
@@ -127,8 +139,11 @@ const defaultFactories: ApplicationFactories = {
   createDogRepository(database) {
     return createDrizzleDogRepository(database)
   },
-  createActiveWalkCommands() {
-    return createAbsentActiveWalkCommands()
+  createWalkRepository(database) {
+    return createDrizzleWalkRepository(database)
+  },
+  createActiveWalkCommands(walks) {
+    return walks
   },
   createAccessTokenVerifier(config) {
     return createProductionAccessTokenVerifier(config)
@@ -137,6 +152,7 @@ const defaultFactories: ApplicationFactories = {
     authProvider,
     ownerRepository,
     dogRepository,
+    walkRepository,
     activeWalkCommands,
     accessTokenVerifier,
   }) {
@@ -152,6 +168,10 @@ const defaultFactories: ApplicationFactories = {
       listDogs: createListDogs(ownerRepository, dogRepository),
       createDog: createCreateDog(ownerRepository, dogRepository),
       getDog: createGetDog(ownerRepository, dogRepository),
+      getActiveWalk: createGetActiveWalk(ownerRepository, walkRepository),
+      startWalk: createStartWalk(ownerRepository, walkRepository),
+      finishWalk: createFinishWalk(ownerRepository, walkRepository),
+      deleteWalk: createDeleteWalk(ownerRepository, walkRepository),
     }
   },
   createAuthRoutes(dependencies) {
@@ -162,6 +182,9 @@ const defaultFactories: ApplicationFactories = {
   },
   createDogRoutes(dependencies) {
     return registerDogRoutes(dependencies)
+  },
+  createWalkRoutes(dependencies) {
+    return registerWalkRoutes(dependencies)
   },
   createHealthRoutes() {
     return registerHealthRoutes()
@@ -182,18 +205,21 @@ export function createApplication(
   const authProvider = factories.createAuthProvider(cognitoClient)
   const ownerRepository = factories.createOwnerRepository(database)
   const dogRepository = factories.createDogRepository(database)
-  const activeWalkCommands = factories.createActiveWalkCommands()
+  const walkRepository = factories.createWalkRepository(database)
+  const activeWalkCommands = factories.createActiveWalkCommands(walkRepository)
   const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
   const useCases = factories.createUseCases({
     authProvider,
     ownerRepository,
     dogRepository,
+    walkRepository,
     activeWalkCommands,
     accessTokenVerifier,
   })
   const authRoutes = factories.createAuthRoutes(useCases)
   const ownerRoutes = factories.createOwnerRoutes(useCases)
   const dogRoutes = factories.createDogRoutes(useCases)
+  const walkRoutes = factories.createWalkRoutes(useCases)
   const healthRoutes = factories.createHealthRoutes()
   const app = factories.createApp(
     { logger, setRequestId: setRequestIdTag },
@@ -202,6 +228,7 @@ export function createApplication(
       { path: '/v1/auth', app: authRoutes },
       { path: '/v1/owner', app: ownerRoutes },
       { path: '/v1/dogs', app: dogRoutes },
+      { path: '/v1/walks', app: walkRoutes },
     ],
   )
 

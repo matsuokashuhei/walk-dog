@@ -41,10 +41,10 @@ R1は次の縦切り順で進める。
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **1. アカウント**（Sign Up / Sign In / OTP / Owner 表示名 / Sign Out） | 必須（owners・表示名） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
 | **2. Dog**（一覧・登録・プロフィール Detail、登録時 Daily 30分 Goal Revision） | 必須（Dog / Goal Revision） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
-| **3. Active Walk**（Ready → Starting → Recording → Completed / Failed を API と同期） | 必須（Walk / Participant） | 必須 | 必須 | 必須 | — | 必須（foreground / background） | — | — | — | 配布・VPS反映 |
+| **3. Active Walk**（Ready → Starting → Recording → Completed / Failed を API と同期。許可時は Apple MapKit で現在地） | 必須（Walk / Participant） | 必須 | 必須 | 必須 | — | 必須（foreground / background） | — | — | — | 配布・VPS反映 |
 | **4. TrackPoint**（10秒ごと連番送信 → SQS → worker → DynamoDB） | — | 必須 | 必須 | 必須 | 必須 | 必須（取得元） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
 | **5. Finish**（受理済み連番の処理確定後に Completed） | — | 必須 | 必須 | 必須 | 必須（未送信の吐き出し） | 必須（記録継続） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
-| **6. Event + Detail**（Pee / Poop / Sniff / Greet、eventId Retry、地図・距離・時間・Event） | 必須（Event） | 必須 | 必須 | 必須 | 必須（Event Retry） | 必須（Event の latitude / longitude） | 必須（DynamoDB 経路） | 必須 | 必須 | 配布・VPS反映 |
+| **6. Event + Detail**（Pee / Poop / Sniff / Greet、eventId Retry、経路・距離・時間・Event） | 必須（Event） | 必須 | 必須 | 必須 | 必須（Event Retry） | 必須（Event の latitude / longitude） | 必須（DynamoDB 経路） | 必須 | 必須 | 配布・VPS反映 |
 | **7. 実機検証**（起動／Foreground 復帰／タブ移動での Active Walk 照合、バックグラウンド位置） | — | 必須 | 必須 | 必須 | 必須（通信復帰） | 必須（foreground / background） | VPS API実機 | ローカルAPI実機 | 必須 | VPS API実機 |
 
 前提の意味:
@@ -52,7 +52,7 @@ R1は次の縦切り順で進める。
 - **モバイル認証状態** … Cognito セッションの保持・復元・access token 付与（認証の提供者は Cognito。端末内の認証状態管理とは別層）
 - **モバイル API クライアント** … OpenAPI から生成した型付き client と共通エラー処理
 - **永続送信キュー** … 端末内の送信待ち（SQS ではない。流れは 端末キュー → API → SQS → worker → DynamoDB）
-- **iOS 位置情報権限** … foreground / background 許可と Start 条件・取得の土台
+- **iOS 位置情報権限** … foreground / background 許可と Start 条件・取得の土台。許可時の Walk 画面は Apple MapKit を背景にし、現在地を表示する。
 - **Owner / Dog Avatar と S3** … Dog AvatarはR2（Dog編集・Avatarアップロード）、Owner AvatarはR3（Owner編集）の前提
 
 ## R0: 開発基盤
@@ -69,11 +69,14 @@ R1は次の縦切り順で進める。
 - Sign Outは、Active Walkがある場合に確認ダイアログを表示し、承諾後にActive WalkをFailedにしてからCognito sessionを無効化する。Active Walkがない場合は確認なしでSign Outする。
 - アカウント縦切りの Settings（`/settings`）は Sign Out と法務リンク（利用規約、プライバシーポリシー、アプリ情報）を提供する。
 - 認証済みホームは Dogs List を表示する。Empty と追加操作から `/dogs/new` で Name と Gender を登録し、Birthday は任意とする。登録時に Daily 30分の Goal Revision を作成する。一覧の行から `/dogs/:dogId` で名前、Gender、Birthday、currentGoal を表示する。
-- Walk Ready は同じ Owner の Dog を1頭以上選択して開始する。
-- Ready、Starting、Recording、Completed、Failedを、APIのActive Walkと同期して表示する。
+- 認証済みシェルは Dogs と Walk のタブを置く。Walk 画面は `/(tabs)/walk` で Ready、Starting、Recording、Completed、Failed を API の Active Walk と同期して表示する。
+- Walk Ready は同じ Owner の Dog を1頭以上選択し、foreground と background の位置情報を許可すると開始する。不足条件は理由を表示する。
+- 位置情報を許可している Walk 画面は Apple MapKit を背景にし、現在地を表示する。未許可のときは地図と現在地を出さない。
+- `POST /v1/walks` は開始成功時に `recording` を返す。Starting は開始要求中の画面状態。
+- この縦切りの Finish は受理済み連番を待たず Completed にする。TrackPoint 0件の Completed は距離 0。連番確定待ちは縦切り 5。
 - 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。
 - Finishは受理済み連番までのTrackPoint処理が確定した後にCompletedへ遷移する。
-- Participant別のPee、Poop、Sniff、Greet、同一eventIdでの手動Retry、Walk Detailの地図、距離、時間、Eventを実装する。
+- Participant別のPee、Poop、Sniff、Greet、同一eventIdでの手動Retry、Walk Detailの経路、距離、時間、Eventを実装する。
 - 起動、Foreground復帰、タブ移動時にActive Walkを照合し、バックグラウンド位置記録をiPhone実機で検証する。
 
 ## R2: 振り返りとDog管理
@@ -97,10 +100,14 @@ R1は次の縦切り順で進める。
 - `GET /v1/owner` はAccess Tokenで認証し、現在のOwnerを返す。`displayName` は未設定時 `null`、設定後は保存した値。
 - `PATCH /v1/owner` はAccess Tokenで認証し、`displayName` を受けてOwnerを返す。`displayName` は前後空白除去後 1〜100 文字。
 - `POST /v1/auth/sign-out` はAccess Tokenで認証し、成功時に204を返す。Active Walkがある場合はFailedにしてからsessionを無効化する。
+- `DELETE /v1/walks/:walkId` はAccess Tokenで認証し、その Owner の `recording` Walk を `failed` にして204を返す。すでに `failed` の再送も204。`completed` は 409 `WALK_NOT_RECORDING`。
 - `GET /v1/dogs` はAccess Tokenで認証し、そのOwnerが管理するDogと各DogのcurrentGoalを返す。0件は空配列。
 - `POST /v1/dogs` はAccess Tokenで認証し、`name` と `gender` を必須、`birthday` を任意として受け、DogとDaily 30分のGoal Revisionを返す。`name` は同一Owner内で一意、前後空白除去後 1〜100 文字。`gender` は `male` / `female` / `unknown`。`birthday` 省略時の精度は `unknown`。同一OwnerのName重複は 409 `DOG_NAME_DUPLICATE`。
 - `GET /v1/dogs/:dogId` はAccess Tokenで認証し、そのOwnerが管理するDogとcurrentGoalを返す。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
-- `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。
+- `GET /v1/walks/active` はAccess Tokenで認証し、そのOwnerのActive Walkを返す。無いときは204。この縦切りの Active Walk の `state` は `recording`。`participants` は `walkParticipantId`、`dogId`、応答時点の `name`。
+- `POST /v1/walks` はAccess Tokenで認証し、`participantDogIds` と `Idempotency-Key` を受け、`recording` のWalkを返す。`participantDogIds` は同一OwnerのDogを1頭以上、重複なし。既にActive Walkがあるときは 409 `ACTIVE_WALK_EXISTS`。同一Keyで異なるbodyは 409 `IDEMPOTENCY_CONFLICT`。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
+- `POST /v1/walks/:walkId/finish` はAccess Tokenで認証し、空のbody `{}` と `Idempotency-Key` を受け、Completed Walkを返す。`durationSeconds` は `startedAt` から `completedAt` までの秒。`distanceMeters` はこの縦切りでは 0。`paceSecondsPerMeter` は距離0のため `null`。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
+- `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。開始とFinishはEndpointごとに別名前空間。有効期間は処理開始から24時間。
 - `eventId` はEventの冪等キー、`sequence` はWalk内のTrackPoint送信順序を表す。
 - PostgreSQLはOwner、Dog、Goal Revision、Walk、Participant、Event、Preferenceを扱い、DynamoDBはTrackPointを扱う。
 

@@ -11,7 +11,10 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.cacheandbuffer.walkdog",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "散歩の記録と地図の現在地表示に使います。",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "散歩の記録と地図の現在地表示に使います。",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
@@ -37,7 +40,16 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "散歩の記録と地図の現在地表示に使います。",
+          "locationAlwaysAndWhenInUsePermission": "散歩の記録と地図の現在地表示に使います。",
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-maps"
     ],
     "experiments": {
       "typedRoutes": true,

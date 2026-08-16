@@ -22,7 +22,15 @@ import type {
   OwnerRouteDependencies,
   UpdateOwnerDisplayName,
 } from '../src/modules/owners/index.js'
-import type { ActiveWalkCommands } from '../src/modules/walks/active-walk-commands.js'
+import type {
+  ActiveWalkCommands,
+  DeleteWalk,
+  FinishWalk,
+  GetActiveWalk,
+  StartWalk,
+  WalkRepository,
+  WalkRouteDependencies,
+} from '../src/modules/walks/index.js'
 import type { AppVariables } from '../src/shared/http/types.js'
 import {
   createApplication,
@@ -70,6 +78,7 @@ test('createApplication shares one database and Cognito client through the objec
   const authProvider = { kind: 'auth-provider' } as unknown as AuthProvider
   const ownerRepository = { kind: 'owner-repository' } as unknown as OwnerRepository
   const dogRepository = { kind: 'dog-repository' } as unknown as DogRepository
+  const walkRepository = { kind: 'walk-repository' } as unknown as WalkRepository
   const activeWalkCommands = { kind: 'active-walk-commands' } as unknown as ActiveWalkCommands
   const accessTokenVerifier = { kind: 'access-token-verifier' } as unknown as AccessTokenVerifier
   const getOwner: GetOwner = async () => {
@@ -85,6 +94,18 @@ test('createApplication shares one database and Cognito client through the objec
     throw new Error('unused')
   }
   const getDog: GetDog = async () => {
+    throw new Error('unused')
+  }
+  const getActiveWalk: GetActiveWalk = async () => {
+    throw new Error('unused')
+  }
+  const startWalk: StartWalk = async () => {
+    throw new Error('unused')
+  }
+  const finishWalk: FinishWalk = async () => {
+    throw new Error('unused')
+  }
+  const deleteWalk: DeleteWalk = async () => {
     throw new Error('unused')
   }
   const useCases = {
@@ -109,10 +130,15 @@ test('createApplication shares one database and Cognito client through the objec
     listDogs,
     createDog,
     getDog,
-  } satisfies AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies
+    getActiveWalk,
+    startWalk,
+    finishWalk,
+    deleteWalk,
+  } satisfies AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies & WalkRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const ownerRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const dogRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
+  const walkRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const healthRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const composedApp = new OpenAPIHono<{ Variables: AppVariables }>()
   let receivedDatabase: DbInstance | undefined
@@ -120,11 +146,13 @@ test('createApplication shares one database and Cognito client through the objec
   let receivedAuthProvider: AuthProvider | undefined
   let receivedOwnerRepository: OwnerRepository | undefined
   let receivedDogRepository: DogRepository | undefined
+  let receivedWalkRepository: WalkRepository | undefined
   let receivedActiveWalkCommands: ActiveWalkCommands | undefined
   let receivedAccessTokenVerifier: AccessTokenVerifier | undefined
   let receivedUseCases: AuthRouteDependencies | undefined
   let receivedOwnerRouteDependencies: OwnerRouteDependencies | undefined
   let receivedDogRouteDependencies: DogRouteDependencies | undefined
+  let receivedWalkRouteDependencies: WalkRouteDependencies | undefined
   let receivedRoutes: ModuleRoute[] | undefined
 
   const factories: ApplicationFactories = {
@@ -166,8 +194,14 @@ test('createApplication shares one database and Cognito client through the objec
       assert.equal(databaseInstance, receivedDatabase)
       return dogRepository
     },
-    createActiveWalkCommands() {
+    createWalkRepository(databaseInstance) {
+      calls.push('walk-repository')
+      assert.equal(databaseInstance, receivedDatabase)
+      return walkRepository
+    },
+    createActiveWalkCommands(walks) {
       calls.push('active-walk-commands')
+      receivedWalkRepository = walks
       return activeWalkCommands
     },
     createAccessTokenVerifier(config) {
@@ -180,6 +214,7 @@ test('createApplication shares one database and Cognito client through the objec
       receivedAuthProvider = dependencies.authProvider
       receivedOwnerRepository = dependencies.ownerRepository
       receivedDogRepository = dependencies.dogRepository
+      assert.equal(dependencies.walkRepository, walkRepository)
       receivedActiveWalkCommands = dependencies.activeWalkCommands
       receivedAccessTokenVerifier = dependencies.accessTokenVerifier
       return useCases
@@ -198,6 +233,11 @@ test('createApplication shares one database and Cognito client through the objec
       calls.push('dog-routes')
       receivedDogRouteDependencies = dependencies
       return dogRoutes
+    },
+    createWalkRoutes(dependencies) {
+      calls.push('walk-routes')
+      receivedWalkRouteDependencies = dependencies
+      return walkRoutes
     },
     createHealthRoutes() {
       calls.push('health-routes')
@@ -223,12 +263,14 @@ test('createApplication shares one database and Cognito client through the objec
     'auth-provider',
     'owner-repository',
     'dog-repository',
+    'walk-repository',
     'active-walk-commands',
     'access-token-verifier',
     'use-cases',
     'auth-routes',
     'owner-routes',
     'dog-routes',
+    'walk-routes',
     'health-routes',
     'app',
   ])
@@ -240,11 +282,13 @@ test('createApplication shares one database and Cognito client through the objec
   assert.equal(receivedAuthProvider, authProvider)
   assert.equal(receivedOwnerRepository, ownerRepository)
   assert.equal(receivedDogRepository, dogRepository)
+  assert.equal(receivedWalkRepository, walkRepository)
   assert.equal(receivedActiveWalkCommands, activeWalkCommands)
   assert.equal(receivedAccessTokenVerifier, accessTokenVerifier)
   assert.equal(receivedUseCases, useCases)
   assert.equal(receivedOwnerRouteDependencies, useCases)
   assert.equal(receivedDogRouteDependencies, useCases)
+  assert.equal(receivedWalkRouteDependencies, useCases)
   assert.deepEqual(
     receivedRoutes?.map((route) => ({ path: route.path, app: route.app })),
     [
@@ -252,6 +296,7 @@ test('createApplication shares one database and Cognito client through the objec
       { path: '/v1/auth', app: authRoutes },
       { path: '/v1/owner', app: ownerRoutes },
       { path: '/v1/dogs', app: dogRoutes },
+      { path: '/v1/walks', app: walkRoutes },
     ],
   )
 })

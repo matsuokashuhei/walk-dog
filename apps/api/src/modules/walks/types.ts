@@ -41,6 +41,22 @@ export type FinishWalkInput = {
   bodyHash: string
 }
 
+export type TrackPoint = {
+  trackPointId: string
+  walkId: string
+  recordedAt: Date
+  latitude: number
+  longitude: number
+}
+
+export type AcceptTrackPointInput = {
+  ownerId: string
+  walkId: string
+  recordedAt: Date
+  latitude: number
+  longitude: number
+}
+
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>
 
 export type StartWalk = (input: {

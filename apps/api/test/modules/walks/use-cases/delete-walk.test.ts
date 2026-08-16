@@ -43,6 +43,9 @@ function walksFake(fail: WalkRepository['fail']): WalkRepository {
     async failIfPresent() {
       throw new Error('unexpected failIfPresent')
     },
+    async acceptTrackPoint() {
+      throw new Error('unexpected acceptTrackPoint')
+    },
   }
 }
 

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { registerWalkRoutes } from '../../../../src/modules/walks/routes/index.js'
 import {
   createWalkApp,
+  unusedDeleteWalk,
   unusedFinishWalk,
   unusedStartWalk,
 } from '../fixtures.js'
@@ -13,6 +14,7 @@ test('registerWalkRoutes serves GET /v1/walks/active on the mounted child app', 
       getActiveWalk: async () => null,
       startWalk: unusedStartWalk,
       finishWalk: unusedFinishWalk,
+      deleteWalk: unusedDeleteWalk,
       accessTokenVerifier: {
         async verify() {
           return { cognitoSubject: 'sub-1' }

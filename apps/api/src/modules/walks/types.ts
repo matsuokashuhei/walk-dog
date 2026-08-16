@@ -60,3 +60,11 @@ export type FinishWalk = (input: {
   | { ok: true; walk: CompletedWalk }
   | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
 >
+
+export type DeleteWalk = (input: {
+  cognitoSubject: string
+  walkId: string
+}) => Promise<
+  | { ok: true }
+  | { ok: false; error: 'not_found' | 'walk_not_recording' }
+>

@@ -61,6 +61,7 @@ import {
   type WalkRepository,
   type WalkRouteDependencies,
 } from './modules/walks/index.js'
+import { createDeleteWalk } from './modules/walks/use-cases/delete-walk.js'
 import { createFinishWalk } from './modules/walks/use-cases/finish-walk.js'
 import { createGetActiveWalk } from './modules/walks/use-cases/get-active-walk.js'
 import { createStartWalk } from './modules/walks/use-cases/start-walk.js'
@@ -170,6 +171,7 @@ const defaultFactories: ApplicationFactories = {
       getActiveWalk: createGetActiveWalk(ownerRepository, walkRepository),
       startWalk: createStartWalk(ownerRepository, walkRepository),
       finishWalk: createFinishWalk(ownerRepository, walkRepository),
+      deleteWalk: createDeleteWalk(ownerRepository, walkRepository),
     }
   },
   createAuthRoutes(dependencies) {

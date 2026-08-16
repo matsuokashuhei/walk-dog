@@ -1,4 +1,5 @@
 export type {
+  DeleteWalk,
   FinishWalk,
   GetActiveWalk,
   StartWalk,

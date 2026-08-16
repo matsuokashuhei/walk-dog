@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { DrizzleQueryError } from 'drizzle-orm/errors'
-import type { DbInstance } from '../../../src/infrastructure/database/client.js'
 import { createDrizzleWalkRepository } from '../../../src/infrastructure/database/repositories/drizzle-walk-repository.js'
 import { dogs } from '../../../src/infrastructure/database/schema/dog.js'
 import { walkCommandKeys } from '../../../src/infrastructure/database/schema/walk-command-key.js'
@@ -13,6 +11,12 @@ import {
   WalkNotFoundError,
   WalkNotRecordingError,
 } from '../../../src/modules/walks/errors.js'
+import {
+  createWalkDatabaseFake,
+  isError,
+  uniqueViolation,
+  updateWhereGatesRecording,
+} from './walk-repository-fake.js'
 
 const startedAt = new Date('2026-08-15T12:00:00.000Z')
 const completedAt = new Date('2026-08-15T12:10:30.500Z')
@@ -32,6 +36,10 @@ const recordingWalkRow = {
 const completedWalkRow = {
   walkId, ownerId, state: 'completed' as const, startedAt, completedAt, createdAt: startedAt, updatedAt: completedAt,
 }
+const failedWalkRow = {
+  walkId, ownerId, state: 'failed' as const, startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt,
+}
+const failInput = { ownerId, walkId }
 const participantRow1 = {
   walkParticipantId: '019fc321-aaaa-73c4-9351-2a6ea25e4f01', walkId, dogId: dogId1, name: 'Mugi', position: 0, createdAt: startedAt,
 }
@@ -61,112 +69,11 @@ const finishCommandKeyRow = {
   key: finishKey, bodyHash: finishHash, walkId, createdAt: startedAt,
 }
 
-function createDatabaseFake(options: {
-  selectResults?: unknown[][]; insertResults?: unknown[][]; updateResult?: unknown[]
-  insertError?: Error; insertErrorAtIndex?: number
-}) {
-  const calls: string[] = []
-  const insertTables: unknown[] = []; const insertValues: unknown[] = []; const selectTables: unknown[] = []
-  const updateTables: unknown[] = []; const updateSets: unknown[] = []; const updateWheres: unknown[] = []
-  const selectResults = options.selectResults ?? []
-  const insertResults = options.insertResults ?? []
-  const updateResult = options.updateResult ?? []
-  let selectCallIndex = 0
-  let insertCallIndex = 0
-
-  const promiseLike = (execute: () => Promise<unknown>) => ({
-    returning: execute,
-    then: (onFulfilled: (value: unknown) => unknown, onRejected: (reason: unknown) => unknown) =>
-      execute().then(onFulfilled, onRejected),
-  })
-  const createSelectQuery = () => {
-    const execute = async () => {
-      calls.push('select')
-      const result = selectResults[selectCallIndex] ?? []
-      selectCallIndex += 1
-      return result
-    }
-    const query = {
-      from: (table: unknown) => {
-        selectTables.push(table)
-        return query
-      },
-      where: () => query,
-      orderBy: () => {
-        calls.push('orderBy')
-        return query
-      },
-      then: (onFulfilled: (value: unknown) => unknown, onRejected: (reason: unknown) => unknown) =>
-        execute().then(onFulfilled, onRejected),
-    }
-    return query
-  }
-  const values = (value: unknown) => {
-    insertValues.push(value)
-    calls.push('insert')
-    return {
-      returning: async () => {
-        if (options.insertError && insertCallIndex === (options.insertErrorAtIndex ?? 0)) {
-          throw options.insertError
-        }
-        const result = insertResults[insertCallIndex] ?? []
-        insertCallIndex += 1
-        return result
-      },
-    }
-  }
-  const updateWhere = (where: unknown) => {
-    updateWheres.push(where)
-    return promiseLike(async () => updateResult)
-  }
-  const ops = {
-    select: () => createSelectQuery(),
-    insert: (table: unknown) => {
-      insertTables.push(table)
-      return { values }
-    },
-    update: (table: unknown) => {
-      updateTables.push(table)
-      calls.push('update')
-      return {
-        set: (value: unknown) => {
-          updateSets.push(value)
-          return { where: updateWhere }
-        },
-      }
-    },
-  }
-  const transaction = async (callback: (trx: typeof ops) => Promise<unknown>) => {
-    calls.push('transaction')
-    return callback(ops)
-  }
-  return {
-    database: { transaction, select: ops.select, update: ops.update, insert: ops.insert } as unknown as DbInstance,
-    calls, insertTables, insertValues, selectTables, updateTables, updateSets, updateWheres,
-  }
-}
-
-function sqlTreeIncludes(node: unknown, match: (value: Record<string, unknown>) => boolean): boolean {
-  if (node == null || typeof node !== 'object') return false
-  const record = node as Record<string, unknown>
-  const chunks = Array.isArray(node) ? node : record.queryChunks
-  return match(record) || (Array.isArray(chunks) && chunks.some((chunk) => sqlTreeIncludes(chunk, match)))
-}
-
-function updateWhereGatesRecording(where: unknown): boolean {
-  return sqlTreeIncludes(where, (value) => value.name === 'state')
-    && sqlTreeIncludes(where, (value) => value.value === 'recording' && 'encoder' in value)
-}
-
-const isError = (ErrorType: new () => Error) => (error: unknown) => error instanceof ErrorType
-
-const uniqueViolation = (constraint: string) =>
-  new DrizzleQueryError('insert', [], Object.assign(new Error('duplicate key'), { code: '23505', constraint }))
 const commandKeyUnique = uniqueViolation('walk_command_keys_owner_id_namespace_key_unique')
 
 
 test('getActiveByOwner returns the recording walk with participants in position order', async () => {
-  const { database, calls } = createDatabaseFake({
+  const { database, calls } = createWalkDatabaseFake({
     selectResults: [[recordingWalkRow], [participantRow1, participantRow2]],
   })
   assert.deepEqual(await createDrizzleWalkRepository(database).getActiveByOwner(ownerId), expectedRecordingWalk)
@@ -174,13 +81,13 @@ test('getActiveByOwner returns the recording walk with participants in position 
 })
 
 test('getActiveByOwner returns null when no recording walk exists', async () => {
-  const { database, calls } = createDatabaseFake({ selectResults: [[]] })
+  const { database, calls } = createWalkDatabaseFake({ selectResults: [[]] })
   assert.equal(await createDrizzleWalkRepository(database).getActiveByOwner(ownerId), null)
   assert.deepEqual(calls, ['select'])
 })
 
 test('start inserts a recording walk, request-order participants, and a start command key', async () => {
-  const { database, calls, insertTables, insertValues, selectTables } = createDatabaseFake({
+  const { database, calls, insertTables, insertValues, selectTables } = createWalkDatabaseFake({
     selectResults: [[], [ownedDogs[1], ownedDogs[0]]],
     insertResults: [[recordingWalkRow], [participantRow1, participantRow2], [startCommandKeyRow]],
   })
@@ -201,7 +108,7 @@ test('start inserts a recording walk, request-order participants, and a start co
 })
 
 test('start returns the existing walk when the start key and body hash match', async () => {
-  const { database, calls, insertTables } = createDatabaseFake({
+  const { database, calls, insertTables } = createWalkDatabaseFake({
     selectResults: [[startCommandKeyRow], [recordingWalkRow], [participantRow1, participantRow2]],
   })
   assert.deepEqual(await createDrizzleWalkRepository(database).start(startInput), expectedRecordingWalk)
@@ -210,12 +117,12 @@ test('start returns the existing walk when the start key and body hash match', a
 })
 
 test('start throws IdempotencyConflictError when the start key matches with a different body hash', async () => {
-  const { database } = createDatabaseFake({ selectResults: [[{ ...startCommandKeyRow, bodyHash: 'other-hash' }]] })
+  const { database } = createWalkDatabaseFake({ selectResults: [[{ ...startCommandKeyRow, bodyHash: 'other-hash' }]] })
   await assert.rejects(() => createDrizzleWalkRepository(database).start(startInput), isError(IdempotencyConflictError))
 })
 
 test('start throws ActiveWalkExistsError on recording unique violation', async () => {
-  const { database } = createDatabaseFake({
+  const { database } = createWalkDatabaseFake({
     selectResults: [[], ownedDogs],
     insertError: uniqueViolation('walks_owner_id_recording_unique'),
   })
@@ -223,7 +130,7 @@ test('start throws ActiveWalkExistsError on recording unique violation', async (
 })
 
 test('start replays the original walk when command-key unique violates with the same hash', async () => {
-  const { database } = createDatabaseFake({
+  const { database } = createWalkDatabaseFake({
     selectResults: [[], ownedDogs, [startCommandKeyRow], [recordingWalkRow], [participantRow1, participantRow2]],
     insertResults: [[recordingWalkRow], [participantRow1, participantRow2]],
     insertError: commandKeyUnique, insertErrorAtIndex: 2,
@@ -233,7 +140,7 @@ test('start replays the original walk when command-key unique violates with the 
 
 
 test('start throws IdempotencyConflictError when command-key unique violates with a different hash', async () => {
-  const { database } = createDatabaseFake({
+  const { database } = createWalkDatabaseFake({
     selectResults: [[], ownedDogs, [{ ...startCommandKeyRow, bodyHash: 'other-hash' }]],
     insertResults: [[recordingWalkRow], [participantRow1, participantRow2]],
     insertError: commandKeyUnique, insertErrorAtIndex: 2,
@@ -242,7 +149,7 @@ test('start throws IdempotencyConflictError when command-key unique violates wit
 })
 
 test('start throws WalkNotFoundError when a participant dog is missing or not owned', async () => {
-  const { database, insertTables } = createDatabaseFake({
+  const { database, insertTables } = createWalkDatabaseFake({
     selectResults: [[], [{ dogId: dogId1, name: 'Mugi' }]],
   })
   await assert.rejects(() => createDrizzleWalkRepository(database).start(startInput), isError(WalkNotFoundError))
@@ -250,7 +157,7 @@ test('start throws WalkNotFoundError when a participant dog is missing or not ow
 })
 
 test('finish completes the recording walk and stores a finish command key', async () => {
-  const { database, calls, insertTables, insertValues, updateTables, updateSets } = createDatabaseFake({
+  const { database, calls, insertTables, insertValues, updateTables, updateSets } = createWalkDatabaseFake({
     selectResults: [[], [recordingWalkRow], [participantRow1, participantRow2]],
     updateResult: [completedWalkRow],
     insertResults: [[finishCommandKeyRow]],
@@ -268,7 +175,7 @@ test('finish completes the recording walk and stores a finish command key', asyn
 })
 
 test('finish returns the existing completed walk when the finish key and body hash match', async () => {
-  const { database, calls, insertTables, updateTables } = createDatabaseFake({
+  const { database, calls, insertTables, updateTables } = createWalkDatabaseFake({
     selectResults: [[finishCommandKeyRow], [completedWalkRow], [participantRow1, participantRow2]],
   })
   assert.deepEqual(await createDrizzleWalkRepository(database).finish(finishInput), expectedCompletedWalk)
@@ -278,12 +185,12 @@ test('finish returns the existing completed walk when the finish key and body ha
 })
 
 test('finish throws IdempotencyConflictError when the finish key matches with a different body hash', async () => {
-  const { database } = createDatabaseFake({ selectResults: [[{ ...finishCommandKeyRow, bodyHash: 'other-hash' }]] })
+  const { database } = createWalkDatabaseFake({ selectResults: [[{ ...finishCommandKeyRow, bodyHash: 'other-hash' }]] })
   await assert.rejects(() => createDrizzleWalkRepository(database).finish(finishInput), isError(IdempotencyConflictError))
 })
 
 test('finish throws WalkNotFoundError for another owner or unknown walkId', async () => {
-  const { database } = createDatabaseFake({ selectResults: [[], []] })
+  const { database } = createWalkDatabaseFake({ selectResults: [[], []] })
   await assert.rejects(
     () => createDrizzleWalkRepository(database).finish({ ...finishInput, ownerId: otherOwnerId }),
     isError(WalkNotFoundError),
@@ -291,12 +198,12 @@ test('finish throws WalkNotFoundError for another owner or unknown walkId', asyn
 })
 
 test('finish throws WalkNotRecordingError when the walk is not recording', async () => {
-  const { database } = createDatabaseFake({ selectResults: [[], [completedWalkRow]] })
+  const { database } = createWalkDatabaseFake({ selectResults: [[], [completedWalkRow]] })
   await assert.rejects(() => createDrizzleWalkRepository(database).finish(finishInput), isError(WalkNotRecordingError))
 })
 
 test('finish throws WalkNotRecordingError when failIfPresent wins after the recording pre-check', async () => {
-  const { database, insertTables, insertValues, updateWheres } = createDatabaseFake({
+  const { database, insertTables, insertValues, updateWheres } = createWalkDatabaseFake({
     selectResults: [[], [recordingWalkRow]],
     updateResult: [],
   })
@@ -308,7 +215,7 @@ test('finish throws WalkNotRecordingError when failIfPresent wins after the reco
 })
 
 test('failIfPresent marks the recording walk as failed', async () => {
-  const { database, calls, updateTables, updateSets } = createDatabaseFake({
+  const { database, calls, updateTables, updateSets } = createWalkDatabaseFake({
     updateResult: [{ ...recordingWalkRow, state: 'failed' }],
   })
   await createDrizzleWalkRepository(database).failIfPresent({ ownerId })
@@ -318,9 +225,52 @@ test('failIfPresent marks the recording walk as failed', async () => {
 })
 
 test('failIfPresent resolves when no recording walk exists', async () => {
-  const { database, calls, insertTables, updateTables } = createDatabaseFake({ updateResult: [] })
+  const { database, calls, insertTables, updateTables } = createWalkDatabaseFake({ updateResult: [] })
   await createDrizzleWalkRepository(database).failIfPresent({ ownerId })
   assert.deepEqual(calls, ['update'])
   assert.deepEqual(insertTables, [])
   assert.deepEqual(updateTables, [walks])
+})
+
+test('fail marks the recording walk as failed', async () => {
+  const { database, calls, updateTables, updateSets, updateWheres } = createWalkDatabaseFake({
+    updateResult: [failedWalkRow],
+  })
+  await createDrizzleWalkRepository(database).fail(failInput)
+  assert.deepEqual(calls, ['update'])
+  assert.deepEqual(updateTables, [walks])
+  assert.deepEqual(updateSets, [{ state: 'failed' }])
+  assert.equal(updateWheres.length, 1)
+  assert.equal(updateWhereGatesRecording(updateWheres[0]), true)
+})
+
+test('fail resolves when the walk is already failed', async () => {
+  const { database, calls } = createWalkDatabaseFake({
+    selectResults: [[failedWalkRow]],
+    updateResult: [],
+  })
+  await createDrizzleWalkRepository(database).fail(failInput)
+  assert.deepEqual(calls, ['update', 'select'])
+})
+
+test('fail throws WalkNotRecordingError when the walk is completed', async () => {
+  const { database } = createWalkDatabaseFake({
+    selectResults: [[completedWalkRow]],
+    updateResult: [],
+  })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(database).fail(failInput),
+    isError(WalkNotRecordingError),
+  )
+})
+
+test('fail throws WalkNotFoundError for another owner or unknown walkId', async () => {
+  const { database } = createWalkDatabaseFake({
+    selectResults: [[]],
+    updateResult: [],
+  })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(database).fail({ ownerId: otherOwnerId, walkId }),
+    isError(WalkNotFoundError),
+  )
 })

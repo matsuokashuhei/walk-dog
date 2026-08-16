@@ -2,7 +2,7 @@ import { createRoute } from '@hono/zod-openapi'
 import type { App } from '../../../shared/http/types.js'
 import {
   completedWalkResponseSchema,
-  finishWalkParamSchema,
+  walkIdParamSchema,
   finishWalkRequestSchema,
   idempotencyKeyHeaderSchema,
   walkErrorSchema,
@@ -16,7 +16,7 @@ export const finishWalkRoute = createRoute({
   tags: ['walks'],
   security: [{ BearerAuth: [] }],
   request: {
-    params: finishWalkParamSchema,
+    params: walkIdParamSchema,
     headers: idempotencyKeyHeaderSchema,
     body: {
       content: { 'application/json': { schema: finishWalkRequestSchema } },

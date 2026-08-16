@@ -11,6 +11,7 @@ R1 Step 3 の Active Walk を API とモバイルで提供する。Owner は Dog
 | Active 照会 | `GET /v1/walks/active` → その Owner の `recording`。無ければ 204 |
 | 開始 | `POST /v1/walks` `{ participantDogIds }` + `Idempotency-Key` → `recording` |
 | Finish | `POST /v1/walks/:walkId/finish` `{}` + `Idempotency-Key` → Completed。距離 0 |
+| 破棄 | `DELETE /v1/walks/:walkId` → その Walk を `failed`。204。行は残す |
 | Walk 画面 | `/(tabs)/walk`。Ready / Starting / Recording / Completed / Failed |
 | タブ | 認証済みシェルは Dogs と Walk |
 | 地図 | 位置情報許可時は Apple MapKit を背景にし、現在地を表示する |
@@ -20,12 +21,14 @@ R1 Step 3 の Active Walk を API とモバイルで提供する。Owner は Dog
 - 有効 token の GET active は Active Walk があるとき 200、無いとき 204
 - 有効 token と同一 Owner の Dog 1頭以上の POST は 201 と `recording`
 - 有効 token の Finish は 200 Completed。`durationSeconds` は `startedAt` から `completedAt`。`distanceMeters` は 0。`paceSecondsPerMeter` は `null`
+- 有効 token の DELETE は `recording` を `failed` にして 204。すでに `failed` の再送も 204
 - token 欠如または不正は 401 `UNAUTHENTICATED`
 - `participantDogIds` 欠如、空、重複、UUID 不正、`Idempotency-Key` 欠如は 400 `INVALID_INPUT`
 - 別 Owner または存在しない `dogId` / `walkId` は 404 `NOT_FOUND`
 - 既に Active Walk がある開始は 409 `ACTIVE_WALK_EXISTS`
 - 同一 Key で異なる body は 409 `IDEMPOTENCY_CONFLICT`
 - `recording` ではない Finish は 409 `WALK_NOT_RECORDING`
+- `completed` の DELETE は 409 `WALK_NOT_RECORDING`
 - Start は Dog 未選択、または foreground / background 未許可のとき無効で、不足理由を表示する
 - 許可時は地図と現在地。未許可は地図なし
 - Sign Out 承諾時は Active Walk を Failed にしてから session を無効化する
@@ -53,6 +56,10 @@ POST /v1/walks/:walkId/finish
   → OwnerRepository.resolveByCognitoSubject
   → walks.finish({ ownerId, walkId, idempotencyKey })
   → 200 completed
+DELETE /v1/walks/:walkId
+  → OwnerRepository.resolveByCognitoSubject
+  → walks.fail({ ownerId, walkId })
+  → 204
 Sign Out
   → walks.failIfPresent({ ownerId })
   → Cognito GlobalSignOut
@@ -60,10 +67,11 @@ Sign Out
 
 | 部品 | 責務 |
 | --- | --- |
-| `walks` module | GET active、POST 開始、POST Finish の契約、use case、route。`/v1/walks` に mount |
+| `walks` module | GET active、POST 開始、POST Finish、DELETE 破棄の契約、use case、route。`/v1/walks` に mount |
 | `WalkRepository.getActiveByOwner` | その Owner の `recording` と participants。無ければ null |
 | `WalkRepository.start` | Walk を `recording` で挿入し、Participant を同じ transaction で挿入する。Owner あたり `recording` は 1 件 |
 | `WalkRepository.finish` | その Owner の `recording` を Completed にする。距離 0、所要秒を書く |
+| `WalkRepository.fail` | 指定した `recording` を Failed にする。すでに Failed なら何もしない。Completed は機能 error |
 | `WalkRepository.failIfPresent` | その Owner の `recording` を Failed にする。無ければ何もしない |
 | `WalkRepository.rememberCommand` | 開始 / Finish の Idempotency-Key を Endpoint 別名前空間で 24 時間保持する |
 | BearerAuth | Owner / Dog と同じ access token 検証。`401 UNAUTHENTICATED` |
@@ -92,7 +100,7 @@ Participant の Dog はその Owner が管理する Dog に限る。満たさな
 
 | 部品 | 責務 |
 | --- | --- |
-| `lib/walk-api.ts` | `GET /v1/walks/active`、`POST /v1/walks`、`POST /v1/walks/:walkId/finish` |
+| `lib/walk-api.ts` | `GET /v1/walks/active`、`POST /v1/walks`、`POST /v1/walks/:walkId/finish`、`DELETE /v1/walks/:walkId` |
 | `lib/api.ts` | `Idempotency-Key` を送れるよう header を受け取る |
 | `(app)/(tabs)/_layout` | NativeTabs。Dogs と Walk |
 | `(app)/(tabs)/index` | Dogs List（現行の認証済みホーム） |
@@ -105,12 +113,14 @@ Walk タブを開いたとき `GET /v1/walks/active` と Dog 一覧を取る。`
 
 Start は新しい `Idempotency-Key` を画面が持ち、失敗時の Retry は同じ Key と同じ `participantDogIds` を送る。Finish も同様に Finish 用の Key を持つ。
 
+Recording 中に位置情報許可が取り消されたら `DELETE /v1/walks/:walkId` を送り、204 のあと Failed を出す。失敗したら Recording のまま同じ `walkId` で再送する。GET active が 204 なら DELETE は送らず Failed にする。Failed の Ready へ戻るは再取得し、204 なら Ready、200 なら Recording。
+
 現在地は端末の位置情報で地図に出す。TrackPoint API には送らない。
 
 ### 検証
 
-- schema / repository: Owner あたり `recording` 1 件、Participant 1頭以上、別 Owner の Dog は開始できない、Finish は距離 0、`failIfPresent` は `recording` を Failed にする
-- route / use case: 200、201、204、400、401、404、409。同一 Idempotency-Key の再送と衝突
+- schema / repository: Owner あたり `recording` 1 件、Participant 1頭以上、別 Owner の Dog は開始できない、Finish は距離 0、`fail` は指定 Walk を Failed にする、`failIfPresent` は `recording` を Failed にする
+- route / use case: 200、201、204、400、401、404、409。同一 Idempotency-Key の再送と衝突。DELETE の 204 / 404 / 409
 - iOS: Ready の不足メッセージ、許可後の地図と現在地、Starting、Recording、Completed、Failed、Start 失敗 Retry
 
 ## WHY
@@ -129,7 +139,7 @@ Active Walk は Owner あたり 1 件の未完了散歩なので、開始・照�
 | Drizzle insert / transactions | https://orm.drizzle.team/docs/insert | `start` は transaction で Walk と Participant と command key を挿入する。 |
 | Drizzle Kit generate | https://orm.drizzle.team/docs/kit-overview | generate 後に `CREATE TABLE` 1 ファイル 1 つへ分割する。 |
 | Zod strings / arrays / objects | https://zod.dev/api | `participantDogIds` は `z.array(z.uuid()).min(1)`。Finish body は空の `strictObject`。 |
-| Hono routing | https://hono.dev/docs/api/routing | `{ path: '/v1/walks', app: walkRoutes }` に GET `/active`、POST `/`、POST `/:walkId/finish`。 |
+| Hono routing | https://hono.dev/docs/api/routing | `{ path: '/v1/walks', app: walkRoutes }` に GET `/active`、POST `/`、POST `/:walkId/finish`、DELETE `/:walkId`。 |
 | Hono middleware | https://hono.dev/docs/guides/middleware | child app で authentication のあと route を登録する。 |
 | Zod OpenAPI | https://hono.dev/examples/zod-openapi | `createRoute` + `security: [{ BearerAuth: [] }]`。Idempotency-Key は header。 |
 | Expo Router Native Tabs | https://docs.expo.dev/router/advanced/native-tabs/ | `(app)/(tabs)` に Dogs と Walk の `NativeTabs`。 |

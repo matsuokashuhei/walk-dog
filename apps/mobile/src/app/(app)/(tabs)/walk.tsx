@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/lib/auth'
 import { listDogs, type DogResponse } from '@/lib/dog-api'
 import {
+  deleteWalk,
   finishWalk,
   getActiveWalk,
   startWalk,
@@ -112,6 +113,7 @@ export default function WalkScreen() {
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
+  const failingRef = useRef(false)
   const startingRef = useRef(false)
   const loadGeneration = useRef(0)
   stateRef.current = state
@@ -159,20 +161,13 @@ export default function WalkScreen() {
         if (!shouldApply()) {
           return
         }
-        if (originKind === 'failed' && walk !== null) {
-          setState({ kind: 'failed' })
-          return
-        }
         await applyLocation(granted)
         if (!shouldApply()) {
           return
         }
-        if (originKind === 'failed' && walk !== null) {
-          setState({ kind: 'failed' })
-          return
-        }
         if (walk !== null) {
           finishingRef.current = false
+          failingRef.current = false
           startingRef.current = false
           setState({ kind: 'recording', walk, finishError: false, finishKey: null })
           return
@@ -210,7 +205,7 @@ export default function WalkScreen() {
   )
 
   const verifyRecording = useCallback(async () => {
-    if (!session || finishingRef.current) {
+    if (!session || finishingRef.current || failingRef.current) {
       return
     }
     const current = stateRef.current
@@ -221,7 +216,18 @@ export default function WalkScreen() {
     if (!granted) {
       setLocationGranted(false)
       setCameraPosition(undefined)
-      setState({ kind: 'failed' })
+      failingRef.current = true
+      try {
+        await deleteWalk(session.accessToken, current.walk.walkId)
+        if (finishingRef.current || stateRef.current.kind !== 'recording') {
+          return
+        }
+        setState({ kind: 'failed' })
+      } catch {
+        return
+      } finally {
+        failingRef.current = false
+      }
       return
     }
     try {
@@ -335,7 +341,7 @@ export default function WalkScreen() {
   }
 
   const onFinish = () => {
-    if (!session || state.kind !== 'recording' || finishingRef.current) {
+    if (!session || state.kind !== 'recording' || finishingRef.current || failingRef.current) {
       return
     }
     const finishKey = state.finishKey ?? newIdempotencyKey()

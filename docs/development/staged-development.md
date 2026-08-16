@@ -100,6 +100,7 @@ R1は次の縦切り順で進める。
 - `GET /v1/owner` はAccess Tokenで認証し、現在のOwnerを返す。`displayName` は未設定時 `null`、設定後は保存した値。
 - `PATCH /v1/owner` はAccess Tokenで認証し、`displayName` を受けてOwnerを返す。`displayName` は前後空白除去後 1〜100 文字。
 - `POST /v1/auth/sign-out` はAccess Tokenで認証し、成功時に204を返す。Active Walkがある場合はFailedにしてからsessionを無効化する。
+- `DELETE /v1/walks/:walkId` はAccess Tokenで認証し、その Owner の `recording` Walk を `failed` にして204を返す。すでに `failed` の再送も204。`completed` は 409 `WALK_NOT_RECORDING`。
 - `GET /v1/dogs` はAccess Tokenで認証し、そのOwnerが管理するDogと各DogのcurrentGoalを返す。0件は空配列。
 - `POST /v1/dogs` はAccess Tokenで認証し、`name` と `gender` を必須、`birthday` を任意として受け、DogとDaily 30分のGoal Revisionを返す。`name` は同一Owner内で一意、前後空白除去後 1〜100 文字。`gender` は `male` / `female` / `unknown`。`birthday` 省略時の精度は `unknown`。同一OwnerのName重複は 409 `DOG_NAME_DUPLICATE`。
 - `GET /v1/dogs/:dogId` はAccess Tokenで認証し、そのOwnerが管理するDogとcurrentGoalを返す。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。

@@ -67,6 +67,9 @@ function walksFake(start: WalkRepository['start']): WalkRepository {
     async finish() {
       throw new Error('unexpected finish')
     },
+    async fail() {
+      throw new Error('unexpected fail')
+    },
     async failIfPresent() {
       throw new Error('unexpected failIfPresent')
     },

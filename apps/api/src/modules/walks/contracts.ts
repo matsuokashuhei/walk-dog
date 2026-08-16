@@ -12,7 +12,7 @@ export const startWalkRequestSchema = z.strictObject({
 
 export const finishWalkRequestSchema = z.strictObject({})
 
-export const finishWalkParamSchema = z.object({
+export const walkIdParamSchema = z.object({
   walkId: z.uuid(),
 })
 

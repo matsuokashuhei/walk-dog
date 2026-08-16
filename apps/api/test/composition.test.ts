@@ -24,6 +24,7 @@ import type {
 } from '../src/modules/owners/index.js'
 import type {
   ActiveWalkCommands,
+  DeleteWalk,
   FinishWalk,
   GetActiveWalk,
   StartWalk,
@@ -104,6 +105,9 @@ test('createApplication shares one database and Cognito client through the objec
   const finishWalk: FinishWalk = async () => {
     throw new Error('unused')
   }
+  const deleteWalk: DeleteWalk = async () => {
+    throw new Error('unused')
+  }
   const useCases = {
     startSignUp: async () => {
       throw new Error('unused')
@@ -129,6 +133,7 @@ test('createApplication shares one database and Cognito client through the objec
     getActiveWalk,
     startWalk,
     finishWalk,
+    deleteWalk,
   } satisfies AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies & WalkRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const ownerRoutes = new OpenAPIHono<{ Variables: AppVariables }>()

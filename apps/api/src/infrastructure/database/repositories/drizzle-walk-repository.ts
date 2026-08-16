@@ -33,6 +33,7 @@ export function createDrizzleWalkRepository(database: DbInstance): WalkRepositor
     getActiveByOwner: (ownerId) => getActiveByOwner(database, ownerId),
     start: (input) => startWithRecovery(database, input),
     finish: (input) => finishWithRecovery(database, input),
+    fail: (input) => failWalk(database, input),
     failIfPresent: (input) => failIfPresent(database, input),
   }
 }
@@ -105,6 +106,22 @@ async function finishWalk(trx: WalkDb, input: FinishWalkInput): Promise<Complete
   const participantRows = await selectParticipants(trx, input.walkId)
   await rememberCommand(trx, input.ownerId, 'finish', input.idempotencyKey, input.bodyHash, input.walkId)
   return toCompletedWalk(updatedWalks[0], participantRows)
+}
+
+async function failWalk(database: WalkDb, input: { ownerId: string; walkId: string }): Promise<void> {
+  const updatedWalks = await database
+    .update(walks)
+    .set({ state: 'failed' })
+    .where(and(eq(walks.walkId, input.walkId), eq(walks.ownerId, input.ownerId), eq(walks.state, 'recording')))
+    .returning()
+  if (updatedWalks.length > 0) {
+    return
+  }
+  const walkRow = await selectOwnedWalk(database, input.ownerId, input.walkId)
+  if (walkRow.state === 'failed') {
+    return
+  }
+  throw new WalkNotRecordingError()
 }
 
 async function failIfPresent(database: WalkDb, input: { ownerId: string }): Promise<void> {

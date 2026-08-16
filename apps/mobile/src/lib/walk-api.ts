@@ -59,3 +59,10 @@ export function finishWalk(
     headers: { 'Idempotency-Key': input.idempotencyKey },
   })
 }
+
+export async function deleteWalk(accessToken: string, walkId: string): Promise<void> {
+  await apiRequest(`/v1/walks/${walkId}`, {
+    method: 'DELETE',
+    accessToken,
+  })
+}

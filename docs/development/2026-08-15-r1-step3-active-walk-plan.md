@@ -16,6 +16,7 @@
 - `GET /v1/walks/active` 成功は 200 recording Walk、または 204 空 body。
 - `POST /v1/walks` 成功は 201。Header `Idempotency-Key`（1–256 文字）必須。body は `{ participantDogIds: UUID[] }`（1件以上、重複なし、すべて同一 Owner）。応答 `state` は `recording`。`completedAt` は `null`。`participants` は request 順。
 - `POST /v1/walks/:walkId/finish` 成功は 200。Header は Finish 用 `Idempotency-Key`（開始とは別名前空間）。body は `{}`。`durationSeconds` は `startedAt` → `completedAt`。`distanceMeters` は `0`。`paceSecondsPerMeter` は `null`。
+- `DELETE /v1/walks/:walkId` 成功は 204。Body なし。その Walk は `failed`。すでに `failed` の再送も 204。`completed` は 409 `WALK_NOT_RECORDING`、message「この散歩は破棄できません。」、`retryable: false`。
 - DB の `state` は `recording` | `completed` | `failed`。`starting` は画面状態だけ。
 - Owner あたり `recording` は 1 件。衝突は 409 `ACTIVE_WALK_EXISTS`、message「すでに記録中の散歩があります。」、`retryable: false`。
 - 同一 Key + 同一 body hash は元の Walk を返す。同一 Key + 異なる hash は 409 `IDEMPOTENCY_CONFLICT`、message「同じ要求を完了できません。最初からやり直してください。」、`retryable: false`。
@@ -48,7 +49,7 @@
 | `apps/api/src/infrastructure/database/repositories/drizzle-walk-repository.ts` | Drizzle 実装。`failIfPresent` を含む |
 | `apps/api/src/index.ts` | `walks` の生成、`/v1/walks` mount、`createAbsentActiveWalkCommands` を置換 |
 | `apps/mobile/src/lib/api.ts` | `headers` で `Idempotency-Key` を送る |
-| `apps/mobile/src/lib/walk-api.ts` | GET active / POST start / POST finish |
+| `apps/mobile/src/lib/walk-api.ts` | GET active / POST start / POST finish / DELETE walk |
 | `apps/mobile/src/app/(app)/(tabs)/_layout.tsx` | NativeTabs。Dogs と Walk |
 | `apps/mobile/src/app/(app)/(tabs)/index.tsx` | 現行 Dogs List を移す |
 | `apps/mobile/src/app/(app)/(tabs)/walk.tsx` | Walk 画面 |
@@ -645,7 +646,7 @@ Run: `cd apps/mobile && npx expo install expo-location expo-maps`
 
 Start は条件が揃うまで押しても送らない。押した時点で `crypto.randomUUID()` を start Key として state に保持し、Retry は同じ Key と同じ `participantDogIds`。Finish も別 Key を同様に保持する。
 
-Recording 中に許可が取り消された、または再取得の GET active が 204 なら Failed。Completed の「Ready へ戻る」後の GET active は 204。
+Recording 中に許可が取り消された、または再取得の GET active が 204 なら Failed。許可取り消しは `DELETE /v1/walks/:walkId` が 204 になってから Failed を出す。Completed の「Ready へ戻る」後の GET active は 204。Failed の「Ready へ戻る」は 204 なら Ready、200 なら Recording。
 
 - [ ] **Step 5: Wire Settings Sign Out**
 

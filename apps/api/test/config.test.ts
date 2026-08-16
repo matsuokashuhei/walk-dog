@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/infrastructure/config/index.js'
+import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig, loadSqsConfig } from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
   POSTGRES_USER: 'walkdog',
@@ -126,4 +126,34 @@ test('rejects missing COGNITO_CLIENT_ID', () => {
     () => loadCognitoConfig({ COGNITO_REGION: 'region', COGNITO_USER_POOL_ID: 'pool' }),
     /COGNITO_CLIENT_ID/,
   )
+})
+
+const validSqsEnv = {
+  AWS_REGION: 'ap-northeast-1',
+  SQS_QUEUE_URL: 'http://localhost:9324/queue/track-points',
+  SQS_ENDPOINT: 'http://localhost:9324',
+}
+
+test('loads SQS_QUEUE_URL, AWS_REGION, and SQS_ENDPOINT', () => {
+  assert.deepEqual(loadSqsConfig(validSqsEnv), {
+    region: 'ap-northeast-1',
+    queueUrl: 'http://localhost:9324/queue/track-points',
+    endpoint: 'http://localhost:9324',
+  })
+})
+
+test('treats blank SQS_ENDPOINT as undefined', () => {
+  assert.equal(loadSqsConfig({ ...validSqsEnv, SQS_ENDPOINT: '' }).endpoint, undefined)
+})
+
+test('rejects a missing SQS_QUEUE_URL', () => {
+  const env = { ...validSqsEnv }
+  delete (env as { SQS_QUEUE_URL?: string }).SQS_QUEUE_URL
+  assert.throws(() => loadSqsConfig(env), /SQS_QUEUE_URL/)
+})
+
+test('rejects a missing AWS_REGION', () => {
+  const env = { ...validSqsEnv }
+  delete (env as { AWS_REGION?: string }).AWS_REGION
+  assert.throws(() => loadSqsConfig(env), /AWS_REGION/)
 })

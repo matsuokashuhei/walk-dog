@@ -15,6 +15,12 @@ const databaseConfigSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(10),
 })
 
+const sqsConfigSchema = z.object({
+  AWS_REGION: z.string().nonempty({ error: 'AWS_REGION must be a non-empty string' }),
+  SQS_QUEUE_URL: z.string().nonempty({ error: 'SQS_QUEUE_URL must be a non-empty string' }),
+  SQS_ENDPOINT: z.string().optional(),
+})
+
 const observabilityConfigSchema = z.object({
   ENVIRONMENT: z.string({
     error: (issue) => issue.input === undefined
@@ -48,6 +54,23 @@ export function loadDatabaseConfig(env: NodeJS.ProcessEnv): DatabaseConfig {
     host: config.POSTGRES_HOST,
     port: config.POSTGRES_PORT,
     poolMax: config.DATABASE_POOL_MAX,
+  }
+}
+
+export type SqsConfig = {
+  region: string
+  queueUrl: string
+  endpoint: string | undefined
+}
+
+export function loadSqsConfig(env: NodeJS.ProcessEnv): SqsConfig {
+  const config = sqsConfigSchema.parse(env)
+  const endpoint = config.SQS_ENDPOINT?.trim()
+
+  return {
+    region: config.AWS_REGION,
+    queueUrl: config.SQS_QUEUE_URL,
+    endpoint: endpoint ? endpoint : undefined,
   }
 }
 

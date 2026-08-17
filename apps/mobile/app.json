@@ -49,7 +49,8 @@
           "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-maps"
+      "expo-maps",
+      "expo-task-manager"
     ],
     "experiments": {
       "typedRoutes": true,

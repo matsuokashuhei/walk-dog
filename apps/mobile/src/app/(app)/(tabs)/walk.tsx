@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { listDogs, type DogResponse } from '@/lib/dog-api'
 import {
@@ -20,8 +21,15 @@ import {
   getActiveWalk,
   startWalk,
   type CompletedWalkResponse,
+  type LocalTrackPoint,
   type RecordingWalkResponse,
 } from '@/lib/walk-api'
+import { loadPathForWalk } from '@/lib/walk-path-store'
+import {
+  setTrackPointEvents,
+  startTrackPointUpdates,
+  stopTrackPointUpdates,
+} from '@/lib/walk-location-task'
 
 type DogListItem = Omit<DogResponse, 'requestId'>
 
@@ -105,11 +113,12 @@ function isLoadableKind(kind: ScreenState['kind']): boolean {
 
 export default function WalkScreen() {
   const router = useRouter()
-  const { session } = useAuth()
+  const { session, clearSession } = useAuth()
   const insets = useSafeAreaInsets()
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [locationGranted, setLocationGranted] = useState(false)
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | undefined>()
+  const [pathPoints, setPathPoints] = useState<LocalTrackPoint[]>([])
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
@@ -238,10 +247,14 @@ export default function WalkScreen() {
       if (walk === null) {
         setState({ kind: 'failed' })
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await stopTrackPointUpdates()
+        await clearSession()
+      }
       return
     }
-  }, [session])
+  }, [clearSession, session])
 
   useFocusEffect(
     useCallback(() => {
@@ -270,16 +283,40 @@ export default function WalkScreen() {
 
   useEffect(() => {
     if (state.kind !== 'recording') {
+      setTrackPointEvents(null)
+      setPathPoints([])
+      void stopTrackPointUpdates()
       return
     }
+    const walkId = state.walk.walkId
+    setTrackPointEvents({
+      onPathChange: setPathPoints,
+      onUnauthenticated: () => {
+        void clearSession()
+      },
+    })
+    void startTrackPointUpdates(walkId)
+    void loadPathForWalk(walkId).then(setPathPoints)
+    return () => {
+      setTrackPointEvents(null)
+    }
+  }, [state.kind, state.kind === 'recording' ? state.walk.walkId : null])
+
+  useEffect(() => {
+    if (state.kind !== 'recording') {
+      return
+    }
+    const walkId = state.walk.walkId
     setNow(Date.now())
+    void loadPathForWalk(walkId).then(setPathPoints)
     const id = setInterval(() => {
       setNow(Date.now())
+      void loadPathForWalk(walkId).then(setPathPoints)
     }, 1000)
     return () => {
       clearInterval(id)
     }
-  }, [state.kind])
+  }, [state.kind, state.kind === 'recording' ? state.walk.walkId : null])
 
   const onAllowLocation = async () => {
     const foreground = await Location.requestForegroundPermissionsAsync()
@@ -376,6 +413,22 @@ export default function WalkScreen() {
     state.selectedDogIds.length > 0 &&
     locationGranted
 
+  const currentPoint = pathPoints.at(-1)
+  const pathCoordinates = pathPoints.map((point) => ({
+    latitude: point.latitude,
+    longitude: point.longitude,
+  }))
+  const mapCameraPosition =
+    state.kind === 'recording' && currentPoint
+      ? {
+          coordinates: {
+            latitude: currentPoint.latitude,
+            longitude: currentPoint.longitude,
+          },
+          zoom: 15,
+        }
+      : cameraPosition
+
   return (
     <View style={[styles.container, showMap ? styles.containerMap : null]} testID="walk-root">
       {showMap ? (
@@ -386,7 +439,30 @@ export default function WalkScreen() {
             selectionEnabled: false,
             pointsOfInterest: { including: [] },
           }}
-          cameraPosition={cameraPosition}
+          cameraPosition={mapCameraPosition}
+          markers={
+            state.kind === 'recording' && currentPoint
+              ? [
+                  {
+                    id: 'current',
+                    coordinates: {
+                      latitude: currentPoint.latitude,
+                      longitude: currentPoint.longitude,
+                    },
+                  },
+                ]
+              : []
+          }
+          polylines={
+            state.kind === 'recording' && pathCoordinates.length >= 2
+              ? [
+                  {
+                    id: 'walk-path',
+                    coordinates: pathCoordinates,
+                  },
+                ]
+              : []
+          }
         />
       ) : null}
 

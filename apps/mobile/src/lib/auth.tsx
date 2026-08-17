@@ -11,6 +11,8 @@ const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
 const ID_TOKEN_KEY = 'walkdog.idToken'
 const REFRESH_TOKEN_KEY = 'walkdog.refreshToken'
 
+export { ACCESS_TOKEN_KEY }
+
 export type AuthSession = {
   accessToken: string
   idToken: string

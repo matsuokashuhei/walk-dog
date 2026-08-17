@@ -9,9 +9,10 @@ import {
   clearRecordingWalkId,
   loadPathForWalk,
   loadRecordingWalkId,
+  savePendingFailWalkId,
   saveRecordingWalkId,
 } from './walk-path-store'
-import { createTrackPointCoordinator } from './walk-track-point-queue'
+import { SAMPLE_INTERVAL_MS, createTrackPointCoordinator } from './walk-track-point-queue'
 
 export const WALK_TRACK_POINT_TASK = 'WALK_TRACK_POINT'
 
@@ -27,6 +28,7 @@ type TrackPointEvents = {
 let events: TrackPointEvents | null = null
 let coordinator: ReturnType<typeof createTrackPointCoordinator> | null = null
 let coordinatorWalkId: string | null = null
+let sampleTimer: ReturnType<typeof setInterval> | null = null
 
 export function setTrackPointEvents(next: TrackPointEvents | null) {
   events = next
@@ -35,6 +37,14 @@ export function setTrackPointEvents(next: TrackPointEvents | null) {
 function resetTrackPointCoordinator() {
   coordinator = null
   coordinatorWalkId = null
+}
+
+function stopSampleTimer() {
+  if (sampleTimer === null) {
+    return
+  }
+  clearInterval(sampleTimer)
+  sampleTimer = null
 }
 
 async function postPoint(accessToken: string, point: LocalTrackPoint) {
@@ -61,31 +71,13 @@ async function coordinatorFor(walkId: string, accessToken: string) {
   return coordinator
 }
 
-export async function startTrackPointUpdates(walkId: string) {
-  resetTrackPointCoordinator()
-  await saveRecordingWalkId(walkId)
-  const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
-  if (started) {
-    return
-  }
-  await Location.startLocationUpdatesAsync(WALK_TRACK_POINT_TASK, {
-    timeInterval: 10000,
-    distanceInterval: 0,
-    accuracy: Location.Accuracy.Balanced,
-    pausesUpdatesAutomatically: false,
-  })
+async function handleUnauthenticated(walkId: string) {
+  await savePendingFailWalkId(walkId)
+  events?.onUnauthenticated()
+  await stopTrackPointUpdates()
 }
 
-export async function stopTrackPointUpdates() {
-  const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
-  if (started) {
-    await Location.stopLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
-  }
-  resetTrackPointCoordinator()
-  await clearRecordingWalkId()
-}
-
-async function handleLocations(locations: Location.LocationObject[]) {
+async function recordLocation(location: Location.LocationObject) {
   const walkId = await loadRecordingWalkId()
   if (walkId === null) {
     return
@@ -95,20 +87,81 @@ async function handleLocations(locations: Location.LocationObject[]) {
     return
   }
   const store = await coordinatorFor(walkId, accessToken)
-  for (const location of locations) {
-    const action = await store.record({
-      walkId,
-      recordedAt: new Date(location.timestamp).toISOString(),
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
+  const action = await store.record({
+    walkId,
+    recordedAt: new Date(location.timestamp).toISOString(),
+    latitude: location.coords.latitude,
+    longitude: location.coords.longitude,
+  })
+  events?.onPathChange(await loadPathForWalk(walkId))
+  if (action === 'unauthenticated') {
+    await handleUnauthenticated(walkId)
+  }
+}
+
+async function sampleCurrentPosition() {
+  const walkId = await loadRecordingWalkId()
+  if (walkId === null) {
+    return
+  }
+  const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY)
+  if (accessToken === null) {
+    return
+  }
+  try {
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
     })
-    events?.onPathChange(await loadPathForWalk(walkId))
+    await recordLocation(position)
+  } catch {
+    const store = await coordinatorFor(walkId, accessToken)
+    const action = await store.flush()
     if (action === 'unauthenticated') {
-      events?.onUnauthenticated()
-      await stopTrackPointUpdates()
-      return
+      await handleUnauthenticated(walkId)
     }
   }
+}
+
+function startSampleTimer() {
+  stopSampleTimer()
+  void sampleCurrentPosition()
+  sampleTimer = setInterval(() => {
+    void sampleCurrentPosition()
+  }, SAMPLE_INTERVAL_MS)
+}
+
+export async function startTrackPointUpdates(walkId: string) {
+  resetTrackPointCoordinator()
+  await saveRecordingWalkId(walkId)
+  startSampleTimer()
+  const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
+  if (started) {
+    return
+  }
+  await Location.startLocationUpdatesAsync(WALK_TRACK_POINT_TASK, {
+    timeInterval: SAMPLE_INTERVAL_MS,
+    distanceInterval: 0,
+    accuracy: Location.Accuracy.Balanced,
+    pausesUpdatesAutomatically: false,
+  })
+}
+
+export async function stopTrackPointUpdates() {
+  stopSampleTimer()
+  const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
+  if (started) {
+    await Location.stopLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
+  }
+  resetTrackPointCoordinator()
+  await clearRecordingWalkId()
+}
+
+async function handleLocations(locations: Location.LocationObject[]) {
+  const latest = locations.at(-1)
+  if (latest === undefined) {
+    return
+  }
+  await recordLocation(latest)
 }
 
 TaskManager.defineTask(WALK_TRACK_POINT_TASK, async ({ data, error }) => {

@@ -91,3 +91,24 @@ export async function clearRecordingWalkId(): Promise<void> {
   }
   await FileSystem.deleteAsync(recordingUri())
 }
+
+function pendingFailUri() {
+  return documentUri('walk-pending-fail.json')
+}
+
+export async function loadPendingFailWalkId(): Promise<string | null> {
+  const stored = await readJson<{ walkId: string } | null>(pendingFailUri(), null)
+  return stored?.walkId ?? null
+}
+
+export async function savePendingFailWalkId(walkId: string): Promise<void> {
+  await writeJson(pendingFailUri(), { walkId })
+}
+
+export async function clearPendingFailWalkId(): Promise<void> {
+  const info = await FileSystem.getInfoAsync(pendingFailUri())
+  if (!info.exists) {
+    return
+  }
+  await FileSystem.deleteAsync(pendingFailUri())
+}

@@ -24,7 +24,7 @@ import {
   type LocalTrackPoint,
   type RecordingWalkResponse,
 } from '@/lib/walk-api'
-import { loadPathForWalk } from '@/lib/walk-path-store'
+import { loadPathForWalk, loadPendingFailWalkId, savePendingFailWalkId, clearPendingFailWalkId } from '@/lib/walk-path-store'
 import {
   setTrackPointEvents,
   startTrackPointUpdates,
@@ -119,6 +119,7 @@ export default function WalkScreen() {
   const [locationGranted, setLocationGranted] = useState(false)
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | undefined>()
   const [pathPoints, setPathPoints] = useState<LocalTrackPoint[]>([])
+  const [recordingCamera, setRecordingCamera] = useState<CameraPosition | undefined>()
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
@@ -126,6 +127,30 @@ export default function WalkScreen() {
   const startingRef = useRef(false)
   const loadGeneration = useRef(0)
   stateRef.current = state
+
+  const applyPathPoints = useCallback((points: LocalTrackPoint[]) => {
+    setPathPoints(points)
+    const latest = points.at(-1)
+    if (latest === undefined) {
+      return
+    }
+    setRecordingCamera((current) => {
+      if (
+        current !== undefined &&
+        current.coordinates.latitude === latest.latitude &&
+        current.coordinates.longitude === latest.longitude
+      ) {
+        return current
+      }
+      return {
+        coordinates: {
+          latitude: latest.latitude,
+          longitude: latest.longitude,
+        },
+        zoom: 15,
+      }
+    })
+  }, [])
 
   const applyLocation = useCallback(async (granted: boolean) => {
     setLocationGranted(granted)
@@ -162,12 +187,32 @@ export default function WalkScreen() {
       }
 
       try {
+        const pendingFailWalkId = await loadPendingFailWalkId()
         const [walk, dogsResult, granted] = await Promise.all([
           getActiveWalk(session.accessToken),
           listDogs(session.accessToken),
           isLocationFullyGranted(),
         ])
         if (!shouldApply()) {
+          return
+        }
+        if (pendingFailWalkId !== null) {
+          try {
+            await deleteWalk(session.accessToken, pendingFailWalkId)
+            await clearPendingFailWalkId()
+          } catch (error) {
+            if (error instanceof ApiError && (error.status === 404 || error.status === 409)) {
+              await clearPendingFailWalkId()
+            }
+          }
+          await applyLocation(granted)
+          if (!shouldApply()) {
+            return
+          }
+          finishingRef.current = false
+          failingRef.current = false
+          startingRef.current = false
+          setState({ kind: 'failed' })
           return
         }
         await applyLocation(granted)
@@ -213,6 +258,27 @@ export default function WalkScreen() {
     [applyLocation, session],
   )
 
+  const discardRecordingThenReauth = useCallback(
+    async (walkId: string) => {
+      await stopTrackPointUpdates()
+      await savePendingFailWalkId(walkId)
+      if (session?.accessToken) {
+        try {
+          await deleteWalk(session.accessToken, walkId)
+        } catch {
+          // Token is already rejected; discard is retried after re-auth.
+        }
+      }
+      if (stateRef.current.kind === 'recording') {
+        setState({ kind: 'failed' })
+      }
+      await clearSession()
+    },
+    [clearSession, session],
+  )
+  const discardRecordingThenReauthRef = useRef(discardRecordingThenReauth)
+  discardRecordingThenReauthRef.current = discardRecordingThenReauth
+
   const verifyRecording = useCallback(async () => {
     if (!session || finishingRef.current || failingRef.current) {
       return
@@ -249,12 +315,11 @@ export default function WalkScreen() {
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        await stopTrackPointUpdates()
-        await clearSession()
+        await discardRecordingThenReauth(current.walk.walkId)
       }
       return
     }
-  }, [clearSession, session])
+  }, [discardRecordingThenReauth, session])
 
   useFocusEffect(
     useCallback(() => {
@@ -272,51 +337,55 @@ export default function WalkScreen() {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active' && stateRef.current.kind === 'recording') {
+      const current = stateRef.current
+      if (next === 'active' && current.kind === 'recording') {
         void verifyRecording()
+        void loadPathForWalk(current.walk.walkId).then(applyPathPoints)
       }
     })
     return () => {
       sub.remove()
     }
-  }, [verifyRecording])
+  }, [applyPathPoints, verifyRecording])
 
   useEffect(() => {
     if (state.kind !== 'recording') {
       setTrackPointEvents(null)
       setPathPoints([])
+      setRecordingCamera(undefined)
       void stopTrackPointUpdates()
       return
     }
     const walkId = state.walk.walkId
     setTrackPointEvents({
-      onPathChange: setPathPoints,
+      onPathChange: applyPathPoints,
       onUnauthenticated: () => {
-        void clearSession()
+        const current = stateRef.current
+        if (current.kind !== 'recording') {
+          return
+        }
+        void discardRecordingThenReauthRef.current(current.walk.walkId)
       },
     })
     void startTrackPointUpdates(walkId)
-    void loadPathForWalk(walkId).then(setPathPoints)
+    void loadPathForWalk(walkId).then(applyPathPoints)
     return () => {
       setTrackPointEvents(null)
     }
-  }, [state.kind, state.kind === 'recording' ? state.walk.walkId : null])
+  }, [applyPathPoints, state.kind, state.kind === 'recording' ? state.walk.walkId : null])
 
   useEffect(() => {
     if (state.kind !== 'recording') {
       return
     }
-    const walkId = state.walk.walkId
     setNow(Date.now())
-    void loadPathForWalk(walkId).then(setPathPoints)
     const id = setInterval(() => {
       setNow(Date.now())
-      void loadPathForWalk(walkId).then(setPathPoints)
     }, 1000)
     return () => {
       clearInterval(id)
     }
-  }, [state.kind, state.kind === 'recording' ? state.walk.walkId : null])
+  }, [state.kind])
 
   const onAllowLocation = async () => {
     const foreground = await Location.requestForegroundPermissionsAsync()
@@ -419,15 +488,7 @@ export default function WalkScreen() {
     longitude: point.longitude,
   }))
   const mapCameraPosition =
-    state.kind === 'recording' && currentPoint
-      ? {
-          coordinates: {
-            latitude: currentPoint.latitude,
-            longitude: currentPoint.longitude,
-          },
-          zoom: 15,
-        }
-      : cameraPosition
+    state.kind === 'recording' && recordingCamera ? recordingCamera : cameraPosition
 
   return (
     <View style={[styles.container, showMap ? styles.containerMap : null]} testID="walk-root">

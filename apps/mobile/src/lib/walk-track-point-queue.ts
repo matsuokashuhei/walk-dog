@@ -14,6 +14,7 @@ export type TrackPointCoordinatorDeps = {
   loadQueue: () => Promise<LocalTrackPoint[]>
   saveQueue: (points: LocalTrackPoint[]) => Promise<void>
   post: (point: LocalTrackPoint) => Promise<TrackPointPostResult>
+  now: () => number
 }
 
 export function nextQueueAction(error: {
@@ -29,11 +30,11 @@ export function nextQueueAction(error: {
   return 'drop'
 }
 
-export function isSampleDue(lastRecordedAt: string | null, recordedAt: string): boolean {
-  if (lastRecordedAt === null) {
+export function isSampleDue(lastSampleAt: number | null, now: number): boolean {
+  if (lastSampleAt === null) {
     return true
   }
-  return Date.parse(recordedAt) - Date.parse(lastRecordedAt) >= SAMPLE_INTERVAL_MS
+  return now - lastSampleAt >= SAMPLE_INTERVAL_MS
 }
 
 function createLock() {
@@ -51,6 +52,7 @@ function createLock() {
 
 export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
   let autoRetry = true
+  let lastSampleAt: number | null = null
   const lock = createLock()
 
   async function flushUnlocked(): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
@@ -90,11 +92,12 @@ export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
   async function recordUnlocked(
     point: LocalTrackPoint,
   ): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
-    const path = await deps.loadPath()
-    const lastRecordedAt = path.at(-1)?.recordedAt ?? null
-    if (!isSampleDue(lastRecordedAt, point.recordedAt)) {
+    const now = deps.now()
+    if (!isSampleDue(lastSampleAt, now)) {
       return flushUnlocked()
     }
+    lastSampleAt = now
+    const path = await deps.loadPath()
     await deps.savePath([...path, point])
     const queue = await deps.loadQueue()
     await deps.saveQueue([...queue, point])

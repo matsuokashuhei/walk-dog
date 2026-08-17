@@ -1,6 +1,7 @@
 import * as Location from 'expo-location'
 import * as SecureStore from 'expo-secure-store'
 import * as TaskManager from 'expo-task-manager'
+import { AppState, type NativeEventSubscription } from 'react-native'
 import { ApiError } from './api'
 import { ACCESS_TOKEN_KEY } from './auth'
 import { postTrackPoint, type LocalTrackPoint } from './walk-api'
@@ -29,6 +30,7 @@ let events: TrackPointEvents | null = null
 let coordinator: ReturnType<typeof createTrackPointCoordinator> | null = null
 let coordinatorWalkId: string | null = null
 let sampleTimer: ReturnType<typeof setInterval> | null = null
+let appStateSub: NativeEventSubscription | null = null
 
 export function setTrackPointEvents(next: TrackPointEvents | null) {
   events = next
@@ -66,6 +68,7 @@ async function coordinatorFor(walkId: string, accessToken: string) {
   coordinator = createTrackPointCoordinator({
     ...createFileTrackPointStorage(walkId),
     post: (point) => postPoint(accessToken, point),
+    now: () => Date.now(),
   })
   coordinatorWalkId = walkId
   return coordinator
@@ -77,7 +80,12 @@ async function handleUnauthenticated(walkId: string) {
   await stopTrackPointUpdates()
 }
 
-async function recordLocation(location: Location.LocationObject) {
+async function withRecordingStore(
+  run: (
+    walkId: string,
+    store: ReturnType<typeof createTrackPointCoordinator>,
+  ) => Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'>,
+) {
   const walkId = await loadRecordingWalkId()
   if (walkId === null) {
     return
@@ -87,25 +95,31 @@ async function recordLocation(location: Location.LocationObject) {
     return
   }
   const store = await coordinatorFor(walkId, accessToken)
-  const action = await store.record({
-    walkId,
-    recordedAt: new Date(location.timestamp).toISOString(),
-    latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-  })
+  const action = await run(walkId, store)
   events?.onPathChange(await loadPathForWalk(walkId))
   if (action === 'unauthenticated') {
     await handleUnauthenticated(walkId)
   }
 }
 
-async function sampleCurrentPosition() {
+async function flushPending() {
+  await withRecordingStore(async (_walkId, store) => store.flush())
+}
+
+async function recordLocation(location: Location.LocationObject) {
+  await withRecordingStore(async (walkId, store) =>
+    store.record({
+      walkId,
+      recordedAt: new Date(location.timestamp).toISOString(),
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    }),
+  )
+}
+
+async function sampleForegroundTick() {
   const walkId = await loadRecordingWalkId()
   if (walkId === null) {
-    return
-  }
-  const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY)
-  if (accessToken === null) {
     return
   }
   try {
@@ -114,26 +128,43 @@ async function sampleCurrentPosition() {
     })
     await recordLocation(position)
   } catch {
-    const store = await coordinatorFor(walkId, accessToken)
-    const action = await store.flush()
-    if (action === 'unauthenticated') {
-      await handleUnauthenticated(walkId)
-    }
+    await flushPending()
   }
 }
 
 function startSampleTimer() {
   stopSampleTimer()
-  void sampleCurrentPosition()
+  void sampleForegroundTick()
   sampleTimer = setInterval(() => {
-    void sampleCurrentPosition()
+    void sampleForegroundTick()
   }, SAMPLE_INTERVAL_MS)
+}
+
+function startAppStateListener() {
+  if (appStateSub !== null) {
+    return
+  }
+  appStateSub = AppState.addEventListener('change', (next) => {
+    if (next === 'active') {
+      startSampleTimer()
+      return
+    }
+    stopSampleTimer()
+  })
+}
+
+function stopAppStateListener() {
+  appStateSub?.remove()
+  appStateSub = null
 }
 
 export async function startTrackPointUpdates(walkId: string) {
   resetTrackPointCoordinator()
   await saveRecordingWalkId(walkId)
-  startSampleTimer()
+  startAppStateListener()
+  if (AppState.currentState === 'active') {
+    startSampleTimer()
+  }
   const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   if (started) {
     return
@@ -147,6 +178,7 @@ export async function startTrackPointUpdates(walkId: string) {
 }
 
 export async function stopTrackPointUpdates() {
+  stopAppStateListener()
   stopSampleTimer()
   const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   if (started) {
@@ -157,6 +189,7 @@ export async function stopTrackPointUpdates() {
 }
 
 async function handleLocations(locations: Location.LocationObject[]) {
+  await flushPending()
   const latest = locations.at(-1)
   if (latest === undefined) {
     return

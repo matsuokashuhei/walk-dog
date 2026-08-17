@@ -18,6 +18,7 @@ import {
   unusedUpdateOwnerDisplayName,
 } from './modules/owners/fixtures.js'
 import {
+  unusedAcceptTrackPoint,
   unusedDeleteWalk,
   unusedFinishWalk,
   unusedGetActiveWalk,
@@ -75,6 +76,7 @@ const expectedOperations = {
   '/v1/walks': { post: ['201', '400', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}': { delete: ['204', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}/track-points': { post: ['201', '400', '401', '404', '409', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -92,6 +94,7 @@ const expectedPathMethods = {
   '/v1/walks': ['post'],
   '/v1/walks/{walkId}': ['delete'],
   '/v1/walks/{walkId}/finish': ['post'],
+  '/v1/walks/{walkId}/track-points': ['post'],
 } as const
 
 const publicAuthPaths = [
@@ -135,6 +138,7 @@ function createOpenApiApp() {
           startWalk: unusedStartWalk,
           finishWalk: unusedFinishWalk,
           deleteWalk: unusedDeleteWalk,
+          acceptTrackPoint: unusedAcceptTrackPoint,
           accessTokenVerifier: unusedAccessTokenVerifier,
         }),
       },
@@ -200,6 +204,15 @@ function assertFinishWalkRequestSchema(schema: JsonSchema): void {
   assert.equal(schema.additionalProperties, false)
 }
 
+function assertAcceptTrackPointRequestSchema(schema: JsonSchema): void {
+  assert.deepEqual(schema.required, ['recordedAt', 'latitude', 'longitude'])
+  assert.equal(schema.additionalProperties, false)
+  assert.equal(schema.properties.recordedAt.format, 'date-time')
+  assert.equal(schema.properties.recordedAt.nullable, undefined)
+  assert.equal(schema.properties.latitude.nullable, undefined)
+  assert.equal(schema.properties.longitude.nullable, undefined)
+}
+
 function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean | undefined): void {
   assert.deepEqual(schema.required, ['username', 'session', 'code'])
   assert.equal(schema.properties.username.minLength, 1)
@@ -239,6 +252,7 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   assertOperationStatuses(document, '/v1/walks', 'post', expectedOperations['/v1/walks'].post)
   assertOperationStatuses(document, '/v1/walks/{walkId}', 'delete', expectedOperations['/v1/walks/{walkId}'].delete)
   assertOperationStatuses(document, '/v1/walks/{walkId}/finish', 'post', expectedOperations['/v1/walks/{walkId}/finish'].post)
+  assertOperationStatuses(document, '/v1/walks/{walkId}/track-points', 'post', expectedOperations['/v1/walks/{walkId}/track-points'].post)
 
   assert.deepEqual(
     operationAt(document, '/v1/auth/sign-out', 'post').security,
@@ -280,6 +294,10 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
     operationAt(document, '/v1/walks/{walkId}/finish', 'post').security,
     [{ BearerAuth: [] }],
   )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks/{walkId}/track-points', 'post').security,
+    [{ BearerAuth: [] }],
+  )
   for (const path of publicAuthPaths) {
     assert.equal(operationAt(document, path, 'post').security, undefined)
   }
@@ -292,4 +310,5 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   assertCreateDogRequestSchema(requestSchema(document, '/v1/dogs'))
   assertStartWalkRequestSchema(requestSchema(document, '/v1/walks'))
   assertFinishWalkRequestSchema(requestSchema(document, '/v1/walks/{walkId}/finish'))
+  assertAcceptTrackPointRequestSchema(requestSchema(document, '/v1/walks/{walkId}/track-points'))
 })

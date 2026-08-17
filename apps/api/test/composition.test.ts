@@ -51,6 +51,7 @@ const env: NodeJS.ProcessEnv = {
   COGNITO_USER_POOL_ID: 'pool',
   COGNITO_CLIENT_ID: 'client',
   SQS_QUEUE_URL: 'http://localhost:9324/queue/track-points',
+  WORKER_HEALTH_URL: 'http://localhost:3001/health',
   ENVIRONMENT: 'test',
   RELEASE: 'test-release',
 }
@@ -137,6 +138,7 @@ test('createApplication shares one database and Cognito client through the objec
         database: { user: 'user', password: 'password', database: 'db', host: '127.0.0.1', port: 5432, poolMax: 10 },
         cognito: { region: 'ap-northeast-1', userPoolId: 'pool', clientId: 'client' },
         sqs: { region: 'ap-northeast-1', queueUrl: 'http://localhost:9324/queue/track-points', endpoint: undefined },
+        workerHealth: { workerHealthUrl: 'http://localhost:3001/health' },
         observability: { environment: 'test', release: 'test-release', sentryDsn: undefined },
       }
     },
@@ -226,8 +228,15 @@ test('createApplication shares one database and Cognito client through the objec
       receivedWalkRouteDependencies = dependencies
       return walkRoutes
     },
-    createHealthRoutes() {
+    createCheckHealth(dependencies) {
+      calls.push('check-health')
+      assert.equal(typeof dependencies.pingPostgres, 'function')
+      assert.equal(typeof dependencies.pingWorker, 'function')
+      return async () => ({ ok: true })
+    },
+    createHealthRoutes(dependencies) {
       calls.push('health-routes')
+      assert.equal(typeof dependencies.checkHealth, 'function')
       return healthRoutes
     },
     createApp(dependencies: AppDependencies, routes: ModuleRoute[]) {
@@ -260,6 +269,7 @@ test('createApplication shares one database and Cognito client through the objec
     'owner-routes',
     'dog-routes',
     'walk-routes',
+    'check-health',
     'health-routes',
     'app',
   ])

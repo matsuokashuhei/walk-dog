@@ -3,8 +3,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --import ./src/instrument.ts src/server.ts",
+    "worker": "tsx watch --import ./src/instrument.ts src/worker.ts",
     "build": "tsc",
     "start": "node --import ./dist/instrument.js dist/server.js",
+    "start:worker": "node --import ./dist/instrument.js dist/worker.js",
     "lint": "eslint .",
     "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
     "knip": "knip",
@@ -17,6 +19,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1101.0",
+    "@aws-sdk/client-dynamodb": "^3.1111.0",
     "@aws-sdk/client-sqs": "^3.1111.0",
     "@hono/node-server": "^2.0.12",
     "@hono/structured-logger": "^0.1.0",

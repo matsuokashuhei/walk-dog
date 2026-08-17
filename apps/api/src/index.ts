@@ -17,8 +17,10 @@ import {
   loadDatabaseConfig,
   loadObservabilityConfig,
   loadSqsConfig,
+  loadWorkerHealthConfig,
   type DatabaseConfig,
   type SqsConfig,
+  type WorkerHealthConfig,
 } from './infrastructure/config/index.js'
 import {
   createDbClient,
@@ -52,7 +54,12 @@ import {
 import { createCreateDog } from './modules/dogs/use-cases/create-dog.js'
 import { createGetDog } from './modules/dogs/use-cases/get-dog.js'
 import { createListDogs } from './modules/dogs/use-cases/list-dogs.js'
-import { registerHealthRoutes } from './modules/health/index.js'
+import {
+  createCheckHealth,
+  registerHealthRoutes,
+  type CheckHealth,
+  type HealthRouteDependencies,
+} from './modules/health/index.js'
 import {
   registerOwnerRoutes,
   type OwnerRepository,
@@ -79,6 +86,7 @@ export type ApplicationConfigs = {
   database: DatabaseConfig
   cognito: CognitoConfig
   sqs: SqsConfig
+  workerHealth: WorkerHealthConfig
   observability: {
     environment: string
     release: string
@@ -121,7 +129,11 @@ export type ApplicationFactories = {
   createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
   createDogRoutes: (dependencies: DogRouteDependencies) => App
   createWalkRoutes: (dependencies: WalkRouteDependencies) => App
-  createHealthRoutes: () => App
+  createCheckHealth: (dependencies: {
+    pingPostgres: () => Promise<void>
+    pingWorker: () => Promise<void>
+  }) => CheckHealth
+  createHealthRoutes: (dependencies: HealthRouteDependencies) => App
   createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
 }
 
@@ -131,42 +143,21 @@ const defaultFactories: ApplicationFactories = {
       database: loadDatabaseConfig(env),
       cognito: loadCognitoConfig(env),
       sqs: loadSqsConfig(env),
+      workerHealth: loadWorkerHealthConfig(env),
       observability: loadObservabilityConfig(env),
     }
   },
-  createLogger(config) {
-    return createProductionLogger(config)
-  },
-  createDatabase(config) {
-    return createDbClient(config)
-  },
-  createCognitoClient(config) {
-    return createProductionCognitoClient(config)
-  },
-  createAuthProvider(client) {
-    return createCognitoAuthProvider(client)
-  },
-  createOwnerRepository(database) {
-    return createDrizzleOwnerRepository(database)
-  },
-  createDogRepository(database) {
-    return createDrizzleDogRepository(database)
-  },
-  createWalkRepository(database) {
-    return createDrizzleWalkRepository(database)
-  },
-  createActiveWalkCommands(walks) {
-    return walks
-  },
-  createSqsClient(config) {
-    return createProductionSqsClient(config)
-  },
-  createTrackPointQueue(client, config) {
-    return createEnqueueTrackPoint(client, config)
-  },
-  createAccessTokenVerifier(config) {
-    return createProductionAccessTokenVerifier(config)
-  },
+  createLogger: createProductionLogger,
+  createDatabase: createDbClient,
+  createCognitoClient: createProductionCognitoClient,
+  createAuthProvider: createCognitoAuthProvider,
+  createOwnerRepository: createDrizzleOwnerRepository,
+  createDogRepository: createDrizzleDogRepository,
+  createWalkRepository: createDrizzleWalkRepository,
+  createActiveWalkCommands: (walks) => walks,
+  createSqsClient: createProductionSqsClient,
+  createTrackPointQueue: createEnqueueTrackPoint,
+  createAccessTokenVerifier: createProductionAccessTokenVerifier,
   createUseCases({
     authProvider,
     ownerRepository,
@@ -195,24 +186,24 @@ const defaultFactories: ApplicationFactories = {
       acceptTrackPoint: createAcceptTrackPoint(ownerRepository, walkRepository, trackPointQueue),
     }
   },
-  createAuthRoutes(dependencies) {
-    return registerAuthRoutes(dependencies)
-  },
-  createOwnerRoutes(dependencies) {
-    return registerOwnerRoutes(dependencies)
-  },
-  createDogRoutes(dependencies) {
-    return registerDogRoutes(dependencies)
-  },
-  createWalkRoutes(dependencies) {
-    return registerWalkRoutes(dependencies)
-  },
-  createHealthRoutes() {
-    return registerHealthRoutes()
-  },
-  createApp(dependencies, routes) {
-    return createHonoApp(dependencies, routes)
-  },
+  createAuthRoutes: registerAuthRoutes,
+  createOwnerRoutes: registerOwnerRoutes,
+  createDogRoutes: registerDogRoutes,
+  createWalkRoutes: registerWalkRoutes,
+  createCheckHealth,
+  createHealthRoutes: registerHealthRoutes,
+  createApp: createHonoApp,
+}
+
+async function pingPostgres(pool: Pool): Promise<void> {
+  await pool.query('select 1')
+}
+
+async function pingWorkerHealth(workerHealthUrl: string): Promise<void> {
+  const response = await fetch(workerHealthUrl)
+  if (!response.ok) {
+    throw new Error('worker health unavailable')
+  }
 }
 
 export function createApplication(
@@ -224,37 +215,13 @@ export function createApplication(
   const { db: database, pool } = factories.createDatabase(configs.database)
   const cognitoClient = factories.createCognitoClient(configs.cognito)
   const sqsClient = factories.createSqsClient(configs.sqs)
-  const authProvider = factories.createAuthProvider(cognitoClient)
-  const ownerRepository = factories.createOwnerRepository(database)
-  const dogRepository = factories.createDogRepository(database)
-  const walkRepository = factories.createWalkRepository(database)
-  const activeWalkCommands = factories.createActiveWalkCommands(walkRepository)
-  const trackPointQueue = factories.createTrackPointQueue(sqsClient, configs.sqs)
-  const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
-  const useCases = factories.createUseCases({
-    authProvider,
-    ownerRepository,
-    dogRepository,
-    walkRepository,
-    activeWalkCommands,
-    trackPointQueue,
-    accessTokenVerifier,
+  const app = composeApp(factories, configs, {
+    logger,
+    database,
+    pool,
+    cognitoClient,
+    sqsClient,
   })
-  const authRoutes = factories.createAuthRoutes(useCases)
-  const ownerRoutes = factories.createOwnerRoutes(useCases)
-  const dogRoutes = factories.createDogRoutes(useCases)
-  const walkRoutes = factories.createWalkRoutes(useCases)
-  const healthRoutes = factories.createHealthRoutes()
-  const app = factories.createApp(
-    { logger, setRequestId: setRequestIdTag },
-    [
-      { path: '/', app: healthRoutes },
-      { path: '/v1/auth', app: authRoutes },
-      { path: '/v1/owner', app: ownerRoutes },
-      { path: '/v1/dogs', app: dogRoutes },
-      { path: '/v1/walks', app: walkRoutes },
-    ],
-  )
 
   return {
     app,
@@ -265,4 +232,63 @@ export function createApplication(
       closeSentry,
     },
   }
+}
+
+function composeUseCases(
+  factories: ApplicationFactories,
+  configs: ApplicationConfigs,
+  resources: {
+    database: DbInstance
+    cognitoClient: CognitoClient
+    sqsClient: SQSClient
+  },
+): ApplicationUseCases {
+  const authProvider = factories.createAuthProvider(resources.cognitoClient)
+  const ownerRepository = factories.createOwnerRepository(resources.database)
+  const dogRepository = factories.createDogRepository(resources.database)
+  const walkRepository = factories.createWalkRepository(resources.database)
+  const activeWalkCommands = factories.createActiveWalkCommands(walkRepository)
+  const trackPointQueue = factories.createTrackPointQueue(resources.sqsClient, configs.sqs)
+  const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
+  return factories.createUseCases({
+    authProvider,
+    ownerRepository,
+    dogRepository,
+    walkRepository,
+    activeWalkCommands,
+    trackPointQueue,
+    accessTokenVerifier,
+  })
+}
+
+function composeApp(
+  factories: ApplicationFactories,
+  configs: ApplicationConfigs,
+  resources: {
+    logger: Logger
+    database: DbInstance
+    pool: Pool
+    cognitoClient: CognitoClient
+    sqsClient: SQSClient
+  },
+): App {
+  const useCases = composeUseCases(factories, configs, resources)
+  const authRoutes = factories.createAuthRoutes(useCases)
+  const ownerRoutes = factories.createOwnerRoutes(useCases)
+  const dogRoutes = factories.createDogRoutes(useCases)
+  const walkRoutes = factories.createWalkRoutes(useCases)
+  const checkHealth = factories.createCheckHealth({
+    pingPostgres: () => pingPostgres(resources.pool),
+    pingWorker: () => pingWorkerHealth(configs.workerHealth.workerHealthUrl),
+  })
+  return factories.createApp(
+    { logger: resources.logger, setRequestId: setRequestIdTag },
+    [
+      { path: '/', app: factories.createHealthRoutes({ checkHealth }) },
+      { path: '/v1/auth', app: authRoutes },
+      { path: '/v1/owner', app: ownerRoutes },
+      { path: '/v1/dogs', app: dogRoutes },
+      { path: '/v1/walks', app: walkRoutes },
+    ],
+  )
 }

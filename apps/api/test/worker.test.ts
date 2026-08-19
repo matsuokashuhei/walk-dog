@@ -93,6 +93,77 @@ test('polls SQS with WaitTimeSeconds 20, confirms the TrackPoint, then deletes t
   assert.equal(deleted.input.ReceiptHandle, 'receipt-1')
 })
 
+test('keeps polling after ReceiveMessage throws', async () => {
+  let polls = 0
+  let confirmCalls = 0
+  await processSqsMessages({
+    sqs: {
+      send: async (command) => {
+        if (command instanceof ReceiveMessageCommand) {
+          polls += 1
+          if (polls === 1) {
+            throw new Error('receive failed')
+          }
+          return { Messages: [] }
+        }
+        return {}
+      },
+    },
+    queueUrl,
+    confirm: {
+      async confirm() {
+        confirmCalls += 1
+      },
+    },
+    logger: testLogger,
+    shouldContinue: () => polls < 2,
+  })
+
+  assert.equal(polls, 2)
+  assert.equal(confirmCalls, 0)
+})
+
+test('keeps polling after DeleteMessage throws', async () => {
+  let polls = 0
+  let deletes = 0
+  const confirmed: unknown[] = []
+  await processSqsMessages({
+    sqs: {
+      send: async (command) => {
+        if (command instanceof ReceiveMessageCommand) {
+          polls += 1
+          if (polls === 1) {
+            return {
+              Messages: [{
+                Body: JSON.stringify(trackPointBody),
+                ReceiptHandle: 'receipt-1',
+              }],
+            }
+          }
+          return { Messages: [] }
+        }
+        if (command instanceof DeleteMessageCommand) {
+          deletes += 1
+          throw new Error('delete failed')
+        }
+        return {}
+      },
+    },
+    queueUrl,
+    confirm: {
+      async confirm(trackPoint) {
+        confirmed.push(trackPoint)
+      },
+    },
+    logger: testLogger,
+    shouldContinue: () => polls < 2,
+  })
+
+  assert.equal(confirmed.length, 1)
+  assert.equal(deletes, 1)
+  assert.equal(polls, 2)
+})
+
 test('leaves invalid JSON on the queue', async () => {
   const sent: unknown[] = []
   let confirmCalls = 0

@@ -1,6 +1,7 @@
 import {
   DeleteMessageCommand,
   ReceiveMessageCommand,
+  type ReceiveMessageCommandOutput,
   type SQSClient,
 } from '@aws-sdk/client-sqs'
 import { createServer, type Server } from 'node:http'
@@ -93,19 +94,29 @@ async function handleQueueMessage(
   if (receiptHandle === undefined) {
     return
   }
-  await input.sqs.send(new DeleteMessageCommand({
-    QueueUrl: input.queueUrl,
-    ReceiptHandle: receiptHandle,
-  }))
+  try {
+    await input.sqs.send(new DeleteMessageCommand({
+      QueueUrl: input.queueUrl,
+      ReceiptHandle: receiptHandle,
+    }))
+  } catch (error) {
+    input.logger.error({ err: error }, 'failed to delete track point message')
+  }
 }
 
 export async function processSqsMessages(input: ProcessSqsMessagesInput): Promise<void> {
   while (input.shouldContinue()) {
-    const output = await input.sqs.send(new ReceiveMessageCommand({
-      QueueUrl: input.queueUrl,
-      WaitTimeSeconds: 20,
-      MaxNumberOfMessages: 1,
-    }))
+    let output: ReceiveMessageCommandOutput
+    try {
+      output = await input.sqs.send(new ReceiveMessageCommand({
+        QueueUrl: input.queueUrl,
+        WaitTimeSeconds: 20,
+        MaxNumberOfMessages: 1,
+      }))
+    } catch (error) {
+      input.logger.error({ err: error }, 'failed to receive track point messages')
+      continue
+    }
     const message = output.Messages?.[0]
     if (message === undefined) {
       continue

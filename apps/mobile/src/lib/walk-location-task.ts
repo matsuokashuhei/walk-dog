@@ -110,7 +110,7 @@ async function recordLocation(location: Location.LocationObject) {
   await withRecordingStore(async (walkId, store) =>
     store.record({
       walkId,
-      recordedAt: new Date(location.timestamp).toISOString(),
+      recordedAt: new Date(Date.now()).toISOString(),
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
     }),

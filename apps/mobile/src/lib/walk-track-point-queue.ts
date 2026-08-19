@@ -97,10 +97,14 @@ export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
       return flushUnlocked()
     }
     lastSampleAt = now
+    const stamped = {
+      ...point,
+      recordedAt: new Date(now).toISOString(),
+    }
     const path = await deps.loadPath()
-    await deps.savePath([...path, point])
+    await deps.savePath([...path, stamped])
     const queue = await deps.loadQueue()
-    await deps.saveQueue([...queue, point])
+    await deps.saveQueue([...queue, stamped])
     return flushUnlocked()
   }
 

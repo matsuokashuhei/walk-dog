@@ -19,7 +19,7 @@ test('createSqsClient uses the provided endpoint', async () => {
     endpoint: 'http://localhost:9324',
   })
   const endpoint = await client.config.endpoint()
-  assert.equal(endpoint?.hostname, 'localhost')
-  assert.equal(endpoint?.port, 9324)
+  assert.equal(endpoint.hostname, 'localhost')
+  assert.equal(endpoint.port, 9324)
   client.destroy()
 })

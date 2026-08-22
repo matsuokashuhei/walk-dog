@@ -182,13 +182,17 @@ export async function startTrackPointUpdates(walkId: string) {
   })
 }
 
-export async function stopTrackPointUpdates() {
+export async function pauseTrackPointUpdates() {
   stopAppStateListener()
   stopSampleTimer()
   const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   if (started) {
     await Location.stopLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   }
+}
+
+export async function stopTrackPointUpdates() {
+  await pauseTrackPointUpdates()
   resetTrackPointCoordinator()
   await clearRecordingWalkId()
 }

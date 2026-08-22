@@ -65,11 +65,11 @@ export const completedWalkResponseSchema = completedWalkSchema.extend({
   requestId: z.string(),
 })
 
-export const trackPointResponseSchema = z.object({
-  requestId: z.string(),
-  trackPointId: z.string(),
-  walkId: z.string(),
-  recordedAt: z.string(),
+export const trackPointResponseSchema = z.strictObject({
+  requestId: errorSchema.shape.requestId,
+  trackPointId: z.uuid(),
+  walkId: walkIdParamSchema.shape.walkId,
+  recordedAt: acceptTrackPointRequestSchema.shape.recordedAt,
   latitude: latitudeSchema,
   longitude: longitudeSchema,
 })

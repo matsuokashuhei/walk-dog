@@ -1,3 +1,5 @@
+import type { z } from 'zod'
+import { trackPointResponseSchema } from './contracts.js'
 import type { CompletedWalk, RecordingWalk, TrackPoint, WalkParticipant } from './types.js'
 
 function toParticipantFields(participant: WalkParticipant) {
@@ -35,7 +37,10 @@ export function toCompletedWalkResponse(requestId: string, walk: CompletedWalk) 
   }
 }
 
-export function toTrackPointResponse(requestId: string, trackPoint: TrackPoint) {
+export function toTrackPointResponse(
+  requestId: string,
+  trackPoint: TrackPoint,
+): z.infer<typeof trackPointResponseSchema> {
   return {
     requestId,
     trackPointId: trackPoint.trackPointId,

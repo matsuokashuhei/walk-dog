@@ -70,3 +70,13 @@ test('trackPointResponseSchema accepts the mapped TrackPoint body', () => {
   const body = toTrackPointResponse('req-1', trackPoint)
   assert.deepEqual(trackPointResponseSchema.parse(body), body)
 })
+
+test('trackPointResponseSchema rejects a non-UUID trackPointId', () => {
+  const body = toTrackPointResponse('req-1', { ...trackPoint, trackPointId: 'not-a-uuid' })
+  assert.equal(trackPointResponseSchema.safeParse(body).success, false)
+})
+
+test('trackPointResponseSchema rejects a non-ISO recordedAt', () => {
+  const body = { ...toTrackPointResponse('req-1', trackPoint), recordedAt: '2026-08-17' }
+  assert.equal(trackPointResponseSchema.safeParse(body).success, false)
+})

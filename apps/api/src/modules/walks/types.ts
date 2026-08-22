@@ -1,3 +1,5 @@
+import type { Latitude, Longitude } from '../../infrastructure/database/schema/walk-track-point.js'
+
 export type WalkParticipant = {
   walkParticipantId: string
   dogId: string
@@ -45,16 +47,16 @@ export type TrackPoint = {
   trackPointId: string
   walkId: string
   recordedAt: Date
-  latitude: number
-  longitude: number
+  latitude: Latitude
+  longitude: Longitude
 }
 
 export type AcceptTrackPointInput = {
   ownerId: string
   walkId: string
   recordedAt: Date
-  latitude: number
-  longitude: number
+  latitude: Latitude
+  longitude: Longitude
 }
 
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>

@@ -2,20 +2,20 @@ import * as SecureStore from 'expo-secure-store'
 import {
   createContext,
   use,
+  useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { setAuthenticationFailureHandler } from '@/lib/api'
+import { createAuthSessionStore, type AuthSession } from '@/lib/auth-session-store'
 
 const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
 const ID_TOKEN_KEY = 'walkdog.idToken'
 const REFRESH_TOKEN_KEY = 'walkdog.refreshToken'
 
-export type AuthSession = {
-  accessToken: string
-  idToken: string
-  refreshToken: string
-}
+export type { AuthSession } from '@/lib/auth-session-store'
 
 type AuthContextValue = {
   isReady: boolean
@@ -57,6 +57,7 @@ async function deleteSession(): Promise<void> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false)
   const [session, setSessionState] = useState<AuthSession | null>(null)
+  const sessionStoreRef = useRef(createAuthSessionStore({ write: writeSession, clear: deleteSession }))
 
   useEffect(() => {
     let cancelled = false
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) {
         return
       }
+      sessionStoreRef.current.hydrate(stored)
       setSessionState(stored)
       setIsReady(true)
     })
@@ -73,14 +75,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const setSession = async (next: AuthSession) => {
-    await writeSession(next)
-    setSessionState(next)
+    if (await sessionStoreRef.current.set(next)) {
+      setSessionState(next)
+    }
   }
 
-  const clearSession = async () => {
-    await deleteSession()
-    setSessionState(null)
-  }
+  const clearSession = useCallback(async () => {
+    if (await sessionStoreRef.current.clear()) {
+      setSessionState(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    setAuthenticationFailureHandler((failedAccessToken) => {
+      void sessionStoreRef.current.clearIfCurrentAccessToken(failedAccessToken).then((cleared) => {
+        if (cleared) {
+          setSessionState(null)
+        }
+      })
+    })
+    return () => {
+      setAuthenticationFailureHandler(null)
+    }
+  }, [])
 
   return (
     <AuthContext value={{ isReady, session, setSession, clearSession }}>

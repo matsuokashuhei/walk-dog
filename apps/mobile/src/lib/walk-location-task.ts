@@ -35,6 +35,8 @@ let coordinator: ReturnType<typeof createTrackPointCoordinator> | null = null
 let coordinatorWalkId: string | null = null
 let sampleTimer: ReturnType<typeof setInterval> | null = null
 let appStateSub: NativeEventSubscription | null = null
+let acceptsSamples = false
+const activeProducers = new Set<Promise<void>>()
 
 export function setTrackPointEvents(next: TrackPointEvents | null) {
   events = next
@@ -51,6 +53,19 @@ function stopSampleTimer() {
   }
   clearInterval(sampleTimer)
   sampleTimer = null
+}
+
+function runProducer(work: () => Promise<void>): Promise<void> {
+  if (!acceptsSamples) {
+    return Promise.resolve()
+  }
+  const producer = work()
+  activeProducers.add(producer)
+  void producer.then(
+    () => activeProducers.delete(producer),
+    () => activeProducers.delete(producer),
+  )
+  return producer
 }
 
 async function postPoint(accessToken: string, point: LocalTrackPoint) {
@@ -139,9 +154,9 @@ async function sampleForegroundTick() {
 
 function startSampleTimer() {
   stopSampleTimer()
-  void sampleForegroundTick()
+  void runProducer(sampleForegroundTick)
   sampleTimer = setInterval(() => {
-    void sampleForegroundTick()
+    void runProducer(sampleForegroundTick)
   }, SAMPLE_INTERVAL_MS)
 }
 
@@ -166,6 +181,7 @@ function stopAppStateListener() {
 export async function startTrackPointUpdates(walkId: string) {
   resetTrackPointCoordinator()
   await saveRecordingWalkId(walkId)
+  acceptsSamples = true
   startAppStateListener()
   if (AppState.currentState === 'active') {
     startSampleTimer()
@@ -183,12 +199,14 @@ export async function startTrackPointUpdates(walkId: string) {
 }
 
 export async function pauseTrackPointUpdates() {
+  acceptsSamples = false
   stopAppStateListener()
   stopSampleTimer()
   const started = await Location.hasStartedLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   if (started) {
     await Location.stopLocationUpdatesAsync(WALK_TRACK_POINT_TASK)
   }
+  await Promise.all(activeProducers)
 }
 
 export async function stopTrackPointUpdates() {
@@ -207,9 +225,9 @@ async function handleLocations(locations: Location.LocationObject[]) {
 }
 
 TaskManager.defineTask(WALK_TRACK_POINT_TASK, async ({ data, error }) => {
-  if (error) {
+  if (error || !acceptsSamples) {
     return
   }
   const { locations } = data as LocationTaskData
-  await handleLocations(locations)
+  await runProducer(() => handleLocations(locations))
 })

@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  latitudeSchema,
+  longitudeSchema,
+} from '../../infrastructure/database/schema/walk-track-point.js'
 import { errorSchema } from '../../shared/http/error-contract.js'
 
 export { errorSchema as walkErrorSchema }
@@ -14,8 +18,8 @@ export const finishWalkRequestSchema = z.strictObject({})
 
 export const acceptTrackPointRequestSchema = z.strictObject({
   recordedAt: z.iso.datetime(),
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
+  latitude: z.number().gte(-90).lte(90).pipe(latitudeSchema),
+  longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
 })
 
 export const walkIdParamSchema = z.object({
@@ -66,6 +70,6 @@ export const trackPointResponseSchema = z.object({
   trackPointId: z.string(),
   walkId: z.string(),
   recordedAt: z.string(),
-  latitude: z.number(),
-  longitude: z.number(),
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
 })

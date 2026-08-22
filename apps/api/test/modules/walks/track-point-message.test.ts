@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { z } from 'zod'
 import {
   parseTrackPointMessage,
   toTrackPointMessage,
@@ -29,9 +30,9 @@ test('parseTrackPointMessage returns the TrackPoint', () => {
   assert.deepEqual(parseTrackPointMessage(message), trackPoint)
 })
 
-test('parseTrackPointMessage throws when the body is not a TrackPoint', () => {
+test('parseTrackPointMessage throws ZodError when the body is not a TrackPoint', () => {
   assert.throws(
     () => parseTrackPointMessage(JSON.stringify({ walkId: trackPoint.walkId })),
-    { message: 'invalid track point message' },
+    (error: unknown) => error instanceof z.ZodError,
   )
 })

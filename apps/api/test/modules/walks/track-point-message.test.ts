@@ -36,3 +36,13 @@ test('parseTrackPointMessage throws ZodError when the body is not a TrackPoint',
     (error: unknown) => error instanceof z.ZodError,
   )
 })
+
+test('parseTrackPointMessage throws ZodError when coordinates exceed numeric scale', () => {
+  assert.throws(
+    () => parseTrackPointMessage(JSON.stringify({
+      ...JSON.parse(message),
+      latitude: 35.6812361,
+    })),
+    (error: unknown) => error instanceof z.ZodError,
+  )
+})

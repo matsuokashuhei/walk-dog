@@ -9,48 +9,21 @@ const sqsConfig = {
   endpoint: 'http://localhost:9324',
 }
 
-const trackPoint = {
-  trackPointId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90',
-  walkId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80',
-  recordedAt: new Date('2026-08-17T03:12:14.000Z'),
-  latitude: 35.681236,
-  longitude: 139.767125,
-}
-
-test('enqueue sends the TrackPoint JSON to the configured queue URL', async () => {
+test('enqueue sends the given body to the configured queue URL', async () => {
   const sent: unknown[] = []
-  const queue = createEnqueueTrackPoint(
+  const enqueue = createEnqueueTrackPoint(
     { send: async (command) => { sent.push(command); return {} } },
-    {
-      region: 'ap-northeast-1',
-      queueUrl: 'http://localhost:9324/queue/track-points',
-      endpoint: 'http://localhost:9324',
-    },
+    sqsConfig,
   )
-  await queue.enqueue({
-    trackPointId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90',
-    walkId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80',
-    recordedAt: new Date('2026-08-17T03:12:14.000Z'),
-    latitude: 35.681236,
-    longitude: 139.767125,
-  })
+  await enqueue.enqueue('{"ok":true}')
   const command = sent[0] as SendMessageCommand
   assert.equal(command.input.QueueUrl, 'http://localhost:9324/queue/track-points')
-  assert.equal(
-    command.input.MessageBody,
-    JSON.stringify({
-      trackPointId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90',
-      walkId: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80',
-      recordedAt: '2026-08-17T03:12:14.000Z',
-      latitude: 35.681236,
-      longitude: 139.767125,
-    }),
-  )
+  assert.equal(command.input.MessageBody, '{"ok":true}')
 })
 
 test('enqueue throws SDK failures through', async () => {
   const failure = new Error('sqs unavailable')
-  const queue = createEnqueueTrackPoint(
+  const enqueue = createEnqueueTrackPoint(
     {
       send: async () => {
         throw failure
@@ -60,7 +33,7 @@ test('enqueue throws SDK failures through', async () => {
   )
 
   await assert.rejects(
-    () => queue.enqueue(trackPoint),
+    () => enqueue.enqueue('{"ok":true}'),
     (error: unknown) => error === failure,
   )
 })

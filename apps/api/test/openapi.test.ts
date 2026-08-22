@@ -76,6 +76,7 @@ const expectedOperations = {
   '/v1/walks': { post: ['201', '400', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}': { delete: ['204', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}/track-points': { post: ['201', '400', '401', '404', '409', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */

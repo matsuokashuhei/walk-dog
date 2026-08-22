@@ -15,10 +15,12 @@ import type {
   WalkParticipant,
 } from '../../../modules/walks/types.js'
 import type { DbInstance } from '../client.js'
+import { isUniqueViolation, uniqueConstraint } from '../unique-violation.js'
 import { dogs } from '../schema/dog.js'
 import { walkCommandKeys } from '../schema/walk-command-key.js'
 import { walkParticipants } from '../schema/walk-participant.js'
 import { walks } from '../schema/walk.js'
+import { acceptWalkTrackPoint } from './accept-track-point.js'
 
 type WalkRow = typeof walks.$inferSelect
 type WalkParticipantRow = typeof walkParticipants.$inferSelect
@@ -35,6 +37,7 @@ export function createDrizzleWalkRepository(database: DbInstance): WalkRepositor
     finish: (input) => finishWithRecovery(database, input),
     fail: (input) => failWalk(database, input),
     failIfPresent: (input) => failIfPresent(database, input),
+    acceptTrackPoint: (input) => acceptWalkTrackPoint(database, input),
   }
 }
 
@@ -289,22 +292,4 @@ function throwIfRecordingUnique(error: unknown): void {
 
 function isCommandKeyUnique(error: unknown): boolean {
   return isUniqueViolation(error) && uniqueConstraint(error) === COMMAND_KEY_UNIQUE
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return hasPostgresCode(error, '23505') || (error instanceof Error && hasPostgresCode(error.cause, '23505'))
-}
-
-function uniqueConstraint(error: unknown): string | undefined {
-  return postgresConstraint(error) ?? (error instanceof Error ? postgresConstraint(error.cause) : undefined)
-}
-
-function hasPostgresCode(error: unknown, code: string): boolean {
-  return error instanceof Error && 'code' in error && error.code === code
-}
-
-function postgresConstraint(error: unknown): string | undefined {
-  return error instanceof Error && 'constraint' in error && typeof error.constraint === 'string'
-    ? error.constraint
-    : undefined
 }

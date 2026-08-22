@@ -13,7 +13,8 @@
 - iOS先行で、開発チーム向け開発ビルドを配布する。
 - モバイルAPIはさくらVPSで運用し、GitHub ActionsがDockerイメージをAWS ECRへ公開する。開発チームがVPSへイメージを反映する。
 - OpenAPIをAPI契約の正本とし、サーバー検証、モバイルクライアント型、契約テストに利用する。
-- TrackPointはモバイルがWalkごとの連番を付けて送信し、APIがSQS Standardへ受理する。ワーカーは連番と冪等性を使ってDynamoDBへ確定する。
+- TrackPointはモバイルが取得時刻と位置を送信し、APIがSQS Standardへ受理する。ワーカーは`recordedAt`と冪等性を使ってDynamoDBへ確定する。
+- TrackPointの自動再試行は、Walkが`recording`のあいだ回数上限を設けない。保持期限はActive Walkが`recording`のあいだ。
 - OwnerとDogのAvatarはモバイルからAPIへ送信し、APIがS3へ保存する。
 - SentryとVPSコンテナの構造化ログで、モバイル、API、ワーカーの状態遷移を観測する。
 - 利用規約とプライバシーポリシーは既存の公開文書を利用する。
@@ -42,8 +43,8 @@ R1は次の縦切り順で進める。
 | **1. アカウント**（Sign Up / Sign In / OTP / Owner 表示名 / Sign Out） | 必須（owners・表示名） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
 | **2. Dog**（一覧・登録・プロフィール Detail、登録時 Daily 30分 Goal Revision） | 必須（Dog / Goal Revision） | 必須 | 必須 | 必須 | — | — | — | — | — | 配布・VPS反映 |
 | **3. Active Walk**（Ready → Starting → Recording → Completed / Failed を API と同期。許可時は Apple MapKit で現在地） | 必須（Walk / Participant） | 必須 | 必須 | 必須 | — | 必須（foreground / background） | — | — | — | 配布・VPS反映 |
-| **4. TrackPoint**（10秒ごと連番送信 → SQS → worker → DynamoDB） | — | 必須 | 必須 | 必須 | 必須 | 必須（取得元） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
-| **5. Finish**（受理済み連番の処理確定後に Completed） | — | 必須 | 必須 | 必須 | 必須（未送信の吐き出し） | 必須（記録継続） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
+| **4. TrackPoint**（10秒ごと送信 → SQS → worker → DynamoDB） | — | 必須 | 必須 | 必須 | 必須 | 必須（取得元） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
+| **5. Finish**（受理済み TrackPoint の処理確定後に Completed） | — | 必須 | 必須 | 必須 | 必須（未送信の吐き出し） | 必須（記録継続） | 必須（SQS / DynamoDB） | 必須 | 必須 | 配布・VPS反映 |
 | **6. Event + Detail**（Pee / Poop / Sniff / Greet、eventId Retry、経路・距離・時間・Event） | 必須（Event） | 必須 | 必須 | 必須 | 必須（Event Retry） | 必須（Event の latitude / longitude） | 必須（DynamoDB 経路） | 必須 | 必須 | 配布・VPS反映 |
 | **7. 実機検証**（起動／Foreground 復帰／タブ移動での Active Walk 照合、バックグラウンド位置） | — | 必須 | 必須 | 必須 | 必須（通信復帰） | 必須（foreground / background） | VPS API実機 | ローカルAPI実機 | 必須 | VPS API実機 |
 
@@ -52,7 +53,7 @@ R1は次の縦切り順で進める。
 - **モバイル認証状態** … Cognito セッションの保持・復元・access token 付与（認証の提供者は Cognito。端末内の認証状態管理とは別層）
 - **モバイル API クライアント** … OpenAPI から生成した型付き client と共通エラー処理
 - **永続送信キュー** … 端末内の送信待ち（SQS ではない。流れは 端末キュー → API → SQS → worker → DynamoDB）
-- **iOS 位置情報権限** … foreground / background 許可と Start 条件・取得の土台。許可時の Walk 画面は Apple MapKit を背景にし、現在地を表示する。
+- **iOS 位置情報権限** … foreground / background 許可と Start 条件・取得の土台。許可時の Walk 画面は Apple MapKit を背景にし、現在地にピンを表示する。Recording 中は取得した TrackPoint を経路として描く。
 - **Owner / Dog Avatar と S3** … Dog AvatarはR2（Dog編集・Avatarアップロード）、Owner AvatarはR3（Owner編集）の前提
 
 ## R0: 開発基盤
@@ -71,11 +72,13 @@ R1は次の縦切り順で進める。
 - 認証済みホームは Dogs List を表示する。Empty と追加操作から `/dogs/new` で Name と Gender を登録し、Birthday は任意とする。登録時に Daily 30分の Goal Revision を作成する。一覧の行から `/dogs/:dogId` で名前、Gender、Birthday、currentGoal を表示する。
 - 認証済みシェルは Dogs と Walk のタブを置く。Walk 画面は `/(tabs)/walk` で Ready、Starting、Recording、Completed、Failed を API の Active Walk と同期して表示する。
 - Walk Ready は同じ Owner の Dog を1頭以上選択し、foreground と background の位置情報を許可すると開始する。不足条件は理由を表示する。
-- 位置情報を許可している Walk 画面は Apple MapKit を背景にし、現在地を表示する。未許可のときは地図と現在地を出さない。
+- 位置情報を許可している Walk 画面は Apple MapKit を背景にし、現在地にピンを表示する。未許可のときは地図と現在地を出さない。
+- Recording 中は取得した TrackPoint を `recordedAt` 順に結んで経路を描く。距離・pace・Walk Detail は後続。
 - `POST /v1/walks` は開始成功時に `recording` を返す。Starting は開始要求中の画面状態。
-- この縦切りの Finish は受理済み連番を待たず Completed にする。TrackPoint 0件の Completed は距離 0。連番確定待ちは縦切り 5。
-- 10秒ごとのTrackPointを連番付きで送信し、SQSワーカーがDynamoDBへ保存する。
-- Finishは受理済み連番までのTrackPoint処理が確定した後にCompletedへ遷移する。
+- この縦切りの Finish は受理済み点の確定を待たず Completed にする。TrackPoint 0件の Completed は距離 0。受理済み点の確定待ちは縦切り 5。
+- 10秒ごとのTrackPointを送信し、SQSワーカーがDynamoDBへ保存する。
+- TrackPoint の送信失敗は取得時刻と位置を保持し、Walk が `recording` のあいだ回数上限なく自動再送する。
+- Finishは受理済み TrackPoint の処理が確定した後にCompletedへ遷移する。
 - Participant別のPee、Poop、Sniff、Greet、同一eventIdでの手動Retry、Walk Detailの経路、距離、時間、Eventを実装する。
 - 起動、Foreground復帰、タブ移動時にActive Walkを照合し、バックグラウンド位置記録をiPhone実機で検証する。
 
@@ -107,20 +110,20 @@ R1は次の縦切り順で進める。
 - `GET /v1/walks/active` はAccess Tokenで認証し、そのOwnerのActive Walkを返す。無いときは204。この縦切りの Active Walk の `state` は `recording`。`participants` は `walkParticipantId`、`dogId`、応答時点の `name`。
 - `POST /v1/walks` はAccess Tokenで認証し、`participantDogIds` と `Idempotency-Key` を受け、`recording` のWalkを返す。`participantDogIds` は同一OwnerのDogを1頭以上、重複なし。既にActive Walkがあるときは 409 `ACTIVE_WALK_EXISTS`。同一Keyで異なるbodyは 409 `IDEMPOTENCY_CONFLICT`。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
 - `POST /v1/walks/:walkId/finish` はAccess Tokenで認証し、空のbody `{}` と `Idempotency-Key` を受け、Completed Walkを返す。`durationSeconds` は `startedAt` から `completedAt` までの秒。`distanceMeters` はこの縦切りでは 0。`paceSecondsPerMeter` は距離0のため `null`。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
+- `POST /v1/walks/:walkId/track-points` はAccess Tokenで認証し、`recordedAt`、`latitude`、`longitude` を受け、TrackPointを返す。`recordedAt` はモバイルが位置を取得した時刻で、Walk内の順序と冪等の正本。同一 `walkId` と `recordedAt` の再送は、同じ位置なら受理済みTrackPointを返す。位置が違うときは 409 `IDEMPOTENCY_CONFLICT`。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
 - `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。開始とFinishはEndpointごとに別名前空間。有効期間は処理開始から24時間。
-- `eventId` はEventの冪等キー、`sequence` はWalk内のTrackPoint送信順序を表す。
+- `eventId` はEventの冪等キー。`recordedAt` はTrackPointのWalk内順序と冪等の正本。
 - PostgreSQLはOwner、Dog、Goal Revision、Walk、Participant、Event、Preferenceを扱い、DynamoDBはTrackPointを扱う。
 
 ## 検証
 
 - OpenAPI契約テストで成功、認証、入力不正、競合、再試行可能エラーを確認する。
 - API統合テストでOwner境界、Dog名一意性、Goal Revision、Active Walk一意性、Event冪等性、Completed集計を確認する。
-- SQSワーカーテストで重複、順不同、再配信、Finish時の連番確定を確認する。
+- SQSワーカーテストで重複、順不同、再配信、Finish時の受理済み点確定を確認する。
 - モバイルテストで認証遷移、Owner表示名登録、入力保持、Active Walk復元、失敗時Retry、単位・言語表示を確認する。
 - iPhone実機でforegroundとbackgroundの位置情報、通信復帰、位置情報許可変更、完了後の経路表示を確認する。
 
 ## リリース開始時に確定する判断
 
-- R1 TrackPointステップ着手時: TrackPoint自動再試行の回数と時間上限。
 - R3開始時: 利用者向けのWalk・Owner削除、データ保持期間、既存法務文書の公開URL。
 - Android開始時: 地図、位置情報権限、省電力動作の受け入れ条件。

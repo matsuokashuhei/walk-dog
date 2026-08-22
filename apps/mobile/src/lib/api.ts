@@ -21,15 +21,17 @@ export class ApiError extends Error {
   }
 }
 
-let authenticationFailureHandler: (() => void) | null = null
+type AuthenticationFailureHandler = (accessToken: string) => void
 
-export function setAuthenticationFailureHandler(handler: (() => void) | null): void {
+let authenticationFailureHandler: AuthenticationFailureHandler | null = null
+
+export function setAuthenticationFailureHandler(handler: AuthenticationFailureHandler | null): void {
   authenticationFailureHandler = handler
 }
 
 function notifyAuthenticationFailure(error: ApiError, accessToken: string | undefined): void {
   if (accessToken && error.status === 401 && error.code === 'UNAUTHENTICATED') {
-    authenticationFailureHandler?.()
+    authenticationFailureHandler?.(accessToken)
   }
 }
 

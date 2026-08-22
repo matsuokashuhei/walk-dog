@@ -4,9 +4,11 @@
 
 An iPhone 16 Pro simulator (iOS 18.3) ran the SDK 57.0.15 development client against the local API at `http://127.0.0.1:3000`.
 
-The stored access token requested `GET /v1/owner`. The API returned `401 UNAUTHENTICATED`, the client cleared the session, and the Sign In screen became available.
+The app started with a stored access token and requested `GET /v1/owner`. At `2026-08-22T15:02:09.538Z`, the local API recorded this request as `401`; its response body used `code: "UNAUTHENTICATED"`. The client cleared the session, and the Sign In screen became available.
 
 ![Sign In after authentication expiry](screenshots/ios-auth-expired-sign-in.png)
+
+The API request record is saved in [api-log.ndjson](api-log.ndjson). It follows the `curl` preflight at `15:02:07Z` and occurred immediately after the Simulator app launch.
 
 ## Commands
 

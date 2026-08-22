@@ -4,6 +4,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -59,6 +60,7 @@ async function deleteSession(): Promise<void> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false)
   const [session, setSessionState] = useState<AuthSession | null>(null)
+  const sessionRef = useRef<AuthSession | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) {
         return
       }
+      sessionRef.current = stored
       setSessionState(stored)
       setIsReady(true)
     })
@@ -76,17 +79,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setSession = async (next: AuthSession) => {
     await writeSession(next)
+    sessionRef.current = next
     setSessionState(next)
   }
 
   const clearSession = useCallback(async () => {
+    sessionRef.current = null
     await deleteSession()
     setSessionState(null)
   }, [])
 
   useEffect(() => {
-    setAuthenticationFailureHandler(() => {
-      void clearSession()
+    setAuthenticationFailureHandler((failedAccessToken) => {
+      if (sessionRef.current?.accessToken === failedAccessToken) {
+        void clearSession()
+      }
     })
     return () => {
       setAuthenticationFailureHandler(null)

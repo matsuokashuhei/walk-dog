@@ -51,6 +51,20 @@ test('notifies authentication failure for an authenticated UNAUTHENTICATED respo
   assert.equal(notifications, 1)
 })
 
+test('passes the failed access token to the authentication failure handler', async () => {
+  process.env.EXPO_PUBLIC_API_BASE_URL = 'http://example.test'
+  globalThis.fetch = async () => jsonResponse(errorBody('UNAUTHENTICATED'), 401)
+  let failedAccessToken: string | undefined
+
+  setAuthenticationFailureHandler((accessToken) => {
+    failedAccessToken = accessToken
+  })
+
+  await assert.rejects(apiRequest('/v1/owner', { accessToken: 'expired-token' }))
+
+  assert.equal(failedAccessToken, 'expired-token')
+})
+
 test('does not notify for unauthenticated requests or other API errors', async () => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://example.test'
   const responses = [

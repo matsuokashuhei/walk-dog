@@ -41,6 +41,17 @@ test('acceptTrackPointRequestSchema rejects latitude 91', () => {
   )
 })
 
+test('acceptTrackPointRequestSchema rejects coordinates that exceed numeric scale', () => {
+  assert.equal(
+    acceptTrackPointRequestSchema.safeParse({
+      recordedAt: '2026-08-17T03:12:14.000Z',
+      latitude: 35.6812361,
+      longitude: 139.767125,
+    }).success,
+    false,
+  )
+})
+
 test('toTrackPointResponse serializes recordedAt as ISO UTC', () => {
   assert.deepEqual(
     toTrackPointResponse('req-1', trackPoint),

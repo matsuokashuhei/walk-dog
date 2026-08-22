@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  latitudeSchema,
+  longitudeSchema,
+} from '../../infrastructure/database/schema/walk-track-point.js'
 import type { TrackPoint } from './types.js'
 
 const isoDatetimeToDate = z.codec(z.iso.datetime(), z.date(), {
@@ -10,8 +14,8 @@ const trackPointMessage = z.strictObject({
   trackPointId: z.string(),
   walkId: z.string(),
   recordedAt: isoDatetimeToDate,
-  latitude: z.number(),
-  longitude: z.number(),
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
 })
 
 export function toTrackPointMessage(trackPoint: TrackPoint): string {

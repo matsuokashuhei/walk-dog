@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrackPoint — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --pin: #e23d28;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f3eee4;
+      min-height: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      position: relative;
+      z-index: 3;
+      background: transparent;
+    }
+    .screen {
+      padding: 8px 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .map-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 40% at 18% 22%, #cfe8c8 0 42%, transparent 43%),
+        radial-gradient(ellipse 50% 35% at 82% 70%, #cfe8c8 0 40%, transparent 41%),
+        radial-gradient(ellipse 55% 28% at 70% 18%, #b7d7ea 0 46%, transparent 47%),
+        #f3eee4;
+    }
+    .map-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(#fff 0 0) 12% 0 / 10px 100%,
+        linear-gradient(#fff 0 0) 48% 0 / 7px 100%,
+        linear-gradient(#fff 0 0) 78% 0 / 8px 100%,
+        linear-gradient(#fff 0 0) 0 28% / 100% 8px,
+        linear-gradient(#fff 0 0) 0 62% / 100% 6px,
+        linear-gradient(#fff 0 0) 0 84% / 100% 7px;
+      background-repeat: no-repeat;
+      opacity: 0.9;
+    }
+    .route {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .pin {
+      position: absolute;
+      left: 52%;
+      top: 48%;
+      z-index: 2;
+      width: 22px;
+      height: 32px;
+      margin: -32px 0 0 -11px;
+      filter: drop-shadow(0 2px 4px rgb(0 0 0 / 28%));
+    }
+    .pin::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      margin-left: -9px;
+      background: var(--pin);
+      border-radius: 50%;
+    }
+    .pin::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      width: 14px;
+      height: 14px;
+      margin-left: -7px;
+      background: var(--pin);
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+    .pin-hole {
+      position: absolute;
+      left: 50%;
+      top: 5px;
+      z-index: 2;
+      width: 8px;
+      height: 8px;
+      margin-left: -4px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .overlay {
+      position: relative;
+      z-index: 2;
+      background: rgb(255 253 248 / 92%);
+      border: 1px solid rgb(255 255 255 / 70%);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 18px rgb(40 30 10 / 8%);
+    }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h4 { margin: 2px 0 0; font-size: 1.2rem; }
+    .help { margin: 4px 0 0; color: var(--muted); font-size: 0.82rem; }
+    .metrics { display: flex; gap: 10px; margin-top: 8px; }
+    .metric b { display: block; font-size: 1.05rem; }
+    .metric span { color: var(--muted); font-size: 0.72rem; }
+    .dogs { margin: 6px 0 0; color: var(--ink); font-size: 0.88rem; }
+    .spacer { flex: 1; }
+    .btn {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .btn.warn { background: var(--danger); color: #fff; }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 10px 0;
+      background: var(--card);
+      position: relative;
+      z-index: 3;
+    }
+    .tabs .on { color: var(--accent); font-weight: 700; }
+    .caption { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TrackPoint 画面</h1>
+    <p class="lede">
+      Recording 中の Walk 画面は Apple MapKit を背景にし、現在地にピンを置き、取得した TrackPoint を経路として描く。
+      10秒ごとに位置を送り、Background でも継続する。送信失敗は同じ点を自動再送する。
+    </p>
+    <div class="note">
+      Walk 画面は Step 3 の Ready / Starting / Recording / Completed / Failed を継続する。
+      位置情報許可時の地図は Apple MapKit。現在地ピンと、端末が取得した点を <code>recordedAt</code> 順に結んだ経路を表示する。
+      距離・pace・Event・Walk Detail は後続。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>MapBackground</code> — 画面全体の背景を Apple MapKit の地図にする</li>
+        <li><code>CurrentLocationPin</code> — 現在地にピンを置く</li>
+        <li><code>TrackPath</code> — 取得した点を <code>recordedAt</code> 順に結んで経路を描く</li>
+        <li><code>RecordingOverlay</code> — Participant 名と経過時間、Finish</li>
+        <li><code>TrackPointSampler</code> — 10秒ごとに位置を取得する</li>
+        <li><code>OutboundQueue</code> — <code>recordedAt</code>、<code>latitude</code>、<code>longitude</code> を保持する</li>
+        <li><code>TrackPointSender</code> — <code>POST /v1/walks/:walkId/track-points</code> を送る</li>
+        <li><code>AutoRetry</code> — <code>retryable: true</code> の失敗で同じ点を再送する</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onSampleLocation</code> — 10秒ごとに位置を取得し、キューへ入れる。ピンは現在地へ移動し、経路に点を足す</li>
+        <li><code>onSendTrackPoint</code> — キュー先頭を <code>POST /v1/walks/:walkId/track-points</code> で送る</li>
+        <li><code>onTrackPointAccepted</code> — 201 を受けてその点をキューから外す</li>
+        <li><code>onAutoRetry</code> — 再試行可能な失敗で同じ点を保持したまま再送する</li>
+        <li><code>onEnterBackground</code> — Background でも取得と送信を継続する</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>WALK-03 · Recording</h3>
+        <div class="phone" aria-label="Walk recording with map and current location pin">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>12:04</b><span>経過</span></div>
+              </div>
+              <p class="dogs">Mugi · Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">地図が画面背景 · 現在地にピン · 取得点を経路として描く · 10秒ごとに POST /track-points</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Background 継続</h3>
+        <div class="phone" aria-label="Walk recording continues with map after background">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <p class="help">バックグラウンド中も位置の取得と送信を続ける。</p>
+              <div class="metrics">
+                <div class="metric"><b>18:42</b><span>経過</span></div>
+              </div>
+              <p class="dogs">Mugi · Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Foreground 復帰後も Recording · 地図・ピン・経路を維持 · 10秒間隔は Background 中も継続</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Auto retry</h3>
+        <div class="phone" aria-label="Walk recording auto retrying track points on map">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>12:04</b><span>経過</span></div>
+              </div>
+              <p class="dogs">Mugi · Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">送信失敗でも Recording と地図・ピン・経路を維持 · 取得時刻・位置を保持して自動再送 · 専用エラーは出さない</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,3 +1,9 @@
+import { z } from 'zod'
+import type { Latitude, Longitude } from '../../infrastructure/database/schema/walk-track-point.js'
+
+export const cognitoSubjectSchema = z.uuid().brand<'CognitoSubject'>()
+type CognitoSubject = z.infer<typeof cognitoSubjectSchema>
+
 export type WalkParticipant = {
   walkParticipantId: string
   dogId: string
@@ -45,16 +51,16 @@ export type TrackPoint = {
   trackPointId: string
   walkId: string
   recordedAt: Date
-  latitude: number
-  longitude: number
+  latitude: Latitude
+  longitude: Longitude
 }
 
 export type AcceptTrackPointInput = {
   ownerId: string
   walkId: string
   recordedAt: Date
-  latitude: number
-  longitude: number
+  latitude: Latitude
+  longitude: Longitude
 }
 
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>
@@ -86,11 +92,11 @@ export type DeleteWalk = (input: {
 >
 
 export type AcceptTrackPoint = (input: {
-  cognitoSubject: string
+  cognitoSubject: CognitoSubject
   walkId: string
   recordedAt: Date
-  latitude: number
-  longitude: number
+  latitude: Latitude
+  longitude: Longitude
 }) => Promise<
   | { ok: true; trackPoint: TrackPoint }
   | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }

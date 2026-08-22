@@ -2,10 +2,12 @@ import * as SecureStore from 'expo-secure-store'
 import {
   createContext,
   use,
+  useCallback,
   useEffect,
   useState,
   type ReactNode,
 } from 'react'
+import { setAuthenticationFailureHandler } from '@/lib/api'
 
 const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
 const ID_TOKEN_KEY = 'walkdog.idToken'
@@ -77,10 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionState(next)
   }
 
-  const clearSession = async () => {
+  const clearSession = useCallback(async () => {
     await deleteSession()
     setSessionState(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    setAuthenticationFailureHandler(() => {
+      void clearSession()
+    })
+    return () => {
+      setAuthenticationFailureHandler(null)
+    }
+  }, [clearSession])
 
   return (
     <AuthContext value={{ isReady, session, setSession, clearSession }}>

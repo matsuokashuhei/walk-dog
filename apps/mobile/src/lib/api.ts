@@ -21,6 +21,18 @@ export class ApiError extends Error {
   }
 }
 
+let authenticationFailureHandler: (() => void) | null = null
+
+export function setAuthenticationFailureHandler(handler: (() => void) | null): void {
+  authenticationFailureHandler = handler
+}
+
+function notifyAuthenticationFailure(error: ApiError, accessToken: string | undefined): void {
+  if (accessToken && error.status === 401 && error.code === 'UNAUTHENTICATED') {
+    authenticationFailureHandler?.()
+  }
+}
+
 function apiBaseUrl(): string {
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL
   if (!baseUrl) {
@@ -88,9 +100,11 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
   if (!response.ok) {
     if (isApiErrorBody(payload)) {
-      throw new ApiError(payload, response.status)
+      const error = new ApiError(payload, response.status)
+      notifyAuthenticationFailure(error, options.accessToken)
+      throw error
     }
-    throw new ApiError(
+    const error = new ApiError(
       {
         code: 'UNEXPECTED_RESPONSE',
         message: 'Unexpected error response from API',
@@ -99,6 +113,8 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
       },
       response.status,
     )
+    notifyAuthenticationFailure(error, options.accessToken)
+    throw error
   }
 
   return payload as T

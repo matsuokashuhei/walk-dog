@@ -17,8 +17,10 @@ import {
   loadDatabaseConfig,
   loadObservabilityConfig,
   loadSqsConfig,
+  loadWorkerHealthConfig,
   type DatabaseConfig,
   type SqsConfig,
+  type WorkerHealthConfig,
 } from './infrastructure/config/index.js'
 import {
   createDbClient,
@@ -52,7 +54,12 @@ import {
 import { createCreateDog } from './modules/dogs/use-cases/create-dog.js'
 import { createGetDog } from './modules/dogs/use-cases/get-dog.js'
 import { createListDogs } from './modules/dogs/use-cases/list-dogs.js'
-import { registerHealthRoutes } from './modules/health/index.js'
+import {
+  createCheckHealth,
+  registerHealthRoutes,
+  type CheckHealth,
+  type HealthRouteDependencies,
+} from './modules/health/index.js'
 import {
   registerOwnerRoutes,
   type OwnerRepository,
@@ -79,6 +86,7 @@ export type ApplicationConfigs = {
   database: DatabaseConfig
   cognito: CognitoConfig
   sqs: SqsConfig
+  workerHealth: WorkerHealthConfig
   observability: {
     environment: string
     release: string
@@ -121,7 +129,11 @@ export type ApplicationFactories = {
   createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
   createDogRoutes: (dependencies: DogRouteDependencies) => App
   createWalkRoutes: (dependencies: WalkRouteDependencies) => App
-  createHealthRoutes: () => App
+  createCheckHealth: (dependencies: {
+    pingPostgres: () => Promise<void>
+    pingWorker: () => Promise<void>
+  }) => CheckHealth
+  createHealthRoutes: (dependencies: HealthRouteDependencies) => App
   createApp: (dependencies: AppDependencies, routes: ModuleRoute[]) => App
 }
 
@@ -131,6 +143,7 @@ const defaultFactories: ApplicationFactories = {
       database: loadDatabaseConfig(env),
       cognito: loadCognitoConfig(env),
       sqs: loadSqsConfig(env),
+      workerHealth: loadWorkerHealthConfig(env),
       observability: loadObservabilityConfig(env),
     }
   },
@@ -177,8 +190,20 @@ const defaultFactories: ApplicationFactories = {
   createOwnerRoutes: registerOwnerRoutes,
   createDogRoutes: registerDogRoutes,
   createWalkRoutes: registerWalkRoutes,
+  createCheckHealth,
   createHealthRoutes: registerHealthRoutes,
   createApp: createHonoApp,
+}
+
+async function pingPostgres(pool: Pool): Promise<void> {
+  await pool.query('select 1')
+}
+
+async function pingWorkerHealth(workerHealthUrl: string): Promise<void> {
+  const response = await fetch(workerHealthUrl)
+  if (!response.ok) {
+    throw new Error('worker health unavailable')
+  }
 }
 
 export function createApplication(
@@ -252,10 +277,14 @@ function composeApp(
   const ownerRoutes = factories.createOwnerRoutes(useCases)
   const dogRoutes = factories.createDogRoutes(useCases)
   const walkRoutes = factories.createWalkRoutes(useCases)
+  const checkHealth = factories.createCheckHealth({
+    pingPostgres: () => pingPostgres(resources.pool),
+    pingWorker: () => pingWorkerHealth(configs.workerHealth.workerHealthUrl),
+  })
   return factories.createApp(
     { logger: resources.logger, setRequestId: setRequestIdTag },
     [
-      { path: '/', app: factories.createHealthRoutes() },
+      { path: '/', app: factories.createHealthRoutes({ checkHealth }) },
       { path: '/v1/auth', app: authRoutes },
       { path: '/v1/owner', app: ownerRoutes },
       { path: '/v1/dogs', app: dogRoutes },

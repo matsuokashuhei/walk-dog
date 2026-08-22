@@ -21,13 +21,15 @@ const sqsConfigSchema = z.object({
   SQS_ENDPOINT: z.string().optional(),
 })
 
-
 const dynamoDbConfigSchema = z.object({
   AWS_REGION: z.string().nonempty({ error: 'AWS_REGION must be a non-empty string' }),
   DYNAMODB_TABLE: z.string().nonempty({ error: 'DYNAMODB_TABLE must be a non-empty string' }),
   DYNAMODB_ENDPOINT: z.string().optional(),
 })
 
+const workerHealthConfigSchema = z.object({
+  WORKER_HEALTH_URL: z.string().nonempty({ error: 'WORKER_HEALTH_URL must be a non-empty string' }),
+})
 
 const workerListenConfigSchema = z.object({
   WORKER_HEALTH_PORT: z.coerce.number().int().positive({ error: 'WORKER_HEALTH_PORT must be a positive integer' }),
@@ -86,7 +88,6 @@ export function loadSqsConfig(env: NodeJS.ProcessEnv): SqsConfig {
   }
 }
 
-
 export type DynamoDbConfig = {
   region: string
   tableName: string
@@ -104,6 +105,14 @@ export function loadDynamoDbConfig(env: NodeJS.ProcessEnv): DynamoDbConfig {
   }
 }
 
+export type WorkerHealthConfig = {
+  workerHealthUrl: string
+}
+
+export function loadWorkerHealthConfig(env: NodeJS.ProcessEnv): WorkerHealthConfig {
+  const config = workerHealthConfigSchema.parse(env)
+  return { workerHealthUrl: config.WORKER_HEALTH_URL }
+}
 
 export type WorkerListenConfig = {
   port: number

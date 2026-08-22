@@ -6,6 +6,7 @@ import {
   loadDynamoDbConfig,
   loadObservabilityConfig,
   loadSqsConfig,
+  loadWorkerHealthConfig,
   loadWorkerListenConfig,
 } from '../src/infrastructure/config/index.js'
 
@@ -187,6 +188,17 @@ test('rejects a missing DYNAMODB_TABLE', () => {
   const env = { ...validDynamoDbEnv }
   delete (env as { DYNAMODB_TABLE?: string }).DYNAMODB_TABLE
   assert.throws(() => loadDynamoDbConfig(env), /DYNAMODB_TABLE/)
+})
+
+test('loads WORKER_HEALTH_URL', () => {
+  assert.deepEqual(
+    loadWorkerHealthConfig({ WORKER_HEALTH_URL: 'https://worker:3001/health' }),
+    { workerHealthUrl: 'https://worker:3001/health' },
+  )
+})
+
+test('rejects a missing WORKER_HEALTH_URL', () => {
+  assert.throws(() => loadWorkerHealthConfig({}), /WORKER_HEALTH_URL/)
 })
 
 test('loads WORKER_HEALTH_PORT', () => {

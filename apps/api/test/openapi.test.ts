@@ -4,7 +4,7 @@ import { createApp } from '../src/app.js'
 import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
 import { registerAuthRoutes } from '../src/modules/auth/index.js'
 import { registerDogRoutes, type ListDogs } from '../src/modules/dogs/index.js'
-import { registerHealthRoutes } from '../src/modules/health/index.js'
+import { registerHealthyHealthRoutes } from './support/health-routes.js'
 import { registerOwnerRoutes } from '../src/modules/owners/index.js'
 import { registerWalkRoutes } from '../src/modules/walks/index.js'
 import { unusedAuthRouteDependencies } from './modules/auth/fixtures.js'
@@ -63,7 +63,7 @@ type OpenApiDocument = {
 }
 
 const expectedOperations = {
-  '/health': { get: ['200', '500'] },
+  '/health': { get: ['200', '500', '503'] },
   '/v1/auth/sign-up': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-up/verify': { post: ['200', '400', '409', '429', '500'] },
   '/v1/auth/sign-in': { post: ['200', '400', '409', '429', '500'] },
@@ -76,6 +76,7 @@ const expectedOperations = {
   '/v1/walks': { post: ['201', '400', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}': { delete: ['204', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}/track-points': { post: ['201', '400', '401', '404', '409', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -111,7 +112,7 @@ function createOpenApiApp() {
   return createApp(
     { logger: testLogger, setRequestId: setRequestIdTag },
     [
-      { path: '/', app: registerHealthRoutes() },
+      { path: '/', app: registerHealthyHealthRoutes() },
       { path: '/v1/auth', app: registerAuthRoutes(unusedAuthRouteDependencies) },
       {
         path: '/v1/owner',

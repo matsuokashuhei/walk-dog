@@ -5,6 +5,7 @@ import { createApp } from '../src/app.js'
 import { healthRoute, registerHealthRoutes } from '../src/modules/health/index.js'
 import { setRequestIdTag } from '../src/infrastructure/observability/sentry.js'
 import type { AppVariables } from '../src/shared/http/types.js'
+import { registerHealthyHealthRoutes } from './support/health-routes.js'
 import { testLogger } from './support/test-logger.js'
 
 const appDependencies = {
@@ -13,23 +14,41 @@ const appDependencies = {
 }
 
 const withHealth = () => createApp(appDependencies, [
-  { path: '/', app: registerHealthRoutes() },
+  { path: '/', app: registerHealthyHealthRoutes() },
 ])
 
 test('registerHealthRoutes serves GET /health', async () => {
   assert.equal(healthRoute.method, 'get')
   assert.equal(healthRoute.path, '/health')
-  const routes = registerHealthRoutes()
+  const routes = registerHealthyHealthRoutes()
   const response = await routes.request('/health')
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { status: 'ok' })
 })
 
-test('GET /health returns the API health state', async () => {
-  const response = await withHealth().request('/health')
-
+test('GET /health returns 200 when API, worker, and postgres are up', async () => {
+  const app = createApp(appDependencies, [{
+    path: '/',
+    app: registerHealthRoutes({ checkHealth: async () => ({ ok: true }) }),
+  }])
+  const response = await app.request('/health')
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { status: 'ok' })
+})
+
+test('GET /health returns 503 DEPENDENCY_UNAVAILABLE when a dependency is down', async () => {
+  const app = createApp(appDependencies, [{
+    path: '/',
+    app: registerHealthRoutes({ checkHealth: async () => ({ ok: false }) }),
+  }])
+  const response = await app.request('/health', { headers: { 'X-Request-Id': 'health-1' } })
+  assert.equal(response.status, 503)
+  assert.deepEqual(await response.json(), {
+    code: 'DEPENDENCY_UNAVAILABLE',
+    message: 'A required dependency is unavailable.',
+    requestId: 'health-1',
+    retryable: true,
+  })
 })
 
 test('GET /health generates a non-empty request ID when none is received', async () => {
@@ -89,7 +108,7 @@ test('returns the error contract when a route throws', async () => {
     throw new Error('expected test error')
   })
   const response = await createApp(appDependencies, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/', app: errorChild },
   ]).request('/test-error', {
     headers: { 'X-Request-Id': 'request-500' },

@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig, loadSqsConfig } from '../src/infrastructure/config/index.js'
+import {
+  loadDatabaseConfig,
+  loadCognitoConfig,
+  loadDynamoDbConfig,
+  loadObservabilityConfig,
+  loadSqsConfig,
+} from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
   POSTGRES_USER: 'walkdog',
@@ -156,4 +162,28 @@ test('rejects a missing AWS_REGION', () => {
   const env = { ...validSqsEnv }
   delete (env as { AWS_REGION?: string }).AWS_REGION
   assert.throws(() => loadSqsConfig(env), /AWS_REGION/)
+})
+
+const validDynamoDbEnv = {
+  AWS_REGION: 'ap-northeast-1',
+  DYNAMODB_TABLE: 'TrackPoints',
+  DYNAMODB_ENDPOINT: 'http://localhost:8000',
+}
+
+test('loads DYNAMODB_TABLE, AWS_REGION, and DYNAMODB_ENDPOINT', () => {
+  assert.deepEqual(loadDynamoDbConfig(validDynamoDbEnv), {
+    region: 'ap-northeast-1',
+    tableName: 'TrackPoints',
+    endpoint: 'http://localhost:8000',
+  })
+})
+
+test('treats blank DYNAMODB_ENDPOINT as undefined', () => {
+  assert.equal(loadDynamoDbConfig({ ...validDynamoDbEnv, DYNAMODB_ENDPOINT: '' }).endpoint, undefined)
+})
+
+test('rejects a missing DYNAMODB_TABLE', () => {
+  const env = { ...validDynamoDbEnv }
+  delete (env as { DYNAMODB_TABLE?: string }).DYNAMODB_TABLE
+  assert.throws(() => loadDynamoDbConfig(env), /DYNAMODB_TABLE/)
 })

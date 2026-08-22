@@ -21,6 +21,13 @@ const sqsConfigSchema = z.object({
   SQS_ENDPOINT: z.string().optional(),
 })
 
+
+const dynamoDbConfigSchema = z.object({
+  AWS_REGION: z.string().nonempty({ error: 'AWS_REGION must be a non-empty string' }),
+  DYNAMODB_TABLE: z.string().nonempty({ error: 'DYNAMODB_TABLE must be a non-empty string' }),
+  DYNAMODB_ENDPOINT: z.string().optional(),
+})
+
 const observabilityConfigSchema = z.object({
   ENVIRONMENT: z.string({
     error: (issue) => issue.input === undefined
@@ -70,6 +77,24 @@ export function loadSqsConfig(env: NodeJS.ProcessEnv): SqsConfig {
   return {
     region: config.AWS_REGION,
     queueUrl: config.SQS_QUEUE_URL,
+    endpoint: endpoint ? endpoint : undefined,
+  }
+}
+
+
+export type DynamoDbConfig = {
+  region: string
+  tableName: string
+  endpoint: string | undefined
+}
+
+export function loadDynamoDbConfig(env: NodeJS.ProcessEnv): DynamoDbConfig {
+  const config = dynamoDbConfigSchema.parse(env)
+  const endpoint = config.DYNAMODB_ENDPOINT?.trim()
+
+  return {
+    region: config.AWS_REGION,
+    tableName: config.DYNAMODB_TABLE,
     endpoint: endpoint ? endpoint : undefined,
   }
 }

@@ -53,6 +53,9 @@ function walksFake(getActiveByOwner: WalkRepository['getActiveByOwner']): WalkRe
     async failIfPresent() {
       throw new Error('unexpected failIfPresent')
     },
+    async acceptTrackPoint() {
+      throw new Error('unexpected acceptTrackPoint')
+    },
   }
 }
 

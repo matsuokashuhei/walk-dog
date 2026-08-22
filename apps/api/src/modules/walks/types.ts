@@ -1,4 +1,5 @@
-import type { Latitude, Longitude } from '../../infrastructure/database/schema/walk-track-point.js'
+import type { walks } from '../../infrastructure/database/schema/walk.js'
+import type { NewWalkTrackPoint, WalkTrackPoint } from '../../infrastructure/database/schema/walk-track-point.js'
 
 export type WalkParticipant = {
   walkParticipantId: string
@@ -43,20 +44,10 @@ export type FinishWalkInput = {
   bodyHash: string
 }
 
-export type TrackPoint = {
-  trackPointId: string
-  walkId: string
-  recordedAt: Date
-  latitude: Latitude
-  longitude: Longitude
-}
+export type TrackPoint = Pick<WalkTrackPoint, 'trackPointId' | 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>
 
-export type AcceptTrackPointInput = {
-  ownerId: string
-  walkId: string
-  recordedAt: Date
-  latitude: Latitude
-  longitude: Longitude
+export type AcceptTrackPointInput = Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'> & {
+  ownerId: typeof walks.$inferSelect['ownerId']
 }
 
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>

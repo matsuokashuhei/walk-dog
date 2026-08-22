@@ -1,14 +1,12 @@
 import { apiRequest } from '@/lib/api'
-import { z } from 'zod'
+import { trackPointResponseSchema } from './walk-track-point-schema'
+import type { LocalTrackPoint, TrackPointResponse } from './walk-track-point-schema'
 
-export const localTrackPointSchema = z.strictObject({
-  walkId: z.uuid(),
-  recordedAt: z.iso.datetime(),
-  latitude: z.number().gte(-90).lte(90).multipleOf(0.000001),
-  longitude: z.number().gte(-180).lte(180).multipleOf(0.000001),
-})
-
-export type LocalTrackPoint = z.infer<typeof localTrackPointSchema>
+export {
+  localTrackPointSchema,
+  trackPointResponseSchema,
+} from './walk-track-point-schema'
+export type { LocalTrackPoint, TrackPointResponse } from './walk-track-point-schema'
 
 export type WalkParticipantResponse = {
   walkParticipantId: string
@@ -77,27 +75,11 @@ export async function deleteWalk(accessToken: string, walkId: string): Promise<v
   })
 }
 
-export type LocalTrackPoint = {
-  walkId: string
-  recordedAt: string
-  latitude: number
-  longitude: number
-}
-
-export type TrackPointResponse = {
-  requestId: string
-  trackPointId: string
-  walkId: string
-  recordedAt: string
-  latitude: number
-  longitude: number
-}
-
-export function postTrackPoint(
+export async function postTrackPoint(
   accessToken: string,
   input: LocalTrackPoint,
 ): Promise<TrackPointResponse> {
-  return apiRequest(`/v1/walks/${input.walkId}/track-points`, {
+  const response = await apiRequest<unknown>(`/v1/walks/${input.walkId}/track-points`, {
     method: 'POST',
     accessToken,
     body: {
@@ -106,4 +88,5 @@ export function postTrackPoint(
       longitude: input.longitude,
     },
   })
+  return trackPointResponseSchema.parse(response)
 }

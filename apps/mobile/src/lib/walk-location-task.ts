@@ -35,7 +35,7 @@ let coordinator: ReturnType<typeof createTrackPointCoordinator> | null = null
 let coordinatorWalkId: string | null = null
 let sampleTimer: ReturnType<typeof setInterval> | null = null
 let appStateSub: NativeEventSubscription | null = null
-let acceptsSamples = false
+let acceptsSamples = true
 const activeProducers = new Set<Promise<void>>()
 
 export function setTrackPointEvents(next: TrackPointEvents | null) {

@@ -17,6 +17,10 @@ export type CognitoResource = {
   destroy: () => void
 }
 
+export type SqsResource = {
+  destroy: () => void
+}
+
 export type StartServer = (options: {
   fetch: App['fetch']
   port: number
@@ -64,6 +68,7 @@ export function createShutdownHandler(
   server: HttpServer,
   pool: Pool,
   cognito: CognitoResource,
+  sqs: SqsResource,
   sentry: { close: () => Promise<void> },
 ): () => Promise<void> {
   let shutdownPromise: Promise<void> | undefined
@@ -80,6 +85,9 @@ export function createShutdownHandler(
       await attemptClose(() => closeDbClient(pool), firstError)
       await attemptClose(() => {
         cognito.destroy()
+      }, firstError)
+      await attemptClose(() => {
+        sqs.destroy()
       }, firstError)
       await attemptClose(() => sentry.close(), firstError)
 
@@ -115,6 +123,7 @@ export function startServer(options: StartServerOptions = {}): {
     server,
     resources.pool,
     resources.cognitoClient,
+    resources.sqsClient,
     { close: resources.closeSentry },
   )
 

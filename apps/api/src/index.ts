@@ -1,3 +1,4 @@
+import { SQSClient } from '@aws-sdk/client-sqs'
 import type { Pool } from 'pg'
 import {
   createApp as createHonoApp,
@@ -15,7 +16,9 @@ import {
   loadCognitoConfig,
   loadDatabaseConfig,
   loadObservabilityConfig,
+  loadSqsConfig,
   type DatabaseConfig,
+  type SqsConfig,
 } from './infrastructure/config/index.js'
 import {
   createDbClient,
@@ -29,6 +32,8 @@ import {
   type Logger,
 } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
+import { createSqsClient as createProductionSqsClient } from './infrastructure/sqs/client.js'
+import { createEnqueueTrackPoint } from './infrastructure/sqs/enqueue-track-point.js'
 import {
   registerAuthRoutes,
   type AuthRouteDependencies,
@@ -58,9 +63,11 @@ import { createUpdateOwnerDisplayName } from './modules/owners/use-cases/update-
 import {
   registerWalkRoutes,
   type ActiveWalkCommands,
+  type TrackPointQueue,
   type WalkRepository,
   type WalkRouteDependencies,
 } from './modules/walks/index.js'
+import { createAcceptTrackPoint } from './modules/walks/use-cases/accept-track-point.js'
 import { createDeleteWalk } from './modules/walks/use-cases/delete-walk.js'
 import { createFinishWalk } from './modules/walks/use-cases/finish-walk.js'
 import { createGetActiveWalk } from './modules/walks/use-cases/get-active-walk.js'
@@ -71,6 +78,7 @@ import type { App } from './shared/http/types.js'
 export type ApplicationConfigs = {
   database: DatabaseConfig
   cognito: CognitoConfig
+  sqs: SqsConfig
   observability: {
     environment: string
     release: string
@@ -81,6 +89,7 @@ export type ApplicationConfigs = {
 export type ApplicationResources = {
   pool: Pool
   cognitoClient: CognitoClient
+  sqsClient: SQSClient
   closeSentry: () => Promise<void>
 }
 
@@ -96,6 +105,8 @@ export type ApplicationFactories = {
   createDogRepository: (db: DbInstance) => DogRepository
   createWalkRepository: (db: DbInstance) => WalkRepository
   createActiveWalkCommands: (walks: WalkRepository) => ActiveWalkCommands
+  createSqsClient: (config: SqsConfig) => SQSClient
+  createTrackPointQueue: (client: SQSClient, config: SqsConfig) => TrackPointQueue
   createAccessTokenVerifier: (config: CognitoConfig) => AccessTokenVerifier
   createUseCases: (dependencies: {
     authProvider: AuthProvider
@@ -103,6 +114,7 @@ export type ApplicationFactories = {
     dogRepository: DogRepository
     walkRepository: WalkRepository
     activeWalkCommands: ActiveWalkCommands
+    trackPointQueue: TrackPointQueue
     accessTokenVerifier: AccessTokenVerifier
   }) => ApplicationUseCases
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
@@ -118,42 +130,28 @@ const defaultFactories: ApplicationFactories = {
     return {
       database: loadDatabaseConfig(env),
       cognito: loadCognitoConfig(env),
+      sqs: loadSqsConfig(env),
       observability: loadObservabilityConfig(env),
     }
   },
-  createLogger(config) {
-    return createProductionLogger(config)
-  },
-  createDatabase(config) {
-    return createDbClient(config)
-  },
-  createCognitoClient(config) {
-    return createProductionCognitoClient(config)
-  },
-  createAuthProvider(client) {
-    return createCognitoAuthProvider(client)
-  },
-  createOwnerRepository(database) {
-    return createDrizzleOwnerRepository(database)
-  },
-  createDogRepository(database) {
-    return createDrizzleDogRepository(database)
-  },
-  createWalkRepository(database) {
-    return createDrizzleWalkRepository(database)
-  },
-  createActiveWalkCommands(walks) {
-    return walks
-  },
-  createAccessTokenVerifier(config) {
-    return createProductionAccessTokenVerifier(config)
-  },
+  createLogger: createProductionLogger,
+  createDatabase: createDbClient,
+  createCognitoClient: createProductionCognitoClient,
+  createAuthProvider: createCognitoAuthProvider,
+  createOwnerRepository: createDrizzleOwnerRepository,
+  createDogRepository: createDrizzleDogRepository,
+  createWalkRepository: createDrizzleWalkRepository,
+  createActiveWalkCommands: (walks) => walks,
+  createSqsClient: createProductionSqsClient,
+  createTrackPointQueue: createEnqueueTrackPoint,
+  createAccessTokenVerifier: createProductionAccessTokenVerifier,
   createUseCases({
     authProvider,
     ownerRepository,
     dogRepository,
     walkRepository,
     activeWalkCommands,
+    trackPointQueue,
     accessTokenVerifier,
   }) {
     return {
@@ -172,26 +170,15 @@ const defaultFactories: ApplicationFactories = {
       startWalk: createStartWalk(ownerRepository, walkRepository),
       finishWalk: createFinishWalk(ownerRepository, walkRepository),
       deleteWalk: createDeleteWalk(ownerRepository, walkRepository),
+      acceptTrackPoint: createAcceptTrackPoint(ownerRepository, walkRepository, trackPointQueue),
     }
   },
-  createAuthRoutes(dependencies) {
-    return registerAuthRoutes(dependencies)
-  },
-  createOwnerRoutes(dependencies) {
-    return registerOwnerRoutes(dependencies)
-  },
-  createDogRoutes(dependencies) {
-    return registerDogRoutes(dependencies)
-  },
-  createWalkRoutes(dependencies) {
-    return registerWalkRoutes(dependencies)
-  },
-  createHealthRoutes() {
-    return registerHealthRoutes()
-  },
-  createApp(dependencies, routes) {
-    return createHonoApp(dependencies, routes)
-  },
+  createAuthRoutes: registerAuthRoutes,
+  createOwnerRoutes: registerOwnerRoutes,
+  createDogRoutes: registerDogRoutes,
+  createWalkRoutes: registerWalkRoutes,
+  createHealthRoutes: registerHealthRoutes,
+  createApp: createHonoApp,
 }
 
 export function createApplication(
@@ -202,42 +189,77 @@ export function createApplication(
   const logger = factories.createLogger(configs.observability)
   const { db: database, pool } = factories.createDatabase(configs.database)
   const cognitoClient = factories.createCognitoClient(configs.cognito)
-  const authProvider = factories.createAuthProvider(cognitoClient)
-  const ownerRepository = factories.createOwnerRepository(database)
-  const dogRepository = factories.createDogRepository(database)
-  const walkRepository = factories.createWalkRepository(database)
-  const activeWalkCommands = factories.createActiveWalkCommands(walkRepository)
-  const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
-  const useCases = factories.createUseCases({
-    authProvider,
-    ownerRepository,
-    dogRepository,
-    walkRepository,
-    activeWalkCommands,
-    accessTokenVerifier,
+  const sqsClient = factories.createSqsClient(configs.sqs)
+  const app = composeApp(factories, configs, {
+    logger,
+    database,
+    pool,
+    cognitoClient,
+    sqsClient,
   })
-  const authRoutes = factories.createAuthRoutes(useCases)
-  const ownerRoutes = factories.createOwnerRoutes(useCases)
-  const dogRoutes = factories.createDogRoutes(useCases)
-  const walkRoutes = factories.createWalkRoutes(useCases)
-  const healthRoutes = factories.createHealthRoutes()
-  const app = factories.createApp(
-    { logger, setRequestId: setRequestIdTag },
-    [
-      { path: '/', app: healthRoutes },
-      { path: '/v1/auth', app: authRoutes },
-      { path: '/v1/owner', app: ownerRoutes },
-      { path: '/v1/dogs', app: dogRoutes },
-      { path: '/v1/walks', app: walkRoutes },
-    ],
-  )
 
   return {
     app,
     resources: {
       pool,
       cognitoClient,
+      sqsClient,
       closeSentry,
     },
   }
+}
+
+function composeUseCases(
+  factories: ApplicationFactories,
+  configs: ApplicationConfigs,
+  resources: {
+    database: DbInstance
+    cognitoClient: CognitoClient
+    sqsClient: SQSClient
+  },
+): ApplicationUseCases {
+  const authProvider = factories.createAuthProvider(resources.cognitoClient)
+  const ownerRepository = factories.createOwnerRepository(resources.database)
+  const dogRepository = factories.createDogRepository(resources.database)
+  const walkRepository = factories.createWalkRepository(resources.database)
+  const activeWalkCommands = factories.createActiveWalkCommands(walkRepository)
+  const trackPointQueue = factories.createTrackPointQueue(resources.sqsClient, configs.sqs)
+  const accessTokenVerifier = factories.createAccessTokenVerifier(configs.cognito)
+  return factories.createUseCases({
+    authProvider,
+    ownerRepository,
+    dogRepository,
+    walkRepository,
+    activeWalkCommands,
+    trackPointQueue,
+    accessTokenVerifier,
+  })
+}
+
+function composeApp(
+  factories: ApplicationFactories,
+  configs: ApplicationConfigs,
+  resources: {
+    logger: Logger
+    database: DbInstance
+    pool: Pool
+    cognitoClient: CognitoClient
+    sqsClient: SQSClient
+  },
+): App {
+  const useCases = composeUseCases(factories, configs, resources)
+  const authRoutes = factories.createAuthRoutes(useCases)
+  const ownerRoutes = factories.createOwnerRoutes(useCases)
+  const dogRoutes = factories.createDogRoutes(useCases)
+  const walkRoutes = factories.createWalkRoutes(useCases)
+  return factories.createApp(
+    { logger: resources.logger, setRequestId: setRequestIdTag },
+    [
+      { path: '/', app: factories.createHealthRoutes() },
+      { path: '/v1/auth', app: authRoutes },
+      { path: '/v1/owner', app: ownerRoutes },
+      { path: '/v1/dogs', app: dogRoutes },
+      { path: '/v1/walks', app: walkRoutes },
+    ],
+  )
 }

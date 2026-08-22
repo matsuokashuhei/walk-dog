@@ -76,3 +76,34 @@ export async function deleteWalk(accessToken: string, walkId: string): Promise<v
     accessToken,
   })
 }
+
+export type LocalTrackPoint = {
+  walkId: string
+  recordedAt: string
+  latitude: number
+  longitude: number
+}
+
+export type TrackPointResponse = {
+  requestId: string
+  trackPointId: string
+  walkId: string
+  recordedAt: string
+  latitude: number
+  longitude: number
+}
+
+export function postTrackPoint(
+  accessToken: string,
+  input: LocalTrackPoint,
+): Promise<TrackPointResponse> {
+  return apiRequest(`/v1/walks/${input.walkId}/track-points`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      recordedAt: input.recordedAt,
+      latitude: input.latitude,
+      longitude: input.longitude,
+    },
+  })
+}

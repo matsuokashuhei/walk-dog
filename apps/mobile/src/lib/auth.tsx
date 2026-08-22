@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 
-const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
+export const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
 const ID_TOKEN_KEY = 'walkdog.idToken'
 const REFRESH_TOKEN_KEY = 'walkdog.refreshToken'
 

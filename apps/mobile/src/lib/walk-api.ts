@@ -1,5 +1,12 @@
 import { apiRequest } from '@/lib/api'
 
+export type LocalTrackPoint = {
+  walkId: string
+  recordedAt: string
+  latitude: number
+  longitude: number
+}
+
 export type WalkParticipantResponse = {
   walkParticipantId: string
   dogId: string

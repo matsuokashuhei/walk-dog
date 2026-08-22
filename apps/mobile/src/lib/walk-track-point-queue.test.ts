@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import type { LocalTrackPoint } from './walk-api'
 import {
   createTrackPointCoordinator,
-  type LocalTrackPoint,
 } from './walk-track-point-queue'
 
 const SAMPLE_NOW_MS = Date.parse('2026-08-17T03:12:14.000Z')

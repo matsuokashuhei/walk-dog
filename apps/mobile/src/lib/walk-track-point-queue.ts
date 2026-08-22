@@ -8,6 +8,9 @@ export type TrackPointPostResult =
   | { ok: true }
   | { ok: false; status: number; retryable: boolean }
 
+export type TrackPointQueueAction = 'retry' | 'drop' | 'unauthenticated'
+export type TrackPointQueueResult = 'ok' | TrackPointQueueAction
+
 export type TrackPointCoordinatorDeps = {
   loadPath: () => Promise<LocalTrackPoint[]>
   savePath: (points: LocalTrackPoint[]) => Promise<void>
@@ -20,7 +23,7 @@ export type TrackPointCoordinatorDeps = {
 export function nextQueueAction(error: {
   status: number
   retryable: boolean
-}): 'retry' | 'drop' | 'unauthenticated' {
+}): TrackPointQueueAction {
   if (error.status === 401) {
     return 'unauthenticated'
   }
@@ -55,7 +58,7 @@ export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
   let lastSampleAt: number | null = null
   const lock = createLock()
 
-  async function flushUnlocked(): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
+  async function flushUnlocked(): Promise<TrackPointQueueResult> {
     const queue = await deps.loadQueue()
     if (!autoRetry) {
       return 'unauthenticated'
@@ -91,7 +94,7 @@ export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
 
   async function recordUnlocked(
     point: LocalTrackPoint,
-  ): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
+  ): Promise<TrackPointQueueResult> {
     const now = deps.now()
     if (!isSampleDue(lastSampleAt, now)) {
       return flushUnlocked()
@@ -108,11 +111,11 @@ export function createTrackPointCoordinator(deps: TrackPointCoordinatorDeps) {
     return flushUnlocked()
   }
 
-  async function record(point: LocalTrackPoint): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
+  async function record(point: LocalTrackPoint): Promise<TrackPointQueueResult> {
     return lock.acquire(() => recordUnlocked(point))
   }
 
-  async function flush(): Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'> {
+  async function flush(): Promise<TrackPointQueueResult> {
     return lock.acquire(() => flushUnlocked())
   }
 

@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router'
 import { ActivityIndicator, View } from 'react-native'
 import { AuthProvider, useAuth } from '@/lib/auth'
+import '@/lib/walk-location-task'
 
 function RootNavigator() {
   const { isReady, session } = useAuth()

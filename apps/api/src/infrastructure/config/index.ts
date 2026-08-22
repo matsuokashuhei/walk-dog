@@ -28,6 +28,11 @@ const dynamoDbConfigSchema = z.object({
   DYNAMODB_ENDPOINT: z.string().optional(),
 })
 
+
+const workerListenConfigSchema = z.object({
+  WORKER_HEALTH_PORT: z.coerce.number().int().positive({ error: 'WORKER_HEALTH_PORT must be a positive integer' }),
+})
+
 const observabilityConfigSchema = z.object({
   ENVIRONMENT: z.string({
     error: (issue) => issue.input === undefined
@@ -97,6 +102,16 @@ export function loadDynamoDbConfig(env: NodeJS.ProcessEnv): DynamoDbConfig {
     tableName: config.DYNAMODB_TABLE,
     endpoint: endpoint ? endpoint : undefined,
   }
+}
+
+
+export type WorkerListenConfig = {
+  port: number
+}
+
+export function loadWorkerListenConfig(env: NodeJS.ProcessEnv): WorkerListenConfig {
+  const config = workerListenConfigSchema.parse(env)
+  return { port: config.WORKER_HEALTH_PORT }
 }
 
 export function loadCognitoConfig(env: NodeJS.ProcessEnv): {

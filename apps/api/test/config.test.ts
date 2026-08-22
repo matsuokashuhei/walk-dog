@@ -6,6 +6,7 @@ import {
   loadDynamoDbConfig,
   loadObservabilityConfig,
   loadSqsConfig,
+  loadWorkerListenConfig,
 } from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
@@ -186,4 +187,12 @@ test('rejects a missing DYNAMODB_TABLE', () => {
   const env = { ...validDynamoDbEnv }
   delete (env as { DYNAMODB_TABLE?: string }).DYNAMODB_TABLE
   assert.throws(() => loadDynamoDbConfig(env), /DYNAMODB_TABLE/)
+})
+
+test('loads WORKER_HEALTH_PORT', () => {
+  assert.deepEqual(loadWorkerListenConfig({ WORKER_HEALTH_PORT: '3001' }), { port: 3001 })
+})
+
+test('rejects a missing WORKER_HEALTH_PORT', () => {
+  assert.throws(() => loadWorkerListenConfig({}), /WORKER_HEALTH_PORT/)
 })

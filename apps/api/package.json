@@ -3,8 +3,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --import ./src/instrument.ts src/server.ts",
+    "worker": "tsx watch --import ./src/instrument.ts src/worker.ts",
     "build": "tsc",
     "start": "node --import ./dist/instrument.js dist/server.js",
+    "start:worker": "node --import ./dist/instrument.js dist/worker.js",
     "lint": "eslint .",
     "jscpd": "jscpd src --format typescript --ignore \"**/*.d.ts\"",
     "knip": "knip",

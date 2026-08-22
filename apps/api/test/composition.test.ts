@@ -1,9 +1,10 @@
+import type { SQSClient } from '@aws-sdk/client-sqs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import type { AppDependencies, ModuleRoute } from '../src/app.js'
 import type { CognitoClient, CognitoConfig } from '../src/infrastructure/cognito/client.js'
-import type { DatabaseConfig } from '../src/infrastructure/config/index.js'
+import type { DatabaseConfig, SqsConfig } from '../src/infrastructure/config/index.js'
 import type { DbInstance } from '../src/infrastructure/database/client.js'
 import type { Logger } from '../src/infrastructure/observability/logger.js'
 import type { AuthRouteDependencies } from '../src/modules/auth/index.js'
@@ -23,11 +24,13 @@ import type {
   UpdateOwnerDisplayName,
 } from '../src/modules/owners/index.js'
 import type {
+  AcceptTrackPoint,
   ActiveWalkCommands,
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
   StartWalk,
+  TrackPointQueue,
   WalkRepository,
   WalkRouteDependencies,
 } from '../src/modules/walks/index.js'
@@ -47,6 +50,8 @@ const env: NodeJS.ProcessEnv = {
   AWS_REGION: 'ap-northeast-1',
   COGNITO_USER_POOL_ID: 'pool',
   COGNITO_CLIENT_ID: 'client',
+  SQS_QUEUE_URL: 'http://localhost:9324/queue/track-points',
+  WORKER_HEALTH_URL: 'http://localhost:3001/health',
   ENVIRONMENT: 'test',
   RELEASE: 'test-release',
 }
@@ -75,65 +80,34 @@ test('createApplication shares one database and Cognito client through the objec
   const calls: string[] = []
   const database = { db: { kind: 'db' } as unknown as DbInstance, pool: { kind: 'pool' } }
   const cognitoClient = { kind: 'cognito', destroy() {} } as unknown as CognitoClient
+  const sqsClient = { kind: 'sqs', destroy() {} } as unknown as SQSClient
   const authProvider = { kind: 'auth-provider' } as unknown as AuthProvider
   const ownerRepository = { kind: 'owner-repository' } as unknown as OwnerRepository
   const dogRepository = { kind: 'dog-repository' } as unknown as DogRepository
   const walkRepository = { kind: 'walk-repository' } as unknown as WalkRepository
   const activeWalkCommands = { kind: 'active-walk-commands' } as unknown as ActiveWalkCommands
   const accessTokenVerifier = { kind: 'access-token-verifier' } as unknown as AccessTokenVerifier
-  const getOwner: GetOwner = async () => {
+  const unused = async (): Promise<never> => {
     throw new Error('unused')
   }
-  const updateOwnerDisplayName: UpdateOwnerDisplayName = async () => {
-    throw new Error('unused')
-  }
-  const listDogs: ListDogs = async () => {
-    throw new Error('unused')
-  }
-  const createDog: CreateDog = async () => {
-    throw new Error('unused')
-  }
-  const getDog: GetDog = async () => {
-    throw new Error('unused')
-  }
-  const getActiveWalk: GetActiveWalk = async () => {
-    throw new Error('unused')
-  }
-  const startWalk: StartWalk = async () => {
-    throw new Error('unused')
-  }
-  const finishWalk: FinishWalk = async () => {
-    throw new Error('unused')
-  }
-  const deleteWalk: DeleteWalk = async () => {
-    throw new Error('unused')
-  }
+  const trackPointQueue = { kind: 'track-point-queue' } as unknown as TrackPointQueue
   const useCases = {
-    startSignUp: async () => {
-      throw new Error('unused')
-    },
-    verifySignUp: async () => {
-      throw new Error('unused')
-    },
-    startSignIn: async () => {
-      throw new Error('unused')
-    },
-    verifySignIn: async () => {
-      throw new Error('unused')
-    },
-    signOut: async () => {
-      throw new Error('unused')
-    },
+    startSignUp: unused,
+    verifySignUp: unused,
+    startSignIn: unused,
+    verifySignIn: unused,
+    signOut: unused,
     accessTokenVerifier,
-    getOwner,
-    updateOwnerDisplayName,
-    listDogs,
-    createDog,
-    getDog,
-    getActiveWalk,
-    startWalk,
-    finishWalk,
-    deleteWalk,
+    getOwner: unused as GetOwner,
+    updateOwnerDisplayName: unused as UpdateOwnerDisplayName,
+    listDogs: unused as ListDogs,
+    createDog: unused as CreateDog,
+    getDog: unused as GetDog,
+    getActiveWalk: unused as GetActiveWalk,
+    startWalk: unused as StartWalk,
+    finishWalk: unused as FinishWalk,
+    deleteWalk: unused as DeleteWalk,
+    acceptTrackPoint: unused as AcceptTrackPoint,
   } satisfies AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies & WalkRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const ownerRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
@@ -148,6 +122,7 @@ test('createApplication shares one database and Cognito client through the objec
   let receivedDogRepository: DogRepository | undefined
   let receivedWalkRepository: WalkRepository | undefined
   let receivedActiveWalkCommands: ActiveWalkCommands | undefined
+  let receivedTrackPointQueue: TrackPointQueue | undefined
   let receivedAccessTokenVerifier: AccessTokenVerifier | undefined
   let receivedUseCases: AuthRouteDependencies | undefined
   let receivedOwnerRouteDependencies: OwnerRouteDependencies | undefined
@@ -162,6 +137,8 @@ test('createApplication shares one database and Cognito client through the objec
       return {
         database: { user: 'user', password: 'password', database: 'db', host: '127.0.0.1', port: 5432, poolMax: 10 },
         cognito: { region: 'ap-northeast-1', userPoolId: 'pool', clientId: 'client' },
+        sqs: { region: 'ap-northeast-1', queueUrl: 'http://localhost:9324/queue/track-points', endpoint: undefined },
+        workerHealth: { workerHealthUrl: 'http://localhost:3001/health' },
         observability: { environment: 'test', release: 'test-release', sentryDsn: undefined },
       }
     },
@@ -178,6 +155,11 @@ test('createApplication shares one database and Cognito client through the objec
       calls.push('cognito-client')
       assert.equal(config.clientId, 'client')
       return cognitoClient
+    },
+    createSqsClient(config: SqsConfig) {
+      calls.push('sqs-client')
+      assert.equal(config.queueUrl, 'http://localhost:9324/queue/track-points')
+      return sqsClient
     },
     createAuthProvider(client) {
       calls.push('auth-provider')
@@ -204,6 +186,12 @@ test('createApplication shares one database and Cognito client through the objec
       receivedWalkRepository = walks
       return activeWalkCommands
     },
+    createTrackPointQueue(client, config) {
+      calls.push('track-point-queue')
+      assert.equal(client, sqsClient)
+      assert.equal(config.queueUrl, 'http://localhost:9324/queue/track-points')
+      return trackPointQueue
+    },
     createAccessTokenVerifier(config) {
       calls.push('access-token-verifier')
       assert.equal(config.userPoolId, 'pool')
@@ -216,6 +204,7 @@ test('createApplication shares one database and Cognito client through the objec
       receivedDogRepository = dependencies.dogRepository
       assert.equal(dependencies.walkRepository, walkRepository)
       receivedActiveWalkCommands = dependencies.activeWalkCommands
+      receivedTrackPointQueue = dependencies.trackPointQueue
       receivedAccessTokenVerifier = dependencies.accessTokenVerifier
       return useCases
     },
@@ -239,8 +228,15 @@ test('createApplication shares one database and Cognito client through the objec
       receivedWalkRouteDependencies = dependencies
       return walkRoutes
     },
-    createHealthRoutes() {
+    createCheckHealth(dependencies) {
+      calls.push('check-health')
+      assert.equal(typeof dependencies.pingPostgres, 'function')
+      assert.equal(typeof dependencies.pingWorker, 'function')
+      return async () => ({ ok: true })
+    },
+    createHealthRoutes(dependencies) {
       calls.push('health-routes')
+      assert.equal(typeof dependencies.checkHealth, 'function')
       return healthRoutes
     },
     createApp(dependencies: AppDependencies, routes: ModuleRoute[]) {
@@ -260,23 +256,27 @@ test('createApplication shares one database and Cognito client through the objec
     'logger',
     'database',
     'cognito-client',
+    'sqs-client',
     'auth-provider',
     'owner-repository',
     'dog-repository',
     'walk-repository',
     'active-walk-commands',
+    'track-point-queue',
     'access-token-verifier',
     'use-cases',
     'auth-routes',
     'owner-routes',
     'dog-routes',
     'walk-routes',
+    'check-health',
     'health-routes',
     'app',
   ])
   assert.equal(app, composedApp)
   assert.equal(resources.pool, database.pool)
   assert.equal(resources.cognitoClient, cognitoClient)
+  assert.equal(resources.sqsClient, sqsClient)
   assert.equal(receivedDatabase, database.db)
   assert.equal(receivedCognitoClient, cognitoClient)
   assert.equal(receivedAuthProvider, authProvider)
@@ -284,6 +284,7 @@ test('createApplication shares one database and Cognito client through the objec
   assert.equal(receivedDogRepository, dogRepository)
   assert.equal(receivedWalkRepository, walkRepository)
   assert.equal(receivedActiveWalkCommands, activeWalkCommands)
+  assert.equal(receivedTrackPointQueue, trackPointQueue)
   assert.equal(receivedAccessTokenVerifier, accessTokenVerifier)
   assert.equal(receivedUseCases, useCases)
   assert.equal(receivedOwnerRouteDependencies, useCases)

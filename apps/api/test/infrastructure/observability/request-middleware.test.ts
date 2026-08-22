@@ -5,7 +5,7 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { createApp } from '../../../src/app.js'
 import { createLogger, type Logger } from '../../../src/infrastructure/observability/logger.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
-import { registerHealthRoutes } from '../../../src/modules/health/index.js'
+import { registerHealthyHealthRoutes } from '../../support/health-routes.js'
 import type { AppVariables } from '../../../src/shared/http/types.js'
 import { testLogger } from '../../support/test-logger.js'
 
@@ -25,7 +25,7 @@ function createCapturingLogger() {
 }
 
 function withHealth(dependencies: { logger: Logger; setRequestId: (requestId: string) => void }) {
-  return createApp(dependencies, [{ path: '/', app: registerHealthRoutes() }])
+  return createApp(dependencies, [{ path: '/', app: registerHealthyHealthRoutes() }])
 }
 
 test('writes a structured HTTP completion log with requestId correlation', async () => {
@@ -59,7 +59,7 @@ test('exposes a request-scoped child logger on the Hono context', async () => {
   })
 
   await createApp({ logger, setRequestId: setRequestIdTag }, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/', app: logChild },
   ]).request('/log-check', {
     headers: { 'X-Request-Id': 'child-logger-1' },
@@ -83,7 +83,7 @@ test('binds requestId on the Sentry isolation path', async () => {
       requestIds.push(requestId)
     },
   }, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/', app: errorChild },
   ]).request('/test-error', {
     headers: { 'X-Request-Id': 'sentry-request-1' },

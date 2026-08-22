@@ -1,7 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { createApp } from '../../../src/app.js'
 import { setRequestIdTag } from '../../../src/infrastructure/observability/sentry.js'
-import { registerHealthRoutes } from '../../../src/modules/health/index.js'
+import { registerHealthyHealthRoutes } from '../../support/health-routes.js'
 import type { GetOwner, UpdateOwnerDisplayName } from '../../../src/modules/owners/types.js'
 import type { AccessTokenVerifier } from '../../../src/shared/http/access-token.js'
 import type { App, AppVariables } from '../../../src/shared/http/types.js'
@@ -27,7 +27,7 @@ export function createOwnerApp(registerRoutes: (app: App) => void): App {
   const ownerChild = new OpenAPIHono<{ Variables: AppVariables }>()
   registerRoutes(ownerChild)
   return createApp(appDependencies, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/v1/owner', app: ownerChild },
   ])
 }

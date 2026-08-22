@@ -3,6 +3,7 @@
   "entry": [
     "src/index.ts",
     "src/server.ts",
+    "src/worker.ts",
     "src/instrument.ts",
     "drizzle.config.ts",
     "test/**/*.ts"

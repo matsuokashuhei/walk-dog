@@ -32,7 +32,7 @@ const expectedTrackPoint: TrackPoint = {
 }
 
 const acceptInput = {
-  cognitoSubject: 'sub-1',
+  cognitoSubject: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70',
   walkId,
   recordedAt,
   latitude: 35.681236,
@@ -78,7 +78,7 @@ test('acceptTrackPoint resolves the owner, accepts, enqueues, and returns the po
   const enqueued: TrackPoint[] = []
   const accept = createAcceptTrackPoint(
     ownersFake(async (cognitoSubject) => {
-      assert.equal(cognitoSubject, 'sub-1')
+      assert.equal(cognitoSubject, '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70')
       return owner
     }),
     walksFake(async (input) => {

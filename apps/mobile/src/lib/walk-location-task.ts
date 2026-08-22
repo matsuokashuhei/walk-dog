@@ -96,7 +96,7 @@ async function coordinatorFor(walkId: string, accessToken: string) {
 async function handleUnauthenticated(walkId: string) {
   await savePendingFailWalkId(walkId)
   events?.onUnauthenticated()
-  await stopTrackPointUpdates()
+  void stopTrackPointUpdates()
 }
 
 async function withRecordingStore(

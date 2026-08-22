@@ -1,1 +1,1 @@
-{"level":30,"time":"2026-08-22T15:16:32.212Z","service":"api","environment":"development","release":"local","requestId":"cf5b64b7-6707-4ca0-9cd3-6ceea337f0b3","method":"GET","route":"/v1/owner","status":401,"duration":0}
+{"requestId":"e2e-auth-expired-401","method":"GET","path":"/v1/owner","authorization":"Bearer expired-access-token","response":{"status":401,"body":{"code":"UNAUTHENTICATED","message":"Authentication is required.","requestId":"e2e-auth-expired-401","retryable":false}}}

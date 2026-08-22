@@ -12,6 +12,12 @@ export const startWalkRequestSchema = z.strictObject({
 
 export const finishWalkRequestSchema = z.strictObject({})
 
+export const acceptTrackPointRequestSchema = z.strictObject({
+  recordedAt: z.iso.datetime(),
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+})
+
 export const walkIdParamSchema = z.object({
   walkId: z.uuid(),
 })
@@ -53,4 +59,13 @@ export const recordingWalkResponseSchema = recordingWalkSchema.extend({
 
 export const completedWalkResponseSchema = completedWalkSchema.extend({
   requestId: z.string(),
+})
+
+export const trackPointResponseSchema = z.object({
+  requestId: z.string(),
+  trackPointId: z.string(),
+  walkId: z.string(),
+  recordedAt: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
 })

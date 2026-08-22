@@ -20,6 +20,7 @@ import { createLogger, type Logger } from './infrastructure/observability/logger
 import { closeSentry } from './infrastructure/observability/sentry.js'
 import { createSqsClient } from './infrastructure/sqs/client.js'
 import type { ConfirmTrackPoint } from './modules/walks/provider.js'
+import { parseTrackPointMessage } from './modules/walks/track-point-message.js'
 import type { TrackPoint } from './modules/walks/types.js'
 
 export type ProcessSqsMessagesInput = {
@@ -51,26 +52,6 @@ export function startWorkerHealthListener(port: number): Server {
   })
   server.listen(port)
   return server
-}
-
-function parseTrackPointMessage(body: string): TrackPoint {
-  const parsed = JSON.parse(body) as Record<string, unknown>
-  if (
-    typeof parsed.trackPointId !== 'string'
-    || typeof parsed.walkId !== 'string'
-    || typeof parsed.recordedAt !== 'string'
-    || typeof parsed.latitude !== 'number'
-    || typeof parsed.longitude !== 'number'
-  ) {
-    throw new Error('invalid track point message')
-  }
-  return {
-    trackPointId: parsed.trackPointId,
-    walkId: parsed.walkId,
-    recordedAt: new Date(parsed.recordedAt),
-    latitude: parsed.latitude,
-    longitude: parsed.longitude,
-  }
 }
 
 async function handleQueueMessage(

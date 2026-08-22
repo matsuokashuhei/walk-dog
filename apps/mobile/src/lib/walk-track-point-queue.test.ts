@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { LocalTrackPoint } from './walk-api'
+import {
+  localTrackPointSchema,
+  type LocalTrackPoint,
+} from './walk-api'
 import {
   createTrackPointCoordinator,
 } from './walk-track-point-queue'
@@ -20,6 +23,16 @@ const laterPoint: LocalTrackPoint = {
   latitude: 35.681,
   longitude: 139.761,
 }
+
+test('LocalTrackPoint schema accepts API values and rejects an invalid walk ID', () => {
+  const apiPoint = {
+    ...point,
+    walkId: 'f4b1b8c4-0e46-4a0d-a32f-8c9e23d4e91c',
+  }
+  assert.equal(localTrackPointSchema.safeParse(apiPoint).success, true)
+  assert.equal(localTrackPointSchema.safeParse({ ...apiPoint, walkId: 'w1' }).success, false)
+  assert.equal(localTrackPointSchema.safeParse({ ...apiPoint, latitude: 35.1234567 }).success, false)
+})
 
 function memoryCoordinator(
   post: (input: LocalTrackPoint) => Promise<

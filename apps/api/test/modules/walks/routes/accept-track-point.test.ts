@@ -31,7 +31,7 @@ const expectedTrackPoint: TrackPoint = {
 function createAcceptApp(
   acceptTrackPoint: AcceptTrackPoint,
   verify: (accessToken: string) => Promise<{ cognitoSubject: string }> = async () => ({
-    cognitoSubject: 'sub-1',
+    cognitoSubject: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70',
   }),
 ) {
   return createWalkApp((routeApp) => {
@@ -91,7 +91,7 @@ test('POST track-points returns 201 TrackPoint', async () => {
   assert.equal(json.latitude, 35.681236)
   assert.equal(json.longitude, 139.767125)
   assert.deepEqual(calls, [{
-    cognitoSubject: 'sub-1',
+    cognitoSubject: '0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70',
     walkId,
     recordedAt: new Date('2026-08-17T03:12:14.000Z'),
     latitude: 35.681236,

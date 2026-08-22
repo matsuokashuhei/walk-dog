@@ -33,7 +33,7 @@ import {
 } from './infrastructure/observability/logger.js'
 import { closeSentry, setRequestIdTag } from './infrastructure/observability/sentry.js'
 import { createSqsClient as createProductionSqsClient } from './infrastructure/sqs/client.js'
-import { createEnqueueTrackPoint } from './infrastructure/sqs/enqueue-track-point.js'
+import { createTrackPointQueue } from './infrastructure/sqs/track-point-queue.js'
 import {
   registerAuthRoutes,
   type AuthRouteDependencies,
@@ -143,7 +143,7 @@ const defaultFactories: ApplicationFactories = {
   createWalkRepository: createDrizzleWalkRepository,
   createActiveWalkCommands: (walks) => walks,
   createSqsClient: createProductionSqsClient,
-  createTrackPointQueue: createEnqueueTrackPoint,
+  createTrackPointQueue,
   createAccessTokenVerifier: createProductionAccessTokenVerifier,
   createUseCases({
     authProvider,

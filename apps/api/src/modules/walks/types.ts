@@ -1,8 +1,6 @@
-import { z } from 'zod'
-import type { Latitude, Longitude } from '../../infrastructure/database/schema/walk-track-point.js'
-
-export const cognitoSubjectSchema = z.uuid().brand<'CognitoSubject'>()
-type CognitoSubject = z.infer<typeof cognitoSubjectSchema>
+import type { owners } from '../../infrastructure/database/schema/owner.js'
+import type { walks } from '../../infrastructure/database/schema/walk.js'
+import type { NewWalkTrackPoint, WalkTrackPoint } from '../../infrastructure/database/schema/walk-track-point.js'
 
 export type WalkParticipant = {
   walkParticipantId: string
@@ -47,20 +45,10 @@ export type FinishWalkInput = {
   bodyHash: string
 }
 
-export type TrackPoint = {
-  trackPointId: string
-  walkId: string
-  recordedAt: Date
-  latitude: Latitude
-  longitude: Longitude
-}
+export type TrackPoint = Pick<WalkTrackPoint, 'trackPointId' | 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>
 
-export type AcceptTrackPointInput = {
-  ownerId: string
-  walkId: string
-  recordedAt: Date
-  latitude: Latitude
-  longitude: Longitude
+export type AcceptTrackPointInput = Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'> & {
+  ownerId: typeof walks.$inferSelect['ownerId']
 }
 
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>
@@ -92,12 +80,8 @@ export type DeleteWalk = (input: {
 >
 
 export type AcceptTrackPoint = (input: {
-  cognitoSubject: CognitoSubject
-  walkId: string
-  recordedAt: Date
-  latitude: Latitude
-  longitude: Longitude
-}) => Promise<
+  cognitoSubject: typeof owners.$inferSelect['cognitoSubject']
+} & Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>) => Promise<
   | { ok: true; trackPoint: TrackPoint }
   | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
 >

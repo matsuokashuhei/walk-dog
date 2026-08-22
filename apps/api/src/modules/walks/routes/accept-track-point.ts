@@ -6,7 +6,7 @@ import {
   walkErrorSchema,
   walkIdParamSchema,
 } from '../contracts.js'
-import type { AcceptTrackPoint } from '../types.js'
+import { cognitoSubjectSchema, type AcceptTrackPoint } from '../types.js'
 import { toTrackPointResponse } from '../walk-response.js'
 
 export const acceptTrackPointRoute = createRoute({
@@ -73,7 +73,7 @@ export function registerAcceptTrackPointRoute(app: App, acceptTrackPoint: Accept
     const { recordedAt, latitude, longitude } = ctx.req.valid('json')
     try {
       const result = await acceptTrackPoint({
-        cognitoSubject: ctx.get('principal').cognitoSubject,
+        cognitoSubject: cognitoSubjectSchema.parse(ctx.get('principal').cognitoSubject),
         walkId,
         recordedAt: new Date(recordedAt),
         latitude,

@@ -9,6 +9,14 @@ export const localTrackPointSchema = z.strictObject({
 
 export type LocalTrackPoint = z.infer<typeof localTrackPointSchema>
 
+export function toLocalTrackPoint(input: LocalTrackPoint): LocalTrackPoint {
+  return localTrackPointSchema.parse({
+    ...input,
+    latitude: Math.round(input.latitude * 1_000_000) / 1_000_000,
+    longitude: Math.round(input.longitude * 1_000_000) / 1_000_000,
+  })
+}
+
 export const trackPointResponseSchema = z.strictObject({
   requestId: z.string(),
   trackPointId: z.uuid(),

@@ -4,7 +4,7 @@ import * as TaskManager from 'expo-task-manager'
 import { AppState, type NativeEventSubscription } from 'react-native'
 import { ApiError } from './api'
 import { ACCESS_TOKEN_KEY } from './auth'
-import { postTrackPoint, type LocalTrackPoint } from './walk-api'
+import { postTrackPoint, toLocalTrackPoint, type LocalTrackPoint } from './walk-api'
 import {
   createFileTrackPointStorage,
   clearRecordingWalkId,
@@ -108,12 +108,12 @@ async function flushPending() {
 
 async function recordLocation(location: Location.LocationObject) {
   await withRecordingStore(async (walkId, store) =>
-    store.record({
+    store.record(toLocalTrackPoint({
       walkId,
       recordedAt: new Date(Date.now()).toISOString(),
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-    }),
+    })),
   )
 }
 

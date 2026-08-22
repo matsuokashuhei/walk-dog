@@ -5,6 +5,7 @@ import type { LocalTrackPoint, TrackPointResponse } from './walk-track-point-sch
 export {
   localTrackPointSchema,
   trackPointResponseSchema,
+  toLocalTrackPoint,
 } from './walk-track-point-schema'
 export type { LocalTrackPoint, TrackPointResponse } from './walk-track-point-schema'
 

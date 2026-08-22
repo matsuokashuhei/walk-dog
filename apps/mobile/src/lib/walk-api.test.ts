@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { postTrackPoint } from './walk-api'
+import { postTrackPoint, toLocalTrackPoint } from './walk-api'
 import { trackPointResponseSchema } from './walk-track-point-schema'
 
 const trackPointResponse = {
@@ -22,6 +22,18 @@ test('TrackPoint response schema accepts API values and rejects invalid identifi
     trackPointResponseSchema.safeParse({ ...trackPointResponse, longitude: 139.7612345 }).success,
     false,
   )
+})
+
+test('toLocalTrackPoint rounds GPS coordinates to API precision', () => {
+  const point = toLocalTrackPoint({
+    walkId: trackPointResponse.walkId,
+    recordedAt: trackPointResponse.recordedAt,
+    latitude: 35.6812347,
+    longitude: 139.7612347,
+  })
+
+  assert.equal(point.latitude, 35.681235)
+  assert.equal(point.longitude, 139.761235)
 })
 
 test('postTrackPoint rejects a malformed successful response', async () => {

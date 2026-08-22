@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { loadDatabaseConfig, loadCognitoConfig, loadObservabilityConfig } from '../src/infrastructure/config/index.js'
+import {
+  loadDatabaseConfig,
+  loadCognitoConfig,
+  loadDynamoDbConfig,
+  loadObservabilityConfig,
+  loadSqsConfig,
+  loadWorkerHealthConfig,
+  loadWorkerListenConfig,
+} from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
   POSTGRES_USER: 'walkdog',
@@ -126,4 +134,77 @@ test('rejects missing COGNITO_CLIENT_ID', () => {
     () => loadCognitoConfig({ COGNITO_REGION: 'region', COGNITO_USER_POOL_ID: 'pool' }),
     /COGNITO_CLIENT_ID/,
   )
+})
+
+const validSqsEnv = {
+  AWS_REGION: 'ap-northeast-1',
+  SQS_QUEUE_URL: 'http://localhost:9324/queue/track-points',
+  SQS_ENDPOINT: 'http://localhost:9324',
+}
+
+test('loads SQS_QUEUE_URL, AWS_REGION, and SQS_ENDPOINT', () => {
+  assert.deepEqual(loadSqsConfig(validSqsEnv), {
+    region: 'ap-northeast-1',
+    queueUrl: 'http://localhost:9324/queue/track-points',
+    endpoint: 'http://localhost:9324',
+  })
+})
+
+test('treats blank SQS_ENDPOINT as undefined', () => {
+  assert.equal(loadSqsConfig({ ...validSqsEnv, SQS_ENDPOINT: '' }).endpoint, undefined)
+})
+
+test('rejects a missing SQS_QUEUE_URL', () => {
+  const env = { ...validSqsEnv }
+  delete (env as { SQS_QUEUE_URL?: string }).SQS_QUEUE_URL
+  assert.throws(() => loadSqsConfig(env), /SQS_QUEUE_URL/)
+})
+
+test('rejects a missing AWS_REGION', () => {
+  const env = { ...validSqsEnv }
+  delete (env as { AWS_REGION?: string }).AWS_REGION
+  assert.throws(() => loadSqsConfig(env), /AWS_REGION/)
+})
+
+const validDynamoDbEnv = {
+  AWS_REGION: 'ap-northeast-1',
+  DYNAMODB_TABLE: 'TrackPoints',
+  DYNAMODB_ENDPOINT: 'http://localhost:8000',
+}
+
+test('loads DYNAMODB_TABLE, AWS_REGION, and DYNAMODB_ENDPOINT', () => {
+  assert.deepEqual(loadDynamoDbConfig(validDynamoDbEnv), {
+    region: 'ap-northeast-1',
+    tableName: 'TrackPoints',
+    endpoint: 'http://localhost:8000',
+  })
+})
+
+test('treats blank DYNAMODB_ENDPOINT as undefined', () => {
+  assert.equal(loadDynamoDbConfig({ ...validDynamoDbEnv, DYNAMODB_ENDPOINT: '' }).endpoint, undefined)
+})
+
+test('rejects a missing DYNAMODB_TABLE', () => {
+  const env = { ...validDynamoDbEnv }
+  delete (env as { DYNAMODB_TABLE?: string }).DYNAMODB_TABLE
+  assert.throws(() => loadDynamoDbConfig(env), /DYNAMODB_TABLE/)
+})
+
+test('loads WORKER_HEALTH_URL', () => {
+  assert.deepEqual(
+    loadWorkerHealthConfig({ WORKER_HEALTH_URL: 'https://worker:3001/health' }),
+    { workerHealthUrl: 'https://worker:3001/health' },
+  )
+})
+
+test('rejects a missing WORKER_HEALTH_URL', () => {
+  assert.throws(() => loadWorkerHealthConfig({}), /WORKER_HEALTH_URL/)
+})
+
+test('loads WORKER_HEALTH_PORT', () => {
+  assert.deepEqual(loadWorkerListenConfig({ WORKER_HEALTH_PORT: '3001' }), { port: 3001 })
+})
+
+test('rejects a missing WORKER_HEALTH_PORT', () => {
+  assert.throws(() => loadWorkerListenConfig({}), /WORKER_HEALTH_PORT/)
 })

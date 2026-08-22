@@ -43,6 +43,13 @@
       "when": 1786765792109,
       "tag": "0005_create_walk_command_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787375491295,
+      "tag": "0006_create_walk_track_points",
+      "breakpoints": true
     }
   ]
 }

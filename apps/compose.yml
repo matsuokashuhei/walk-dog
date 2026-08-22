@@ -12,6 +12,29 @@ services:
       timeout: 5s
       retries: 5
 
+  elasticmq:
+    image: softwaremill/elasticmq-native
+    ports:
+      - "9324:9324"
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+
+  dynamodb:
+    image: amazon/dynamodb-local
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: ./api
+    command: npm run worker
+    env_file: .env.local
+    depends_on:
+      - elasticmq
+      - dynamodb
+    expose:
+      - "3001"
+
   api:
     build: ./api
     command: npm run dev
@@ -21,6 +44,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elasticmq:
+        condition: service_started
 
 volumes:
   postgres-data:

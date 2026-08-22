@@ -13,7 +13,7 @@ import type {
   VerifySignIn,
   VerifySignUp,
 } from '../../../src/modules/auth/types.js'
-import { registerHealthRoutes } from '../../../src/modules/health/index.js'
+import { registerHealthyHealthRoutes } from '../../support/health-routes.js'
 import type { App, AppVariables } from '../../../src/shared/http/types.js'
 import { testLogger } from '../../support/test-logger.js'
 
@@ -63,7 +63,7 @@ export function createAuthApp(registerRoutes: (app: App) => void): App {
   const authChild = new OpenAPIHono<{ Variables: AppVariables }>()
   registerRoutes(authChild)
   return createApp(appDependencies, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/v1/auth', app: authChild },
   ])
 }
@@ -72,7 +72,7 @@ export function createRegisteredAuthApp(
   dependencies: AuthRouteDependencies = unusedAuthRouteDependencies,
 ): App {
   return createApp(appDependencies, [
-    { path: '/', app: registerHealthRoutes() },
+    { path: '/', app: registerHealthyHealthRoutes() },
     { path: '/v1/auth', app: registerAuthRoutes(dependencies) },
   ])
 }

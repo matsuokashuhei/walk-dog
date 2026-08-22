@@ -1,4 +1,6 @@
-import type { CompletedWalk, RecordingWalk, WalkParticipant } from './types.js'
+import type { z } from 'zod'
+import { trackPointResponseSchema } from './contracts.js'
+import type { CompletedWalk, RecordingWalk, TrackPoint, WalkParticipant } from './types.js'
 
 function toParticipantFields(participant: WalkParticipant) {
   return {
@@ -32,5 +34,19 @@ export function toCompletedWalkResponse(requestId: string, walk: CompletedWalk) 
     distanceMeters: walk.distanceMeters,
     paceSecondsPerMeter: walk.paceSecondsPerMeter,
     participants: walk.participants.map(toParticipantFields),
+  }
+}
+
+export function toTrackPointResponse(
+  requestId: string,
+  trackPoint: TrackPoint,
+): z.infer<typeof trackPointResponseSchema> {
+  return {
+    requestId,
+    trackPointId: trackPoint.trackPointId,
+    walkId: trackPoint.walkId,
+    recordedAt: trackPoint.recordedAt.toISOString(),
+    latitude: trackPoint.latitude,
+    longitude: trackPoint.longitude,
   }
 }

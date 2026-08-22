@@ -4,6 +4,7 @@ import { createDrizzleWalkRepository } from '../../../src/infrastructure/databas
 import { dogs } from '../../../src/infrastructure/database/schema/dog.js'
 import { walkCommandKeys } from '../../../src/infrastructure/database/schema/walk-command-key.js'
 import { walkParticipants } from '../../../src/infrastructure/database/schema/walk-participant.js'
+import { walkTrackPoints } from '../../../src/infrastructure/database/schema/walk-track-point.js'
 import { walks } from '../../../src/infrastructure/database/schema/walk.js'
 import {
   ActiveWalkExistsError,
@@ -17,59 +18,37 @@ import {
   uniqueViolation,
   updateWhereGatesRecording,
 } from './walk-repository-fake.js'
+import {
+  commandKeyUnique,
+  completedWalkRow,
+  dogId1,
+  dogId2,
+  expectedCompletedWalk,
+  expectedRecordingWalk,
+  expectedTrackPoint,
+  failInput,
+  failedWalkRow,
+  finishCommandKeyRow,
+  finishHash,
+  finishInput,
+  finishKey,
+  otherOwnerId,
+  ownedDogs,
+  ownerId,
+  participantRow1,
+  participantRow2,
+  recordedAt,
+  recordingWalkRow,
+  startCommandKeyRow,
+  startHash,
+  startInput,
+  startKey,
+  trackPointInput,
+  trackPointRow,
+  trackPointUnique,
+  walkId,
+} from './walk-repository-fixtures.js'
 
-const startedAt = new Date('2026-08-15T12:00:00.000Z')
-const completedAt = new Date('2026-08-15T12:10:30.500Z')
-const ownerId = '019fc312-f7eb-73c4-9351-2a6ea25e4fcb'
-const otherOwnerId = '019fc312-f7eb-73c4-9351-2a6ea25e4fcc'
-const walkId = '019fc320-aaaa-73c4-9351-2a6ea25e4f01'
-const dogId1 = '019fc313-aaaa-73c4-9351-2a6ea25e4f01'
-const dogId2 = '019fc313-cccc-73c4-9351-2a6ea25e4f03'
-const startKey = 'idem-start-1'
-const finishKey = 'idem-finish-1'
-const startHash = 'hash-start-1'
-const finishHash = 'hash-finish-1'
-
-const recordingWalkRow = {
-  walkId, ownerId, state: 'recording' as const, startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt,
-}
-const completedWalkRow = {
-  walkId, ownerId, state: 'completed' as const, startedAt, completedAt, createdAt: startedAt, updatedAt: completedAt,
-}
-const failedWalkRow = {
-  walkId, ownerId, state: 'failed' as const, startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt,
-}
-const failInput = { ownerId, walkId }
-const participantRow1 = {
-  walkParticipantId: '019fc321-aaaa-73c4-9351-2a6ea25e4f01', walkId, dogId: dogId1, name: 'Mugi', position: 0, createdAt: startedAt,
-}
-const participantRow2 = {
-  walkParticipantId: '019fc321-bbbb-73c4-9351-2a6ea25e4f02', walkId, dogId: dogId2, name: 'Sora', position: 1, createdAt: startedAt,
-}
-const expectedParticipants = [
-  { walkParticipantId: participantRow1.walkParticipantId, dogId: dogId1, name: 'Mugi' },
-  { walkParticipantId: participantRow2.walkParticipantId, dogId: dogId2, name: 'Sora' },
-]
-const expectedRecordingWalk = {
-  walkId, ownerId, state: 'recording' as const, startedAt, completedAt: null, participants: expectedParticipants,
-}
-const expectedCompletedWalk = {
-  walkId, ownerId, state: 'completed' as const, startedAt, completedAt,
-  durationSeconds: 630, distanceMeters: 0 as const, paceSecondsPerMeter: null, participants: expectedParticipants,
-}
-const startInput = { ownerId, participantDogIds: [dogId1, dogId2], idempotencyKey: startKey, bodyHash: startHash }
-const finishInput = { ownerId, walkId, idempotencyKey: finishKey, bodyHash: finishHash }
-const ownedDogs = [{ dogId: dogId1, name: 'Mugi' }, { dogId: dogId2, name: 'Sora' }]
-const startCommandKeyRow = {
-  walkCommandKeyId: '019fc322-aaaa-73c4-9351-2a6ea25e4f01', ownerId, namespace: 'start' as const,
-  key: startKey, bodyHash: startHash, walkId, createdAt: startedAt,
-}
-const finishCommandKeyRow = {
-  walkCommandKeyId: '019fc322-bbbb-73c4-9351-2a6ea25e4f02', ownerId, namespace: 'finish' as const,
-  key: finishKey, bodyHash: finishHash, walkId, createdAt: startedAt,
-}
-
-const commandKeyUnique = uniqueViolation('walk_command_keys_owner_id_namespace_key_unique')
 
 
 test('getActiveByOwner returns the recording walk with participants in position order', async () => {
@@ -273,4 +252,79 @@ test('fail throws WalkNotFoundError for another owner or unknown walkId', async 
     () => createDrizzleWalkRepository(database).fail({ ownerId: otherOwnerId, walkId }),
     isError(WalkNotFoundError),
   )
+})
+
+test('acceptTrackPoint inserts an accepted point for a recording walk', async () => {
+  const { database, insertTables, insertValues } = createWalkDatabaseFake({
+    selectResults: [[recordingWalkRow]],
+    insertResults: [[trackPointRow]],
+  })
+  assert.deepEqual(
+    await createDrizzleWalkRepository(database).acceptTrackPoint(trackPointInput),
+    expectedTrackPoint,
+  )
+  assert.equal(insertTables.at(-1), walkTrackPoints)
+  assert.deepEqual(insertValues, [{
+    walkId,
+    recordedAt,
+    latitude: 35.681236,
+    longitude: 139.767125,
+  }])
+})
+
+test('acceptTrackPoint returns the existing point when recordedAt and coordinates match', async () => {
+  const { database, insertTables } = createWalkDatabaseFake({
+    selectResults: [[recordingWalkRow], [trackPointRow]],
+    insertError: trackPointUnique,
+  })
+  assert.deepEqual(
+    await createDrizzleWalkRepository(database).acceptTrackPoint(trackPointInput),
+    expectedTrackPoint,
+  )
+  assert.equal(insertTables.at(-1), walkTrackPoints)
+})
+
+test('acceptTrackPoint throws IdempotencyConflictError when recordedAt matches and coordinates differ', async () => {
+  const { database, insertTables } = createWalkDatabaseFake({
+    selectResults: [[recordingWalkRow], [{
+      ...trackPointRow,
+      latitude: 35.689487,
+      longitude: 139.691706,
+    }]],
+    insertError: trackPointUnique,
+  })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(database).acceptTrackPoint(trackPointInput),
+    isError(IdempotencyConflictError),
+  )
+  assert.equal(insertTables.at(-1), walkTrackPoints)
+})
+
+test('acceptTrackPoint throws WalkNotFoundError when the walk is missing or owned by someone else', async () => {
+  const missing = createWalkDatabaseFake({ selectResults: [[]] })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(missing.database).acceptTrackPoint(trackPointInput),
+    isError(WalkNotFoundError),
+  )
+  assert.deepEqual(missing.insertTables, [])
+
+  const otherOwner = createWalkDatabaseFake({
+    selectResults: [[{ ...recordingWalkRow, ownerId: otherOwnerId }]],
+  })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(otherOwner.database).acceptTrackPoint(trackPointInput),
+    isError(WalkNotFoundError),
+  )
+  assert.deepEqual(otherOwner.insertTables, [])
+})
+
+test('acceptTrackPoint throws WalkNotRecordingError when the walk is completed or failed', async () => {
+  for (const walkRow of [completedWalkRow, failedWalkRow]) {
+    const { database, insertTables } = createWalkDatabaseFake({ selectResults: [[walkRow]] })
+    await assert.rejects(
+      () => createDrizzleWalkRepository(database).acceptTrackPoint(trackPointInput),
+      isError(WalkNotRecordingError),
+    )
+    assert.deepEqual(insertTables, [])
+  }
 })

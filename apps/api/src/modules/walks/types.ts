@@ -1,3 +1,7 @@
+import type { owners } from '../../infrastructure/database/schema/owner.js'
+import type { walks } from '../../infrastructure/database/schema/walk.js'
+import type { NewWalkTrackPoint, WalkTrackPoint } from '../../infrastructure/database/schema/walk-track-point.js'
+
 export type WalkParticipant = {
   walkParticipantId: string
   dogId: string
@@ -41,6 +45,12 @@ export type FinishWalkInput = {
   bodyHash: string
 }
 
+export type TrackPoint = Pick<WalkTrackPoint, 'trackPointId' | 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>
+
+export type AcceptTrackPointInput = Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'> & {
+  ownerId: typeof walks.$inferSelect['ownerId']
+}
+
 export type GetActiveWalk = (cognitoSubject: string) => Promise<RecordingWalk | null>
 
 export type StartWalk = (input: {
@@ -67,4 +77,11 @@ export type DeleteWalk = (input: {
 }) => Promise<
   | { ok: true }
   | { ok: false; error: 'not_found' | 'walk_not_recording' }
+>
+
+export type AcceptTrackPoint = (input: {
+  cognitoSubject: typeof owners.$inferSelect['cognitoSubject']
+} & Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>) => Promise<
+  | { ok: true; trackPoint: TrackPoint }
+  | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
 >

@@ -1,4 +1,11 @@
-import type { CompletedWalk, FinishWalkInput, RecordingWalk, StartWalkInput } from './types.js'
+import type {
+  AcceptTrackPointInput,
+  CompletedWalk,
+  FinishWalkInput,
+  RecordingWalk,
+  StartWalkInput,
+  TrackPoint,
+} from './types.js'
 
 export interface WalkRepository {
   getActiveByOwner(ownerId: string): Promise<RecordingWalk | null>
@@ -6,4 +13,5 @@ export interface WalkRepository {
   finish(input: FinishWalkInput): Promise<CompletedWalk>
   fail(input: { ownerId: string; walkId: string }): Promise<void>
   failIfPresent(input: { ownerId: string }): Promise<void>
+  acceptTrackPoint(input: AcceptTrackPointInput): Promise<TrackPoint>
 }

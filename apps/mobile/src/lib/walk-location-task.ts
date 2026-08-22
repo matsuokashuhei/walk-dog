@@ -13,7 +13,11 @@ import {
   savePendingFailWalkId,
   saveRecordingWalkId,
 } from './walk-path-store'
-import { SAMPLE_INTERVAL_MS, createTrackPointCoordinator } from './walk-track-point-queue'
+import {
+  SAMPLE_INTERVAL_MS,
+  createTrackPointCoordinator,
+  type TrackPointQueueResult,
+} from './walk-track-point-queue'
 
 export const WALK_TRACK_POINT_TASK = 'WALK_TRACK_POINT'
 
@@ -84,8 +88,8 @@ async function withRecordingStore(
   run: (
     walkId: string,
     store: ReturnType<typeof createTrackPointCoordinator>,
-  ) => Promise<'ok' | 'retry' | 'drop' | 'unauthenticated'>,
-) {
+  ) => Promise<TrackPointQueueResult>,
+): Promise<TrackPointQueueResult | undefined> {
   const walkId = await loadRecordingWalkId()
   if (walkId === null) {
     return
@@ -100,10 +104,11 @@ async function withRecordingStore(
   if (action === 'unauthenticated') {
     await handleUnauthenticated(walkId)
   }
+  return action
 }
 
-async function flushPending() {
-  await withRecordingStore(async (_walkId, store) => store.flush())
+export async function flushTrackPointUpdates(): Promise<TrackPointQueueResult | undefined> {
+  return withRecordingStore(async (_walkId, store) => store.flush())
 }
 
 async function recordLocation(location: Location.LocationObject) {
@@ -128,7 +133,7 @@ async function sampleForegroundTick() {
     })
     await recordLocation(position)
   } catch {
-    await flushPending()
+    await flushTrackPointUpdates()
   }
 }
 
@@ -189,7 +194,7 @@ export async function stopTrackPointUpdates() {
 }
 
 async function handleLocations(locations: Location.LocationObject[]) {
-  await flushPending()
+  await flushTrackPointUpdates()
   const latest = locations.at(-1)
   if (latest === undefined) {
     return

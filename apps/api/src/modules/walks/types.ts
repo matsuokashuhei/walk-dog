@@ -84,14 +84,3 @@ export type DeleteWalk = (input: {
   | { ok: true }
   | { ok: false; error: 'not_found' | 'walk_not_recording' }
 >
-
-export type AcceptTrackPoint = (input: {
-  cognitoSubject: string
-  walkId: string
-  recordedAt: Date
-  latitude: number
-  longitude: number
-}) => Promise<
-  | { ok: true; trackPoint: TrackPoint }
-  | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
->

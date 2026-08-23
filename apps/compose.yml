@@ -27,13 +27,7 @@ services:
 
   worker:
     build: ./api
-    command:
-      - /bin/sh
-      - -c
-      - >-
-        export AWS_ACCESS_KEY_ID="$${AWS_ACCESS_KEY_ID:-local}";
-        export AWS_SECRET_ACCESS_KEY="$${AWS_SECRET_ACCESS_KEY:-local}";
-        exec npm run worker
+    command: npm run worker
     env_file: .env.local
     depends_on:
       - elasticmq

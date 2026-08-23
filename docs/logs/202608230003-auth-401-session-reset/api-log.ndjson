@@ -1,0 +1,1 @@
+{"requestId":"e2e-auth-expired-401","method":"GET","path":"/v1/owner","authorization":"Bearer expired-access-token","response":{"status":401,"body":{"code":"UNAUTHENTICATED","message":"Authentication is required.","requestId":"e2e-auth-expired-401","retryable":false}}}

@@ -4,6 +4,7 @@ import { AppleMaps } from 'expo-maps'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AppState,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -14,6 +15,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/lib/auth'
 import { listDogs, type DogResponse } from '@/lib/dog-api'
+import {
+  getLocationPermissionAction,
+  handleWalkAppStateChange,
+  type LocationPermissionAction,
+} from '@/lib/location-permission'
 import {
   deleteWalk,
   finishWalk,
@@ -55,12 +61,12 @@ type ScreenState =
   | { kind: 'completed'; walk: CompletedWalkResponse }
   | { kind: 'failed' }
 
-async function isLocationFullyGranted(): Promise<boolean> {
+async function readLocationPermissionAction(): Promise<LocationPermissionAction> {
   const foreground = await Location.getForegroundPermissionsAsync()
   const background = await Location.getBackgroundPermissionsAsync()
-  return (
-    foreground.status === Location.PermissionStatus.GRANTED &&
-    background.status === Location.PermissionStatus.GRANTED
+  return getLocationPermissionAction(
+    foreground.status,
+    background.status,
   )
 }
 
@@ -108,7 +114,8 @@ export default function WalkScreen() {
   const { session } = useAuth()
   const insets = useSafeAreaInsets()
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
-  const [locationGranted, setLocationGranted] = useState(false)
+  const [locationPermissionAction, setLocationPermissionAction] =
+    useState<LocationPermissionAction>('request')
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | undefined>()
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
@@ -118,9 +125,9 @@ export default function WalkScreen() {
   const loadGeneration = useRef(0)
   stateRef.current = state
 
-  const applyLocation = useCallback(async (granted: boolean) => {
-    setLocationGranted(granted)
-    if (!granted) {
+  const applyLocation = useCallback(async (action: LocationPermissionAction) => {
+    setLocationPermissionAction(action)
+    if (action !== 'granted') {
       setCameraPosition(undefined)
       return
     }
@@ -153,15 +160,15 @@ export default function WalkScreen() {
       }
 
       try {
-        const [walk, dogsResult, granted] = await Promise.all([
+        const [walk, dogsResult, locationAction] = await Promise.all([
           getActiveWalk(session.accessToken),
           listDogs(session.accessToken),
-          isLocationFullyGranted(),
+          readLocationPermissionAction(),
         ])
         if (!shouldApply()) {
           return
         }
-        await applyLocation(granted)
+        await applyLocation(locationAction)
         if (!shouldApply()) {
           return
         }
@@ -212,10 +219,9 @@ export default function WalkScreen() {
     if (current.kind !== 'recording') {
       return
     }
-    const granted = await isLocationFullyGranted()
-    if (!granted) {
-      setLocationGranted(false)
-      setCameraPosition(undefined)
+    const locationAction = await readLocationPermissionAction()
+    if (locationAction !== 'granted') {
+      await applyLocation(locationAction)
       failingRef.current = true
       try {
         await deleteWalk(session.accessToken, current.walk.walkId)
@@ -241,7 +247,7 @@ export default function WalkScreen() {
     } catch {
       return
     }
-  }, [session])
+  }, [applyLocation, session])
 
   useFocusEffect(
     useCallback(() => {
@@ -259,14 +265,19 @@ export default function WalkScreen() {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active' && stateRef.current.kind === 'recording') {
-        void verifyRecording()
-      }
+      handleWalkAppStateChange(next, stateRef.current.kind, {
+        loadReady: () => {
+          void load('silent')
+        },
+        verifyRecording: () => {
+          void verifyRecording()
+        },
+      })
     })
     return () => {
       sub.remove()
     }
-  }, [verifyRecording])
+  }, [load, verifyRecording])
 
   useEffect(() => {
     if (state.kind !== 'recording') {
@@ -286,7 +297,11 @@ export default function WalkScreen() {
     if (foreground.status === Location.PermissionStatus.GRANTED) {
       await Location.requestBackgroundPermissionsAsync()
     }
-    await applyLocation(await isLocationFullyGranted())
+    await applyLocation(await readLocationPermissionAction())
+  }
+
+  const onOpenLocationSettings = () => {
+    void Linking.openSettings()
   }
 
   const onToggleDog = (dogId: string) => {
@@ -362,6 +377,7 @@ export default function WalkScreen() {
     void load('full')
   }
 
+  const locationGranted = locationPermissionAction === 'granted'
   const showMap =
     locationGranted &&
     Platform.OS === 'ios' &&
@@ -477,7 +493,9 @@ export default function WalkScreen() {
             ) : null}
             {state.dogs.length > 0 && state.selectedDogIds.length > 0 && !locationGranted ? (
               <Text style={styles.error} testID="walk-location-required">
-                位置情報（使用中および常に）を許可してください。
+                {locationPermissionAction === 'settings'
+                  ? '位置情報（使用中および常に）を設定で許可してください。'
+                  : '位置情報（使用中および常に）を許可してください。'}
               </Text>
             ) : null}
             {state.startError ? (
@@ -491,14 +509,20 @@ export default function WalkScreen() {
                 testID="walk-allow-location"
                 accessible
                 accessibilityRole="button"
-                accessibilityLabel="位置情報を許可"
+                accessibilityLabel={
+                  locationPermissionAction === 'settings' ? '設定を開く' : '位置情報を許可'
+                }
                 style={styles.primary}
                 onPress={() => {
+                  if (locationPermissionAction === 'settings') {
+                    onOpenLocationSettings()
+                    return
+                  }
                   void onAllowLocation()
                 }}
               >
                 <Text style={styles.primaryText} accessible={false}>
-                  位置情報を許可
+                  {locationPermissionAction === 'settings' ? '設定を開く' : '位置情報を許可'}
                 </Text>
               </Pressable>
             ) : null}

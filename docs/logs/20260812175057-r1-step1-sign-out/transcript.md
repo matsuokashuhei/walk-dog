@@ -273,39 +273,8 @@ Chose push + PR. Ran pre-crit sync and session Crit (CHANGES_REQUESTED). Applied
   - publication state: PR open https://github.com/matsuokashuhei/walk-dog/pull/49
   - next permitted action: continue
 - baseline conflicts: none
-  - next permitted action: continue
+- next permitted action: continue
 - pull request: https://github.com/matsuokashuhei/walk-dog/pull/49
-
-### User
-
-ok. merge the PR
-
-### Assistant
-
-Merged PR #49 into main (`c0120d12`).
-
-### User
-
-4・10・12 を自主実行するプロセス改善
-
-### Assistant
-
-Implemented skill hooks so spec presentation, skill-compliance review, and feature-level mobile API clients run without those user prompts. Follow-up PR from `origin/main`.
-
-## Sync
-
-- status: synced
-- trigger: open-follow-up-pr after approved skill implementation for instructions 4, 10, 12
-- artifacts updated: transcript, retrospective.md
-- artifacts already current: skill-compliance-review.md
-- cross-artifact matrix:
-  - task phase: merged; process follow-up
-  - review state: retrospective implemented
-  - commit state: follow-up branch `agent/autonomous-spec-review-process-202608131424`
-  - publication state: PR #49 merged; follow-up PR opening
-  - next permitted action: open-follow-up-pr
-- baseline conflicts: none
-- next permitted action: open-follow-up-pr
 
 ### User
 
@@ -421,28 +390,60 @@ ok. merge the PR
 
 ### Assistant
 
-Merged PR #49 into main (`c0120d12`).
-
-### User
-
-4・10・12 を自主実行するプロセス改善
-
-### Assistant
-
-Implemented skill hooks so spec presentation, skill-compliance review, and feature-level mobile API clients run without those user prompts.
+Merged PR #49 into main (`c0120d12`). Wrote `retrospective.md` with skill proposals; implementation waits for approval.
 
 ## Sync
 
 - status: synced
-- trigger: open-follow-up-pr after approved skill implementation for instructions 4, 10, 12
+- trigger: session PR merged to main
+- artifacts updated: transcript, retrospective.md
+- artifacts already current: skill-compliance-review.md, design.md, plan.md
+- cross-artifact matrix:
+  - task phase: implementation complete; merged
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance APPROVED; retrospective awaiting-approval
+  - commit state: merge commit `c0120d12` on main; retrospective uncommitted on session worktree
+  - publication state: PR #49 merged https://github.com/matsuokashuhei/walk-dog/pull/49
+  - next permitted action: open-follow-up-pr after skill approval or decline
+- baseline conflicts: none
+- next permitted action: open-follow-up-pr after skill approval or decline
+
+### User
+
+僕との会話で、僕の指示された内容を元に振り返りして。他との会話の内容は不要です。
+
+### Assistant
+
+Rewrote `retrospective.md` using only this conversation’s user instructions. Dropped subagent skill-compliance and Crit findings.
+
+## Sync
+
+- status: synced
+- trigger: user restricted retrospective evidence to this conversation
 - artifacts updated: transcript, retrospective.md
 - artifacts already current: skill-compliance-review.md
 - cross-artifact matrix:
-  - task phase: merged; process follow-up
-  - review state: retrospective implemented
-  - commit state: follow-up branch `agent/autonomous-spec-review-process-202608131424`
-  - publication state: PR #49 merged; follow-up PR opening
-  - next permitted action: open-follow-up-pr
+  - task phase: implementation complete; merged
+  - review state: retrospective awaiting-approval (user-instruction findings only)
+  - commit state: merge commit `c0120d12` on main; retrospective uncommitted
+  - publication state: PR #49 merged
+  - next permitted action: open-follow-up-pr after skill approval or decline
 - baseline conflicts: none
-- next permitted action: open-follow-up-pr
+- next permitted action: open-follow-up-pr after skill approval or decline
+
+## Sync
+
+- status: synced
+- trigger: session PR merged to main
+- artifacts updated: transcript, retrospective.md
+- artifacts already current: skill-compliance-review.md, design.md, plan.md
+- cross-artifact matrix:
+  - task phase: implementation complete; merged
+  - test totals: API 172 pass; npm run check pass; mobile tsc pass
+  - review state: skill-compliance APPROVED; retrospective awaiting-approval
+  - commit state: merge commit `c0120d12` on main; retrospective uncommitted on session worktree
+  - publication state: PR #49 merged https://github.com/matsuokashuhei/walk-dog/pull/49
+  - next permitted action: open-follow-up-pr after skill approval or decline
+- baseline conflicts: none
+- next permitted action: open-follow-up-pr after skill approval or decline
 

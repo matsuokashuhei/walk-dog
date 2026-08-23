@@ -12,7 +12,7 @@ test('worker preserves .env.local credentials and has local defaults', async () 
 
   assert.match(worker, /env_file: .env.local/)
   assert.doesNotMatch(worker, /environment:/)
-  assert.match(worker, /- \/bin\/sh\n      - -c/)
+  assert.match(worker, /- \/bin\/sh\n {6}- -c/)
   assert.match(worker, /AWS_ACCESS_KEY_ID="\$\$\{AWS_ACCESS_KEY_ID:-local\}"/)
   assert.match(worker, /AWS_SECRET_ACCESS_KEY="\$\$\{AWS_SECRET_ACCESS_KEY:-local\}"/)
 })

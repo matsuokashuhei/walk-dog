@@ -1,9 +1,17 @@
 import { Stack } from 'expo-router'
+import { useEffect } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { AuthProvider, useAuth } from '@/lib/auth'
+import { stopTrackPointUpdates } from '@/lib/walk-location-task'
 
 function RootNavigator() {
   const { isReady, session } = useAuth()
+
+  useEffect(() => {
+    if (isReady && session === null) {
+      void stopTrackPointUpdates()
+    }
+  }, [isReady, session])
 
   if (!isReady) {
     return (

@@ -55,3 +55,4 @@ ok
 - `2026-08-29 19:48 JST`: Committed `7aed8ea`. Independent review: Critical — TrackPoint 401 saved a pending fail then DELETE on next Sign In while still showing Recording. Important — HTTP 201 Zod parse failures stayed retryable; GPS `multipleOf` could drop samples; Finish flush / POST / 401 resume untested.
 - `2026-08-29 19:55 JST`: Stopped failing the Active Walk on TrackPoint 401. HTTP 201 accepts the queue regardless of response body. Coordinate schema uses range only. Added POST, flush, and 401-resume coordinator tests. Verification: mobile `npm test` 25 pass / 0 fail; mobile `tsc --noEmit` pass.
 - `2026-08-29 19:58 JST`: Follow-up review of `cbba1a8..759541d`: Critical / Important none. Ready to merge. Minor leftover: unused walk id on `handleUnauthenticated`.
+- `2026-08-29 22:01 JST`: Pushed `agent/r1-step4-mobile-land-20260823235949` and opened https://github.com/matsuokashuhei/walk-dog/pull/90 . Worktree kept for PR feedback.

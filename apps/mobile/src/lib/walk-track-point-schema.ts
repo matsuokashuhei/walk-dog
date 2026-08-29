@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-export const localTrackPointSchema = z.strictObject({
+export const localTrackPointSchema = z.object({
   walkId: z.uuid(),
   recordedAt: z.iso.datetime(),
-  latitude: z.number().gte(-90).lte(90).multipleOf(0.000001),
-  longitude: z.number().gte(-180).lte(180).multipleOf(0.000001),
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
 })
 
 export type LocalTrackPoint = z.infer<typeof localTrackPointSchema>
@@ -17,10 +17,13 @@ export function toLocalTrackPoint(input: LocalTrackPoint): LocalTrackPoint {
   })
 }
 
-export const trackPointResponseSchema = z.strictObject({
+export const trackPointResponseSchema = z.object({
   requestId: z.string(),
   trackPointId: z.uuid(),
-  ...localTrackPointSchema.shape,
+  walkId: z.uuid(),
+  recordedAt: z.iso.datetime(),
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
 })
 
 export type TrackPointResponse = z.infer<typeof trackPointResponseSchema>

@@ -15,31 +15,71 @@ const trackPointResponse = {
   longitude: 139.761234,
 }
 
-test('TrackPoint response schema accepts API values and rejects invalid identifiers and precision', () => {
+test('TrackPoint response schema accepts API values and rejects an invalid identifier', () => {
   assert.equal(trackPointResponseSchema.safeParse(trackPointResponse).success, true)
   assert.equal(
     trackPointResponseSchema.safeParse({ ...trackPointResponse, trackPointId: 'point-1' }).success,
     false,
   )
-  assert.equal(
-    trackPointResponseSchema.safeParse({ ...trackPointResponse, longitude: 139.7612345 }).success,
-    false,
-  )
 })
 
-test('toLocalTrackPoint rounds GPS coordinates to API precision', () => {
+test('toLocalTrackPoint rounds GPS coordinates without throwing on leftover float error', () => {
   const point = toLocalTrackPoint({
     walkId: trackPointResponse.walkId,
     recordedAt: trackPointResponse.recordedAt,
-    latitude: 35.6812347,
-    longitude: 139.7612347,
+    latitude: 35.681234123456,
+    longitude: 139.761234123456,
   })
 
-  assert.equal(point.latitude, 35.681235)
-  assert.equal(point.longitude, 139.761235)
+  assert.equal(point.latitude, 35.681234)
+  assert.equal(point.longitude, 139.761234)
 })
 
-test('postTrackPoint rejects a malformed successful response', async () => {
+test('postTrackPoint sends recordedAt latitude longitude and accepts extra response fields', async () => {
+  process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
+  let request: { url: string; method: string | undefined; body: string | undefined } | undefined
+  globalThis.fetch = async (input, init) => {
+    request = {
+      url: String(input),
+      method: init?.method,
+      body: typeof init?.body === 'string' ? init.body : undefined,
+    }
+    return new Response(
+      JSON.stringify({
+        ...trackPointResponse,
+        extra: 'ignored',
+        longitude: 139.7612345,
+      }),
+      { status: 201, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+
+  try {
+    await postTrackPoint('access-token', trackPointResponse)
+    assert.equal(request?.method, 'POST')
+    assert.equal(
+      request?.url,
+      `https://api.example.test/v1/walks/${trackPointResponse.walkId}/track-points`,
+    )
+    assert.equal(
+      request?.body,
+      JSON.stringify({
+        recordedAt: trackPointResponse.recordedAt,
+        latitude: trackPointResponse.latitude,
+        longitude: trackPointResponse.longitude,
+      }),
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+    if (originalBaseUrl === undefined) {
+      delete process.env.EXPO_PUBLIC_API_BASE_URL
+    } else {
+      process.env.EXPO_PUBLIC_API_BASE_URL = originalBaseUrl
+    }
+  }
+})
+
+test('postTrackPoint treats HTTP 201 as accepted when the body is malformed', async () => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.example.test'
   globalThis.fetch = async () =>
     new Response(
@@ -47,11 +87,11 @@ test('postTrackPoint rejects a malformed successful response', async () => {
         ...trackPointResponse,
         trackPointId: 'point-1',
       }),
-      { status: 201 },
+      { status: 201, headers: { 'Content-Type': 'application/json' } },
     )
 
   try {
-    await assert.rejects(postTrackPoint('access-token', trackPointResponse))
+    await postTrackPoint('access-token', trackPointResponse)
   } finally {
     globalThis.fetch = originalFetch
     if (originalBaseUrl === undefined) {

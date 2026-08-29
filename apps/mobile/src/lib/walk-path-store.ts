@@ -23,10 +23,6 @@ function recordingUri() {
   return documentUri('walk-recording.json')
 }
 
-function pendingFailUri() {
-  return documentUri('walk-pending-fail.json')
-}
-
 async function readJson<T>(uri: string, fallback: T): Promise<T> {
   const info = await FileSystem.getInfoAsync(uri)
   if (!info.exists) {
@@ -94,21 +90,4 @@ export async function clearRecordingWalkId(): Promise<void> {
     return
   }
   await FileSystem.deleteAsync(recordingUri())
-}
-
-export async function loadPendingFailWalkId(): Promise<string | null> {
-  const stored = await readJson<{ walkId: string } | null>(pendingFailUri(), null)
-  return stored?.walkId ?? null
-}
-
-export async function savePendingFailWalkId(walkId: string): Promise<void> {
-  await writeJson(pendingFailUri(), { walkId })
-}
-
-export async function clearPendingFailWalkId(): Promise<void> {
-  const info = await FileSystem.getInfoAsync(pendingFailUri())
-  if (!info.exists) {
-    return
-  }
-  await FileSystem.deleteAsync(pendingFailUri())
 }

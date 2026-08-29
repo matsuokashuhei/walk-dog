@@ -52,3 +52,5 @@ ok
 - `2026-08-24 00:06 JST`: User confirmed the product contract and landing approach.
 - `2026-08-24 00:30 JST`: Landed TrackPoint schema, POST, durable queue, 10s location task, Recording path overlay, and Finish flush. Kept settings CTA and auth-expiry Sign In. Verification: mobile `npm test` 21 pass / 0 fail; mobile `tsc --noEmit` pass.
 - `2026-08-29 19:43 JST`: User asked to commit the worktree and proceed to review. Fresh verification: mobile `npm test` 21 pass / 0 fail; mobile `tsc --noEmit` pass.
+- `2026-08-29 19:48 JST`: Committed `7aed8ea`. Independent review: Critical — TrackPoint 401 saved a pending fail then DELETE on next Sign In while still showing Recording. Important — HTTP 201 Zod parse failures stayed retryable; GPS `multipleOf` could drop samples; Finish flush / POST / 401 resume untested.
+- `2026-08-29 19:55 JST`: Stopped failing the Active Walk on TrackPoint 401. HTTP 201 accepts the queue regardless of response body. Coordinate schema uses range only. Added POST, flush, and 401-resume coordinator tests. Verification: mobile `npm test` 25 pass / 0 fail; mobile `tsc --noEmit` pass.

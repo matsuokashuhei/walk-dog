@@ -10,7 +10,6 @@ import {
   createFileTrackPointStorage,
   loadPathForWalk,
   loadRecordingWalkId,
-  savePendingFailWalkId,
   saveRecordingWalkId,
 } from './walk-path-store'
 import {
@@ -93,8 +92,7 @@ async function coordinatorFor(walkId: string, accessToken: string) {
   return coordinator
 }
 
-async function handleUnauthenticated(walkId: string) {
-  await savePendingFailWalkId(walkId)
+async function handleUnauthenticated(_walkId: string) {
   events?.onUnauthenticated()
   void stopTrackPointUpdates()
 }

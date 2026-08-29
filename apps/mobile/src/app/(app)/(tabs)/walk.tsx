@@ -29,11 +29,7 @@ import {
   type LocalTrackPoint,
   type RecordingWalkResponse,
 } from '@/lib/walk-api'
-import {
-  clearPendingFailWalkId,
-  loadPathForWalk,
-  loadPendingFailWalkId,
-} from '@/lib/walk-path-store'
+import { loadPathForWalk } from '@/lib/walk-path-store'
 import {
   flushTrackPointUpdates,
   pauseTrackPointUpdates,
@@ -199,7 +195,6 @@ export default function WalkScreen() {
       }
 
       try {
-        const pendingFailWalkId = await loadPendingFailWalkId()
         const [walk, dogsResult, locationAction] = await Promise.all([
           getActiveWalk(session.accessToken),
           listDogs(session.accessToken),
@@ -207,14 +202,6 @@ export default function WalkScreen() {
         ])
         if (!shouldApply()) {
           return
-        }
-        if (pendingFailWalkId !== null) {
-          try {
-            await deleteWalk(session.accessToken, pendingFailWalkId)
-            await clearPendingFailWalkId()
-          } catch {
-            await clearPendingFailWalkId()
-          }
         }
         await applyLocation(locationAction)
         if (!shouldApply()) {

@@ -26,7 +26,7 @@ test('LocalTrackPoint schema accepts API values and rejects an invalid walk ID',
   }
   assert.equal(localTrackPointSchema.safeParse(apiPoint).success, true)
   assert.equal(localTrackPointSchema.safeParse({ ...apiPoint, walkId: 'w1' }).success, false)
-  assert.equal(localTrackPointSchema.safeParse({ ...apiPoint, latitude: 35.1234567 }).success, false)
+  assert.equal(localTrackPointSchema.safeParse({ ...apiPoint, latitude: 91 }).success, false)
 })
 
 function memoryCoordinator(
@@ -179,5 +179,52 @@ test('overlapping records keep both points on the path', async () => {
   releaseFirstSave()
   await Promise.all([first, second])
   assert.deepEqual(path, [point, laterPoint])
+  assert.deepEqual(queue, [])
+})
+
+test('flush of an empty queue is ok', async () => {
+  const { store, queue } = memoryCoordinator(async () => ({ ok: true as const }))
+  assert.equal(await store.flush(), 'ok')
+  assert.deepEqual(queue, [])
+})
+
+test('flush of a retryable queue stays retry', async () => {
+  const { store, queue } = memoryCoordinator(async () => ({
+    ok: false as const,
+    status: 500,
+    retryable: true,
+  }))
+  await store.record(point)
+  assert.equal(await store.flush(), 'retry')
+  assert.deepEqual(queue, [point])
+})
+
+test('a later coordinator posts queued points after 401', async () => {
+  const path: LocalTrackPoint[] = []
+  const queue: LocalTrackPoint[] = []
+  let allowPost = false
+  const deps = {
+    loadPath: async () => path,
+    savePath: async (points: LocalTrackPoint[]) => {
+      path.splice(0, path.length, ...points)
+    },
+    loadQueue: async () => queue,
+    saveQueue: async (points: LocalTrackPoint[]) => {
+      queue.splice(0, queue.length, ...points)
+    },
+    post: async () => {
+      if (!allowPost) {
+        return { ok: false as const, status: 401, retryable: false }
+      }
+      return { ok: true as const }
+    },
+    now: () => SAMPLE_NOW_MS,
+  }
+  const first = createTrackPointCoordinator(deps)
+  assert.equal(await first.record(point), 'unauthenticated')
+  assert.deepEqual(queue, [point])
+  allowPost = true
+  const second = createTrackPointCoordinator(deps)
+  assert.equal(await second.flush(), 'ok')
   assert.deepEqual(queue, [])
 })

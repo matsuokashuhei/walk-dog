@@ -1,17 +1,12 @@
 import { apiRequest } from './api.ts'
-import {
-  toLocalTrackPoint,
-  trackPointResponseSchema,
-  type LocalTrackPoint,
-  type TrackPointResponse,
-} from './walk-track-point-schema.ts'
+import type { LocalTrackPoint } from './walk-track-point-schema.ts'
 
 export {
   localTrackPointSchema,
   toLocalTrackPoint,
   trackPointResponseSchema,
 } from './walk-track-point-schema.ts'
-export type { LocalTrackPoint, TrackPointResponse }
+export type { LocalTrackPoint, TrackPointResponse } from './walk-track-point-schema.ts'
 
 export type WalkParticipantResponse = {
   walkParticipantId: string
@@ -83,8 +78,8 @@ export async function deleteWalk(accessToken: string, walkId: string): Promise<v
 export async function postTrackPoint(
   accessToken: string,
   input: LocalTrackPoint,
-): Promise<TrackPointResponse> {
-  const response = await apiRequest<unknown>(`/v1/walks/${input.walkId}/track-points`, {
+): Promise<void> {
+  await apiRequest(`/v1/walks/${input.walkId}/track-points`, {
     method: 'POST',
     accessToken,
     body: {
@@ -93,5 +88,4 @@ export async function postTrackPoint(
       longitude: input.longitude,
     },
   })
-  return trackPointResponseSchema.parse(response)
 }

@@ -1,56 +1,75 @@
-# Welcome to your Expo app 👋
+# Mobile local development
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo SDK 57 development client for walk / dog. Requires a [development build](https://docs.expo.dev/develop/development-builds/introduction/) — Expo Go does not support the native modules used for location, maps, and secure session storage.
 
-## Get started
+## Environment
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Create the local environment file:
 
 ```bash
-npm run reset-project
+cd apps/mobile
+cp .env.example .env
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`EXPO_PUBLIC_API_BASE_URL` must be an absolute URL to the API. For the iOS Simulator with local Compose:
 
-### Other setup steps
+```
+EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3000
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Rebuild the native app after changing `EXPO_PUBLIC_*` values.
 
-## Learn more
+## Run
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+npx expo run:ios
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Start Metro separately when you need a fixed port or an isolated worktree:
 
-## Join the community
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3000 npx expo start --port 8082
+```
 
-Join our community of developers creating universal apps.
+Point the Simulator development client at that Metro URL when prompted.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Authentication session
+
+The app stores Cognito tokens in `expo-secure-store` and attaches the access token to authenticated API requests.
+
+When the API returns `401` with `code: "UNAUTHENTICATED"`, the client clears the stored session and returns to Sign In. The handler ignores stale 401 responses that belong to a superseded access token, so a successful re-sign-in is not undone by an in-flight request from the previous session.
+
+## Location permissions
+
+Walk Ready requires foreground and background location permission before Start is enabled.
+
+| Permission state | Walk Ready UI |
+| --- | --- |
+| Foreground and background granted | Start is available when at least one Dog is selected |
+| Not yet requested | Shows **位置情報を許可** and requests both permissions |
+| Foreground or background denied | Shows **設定を開く** and opens iOS Settings |
+
+When the app returns to the foreground on Walk Ready or Recording, permission state is re-read. iOS does not show the system dialog again after denial — use Settings to grant **使用中** and **常に**.
+
+Recording uses Apple MapKit for the map background, a pin at the current location, and a path from TrackPoints received on the device.
+
+## Tests
+
+```bash
+npm test
+npm run lint
+```
+
+Unit tests cover API error handling, authentication expiry, session persistence ordering, and location-permission action selection.
+
+## API dependency
+
+Mobile development against a local API requires a healthy stack. From `apps`:
+
+```bash
+docker compose -f compose.yml up --build -d
+curl --fail http://localhost:3000/health
+```
+
+See `apps/api/README.md` when `GET /health` returns `503`.

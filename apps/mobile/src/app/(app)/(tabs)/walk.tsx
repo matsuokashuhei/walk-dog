@@ -26,8 +26,17 @@ import {
   getActiveWalk,
   startWalk,
   type CompletedWalkResponse,
+  type LocalTrackPoint,
   type RecordingWalkResponse,
 } from '@/lib/walk-api'
+import { loadPathForWalk } from '@/lib/walk-path-store'
+import {
+  flushTrackPointUpdates,
+  pauseTrackPointUpdates,
+  setTrackPointEvents,
+  startTrackPointUpdates,
+  stopTrackPointUpdates,
+} from '@/lib/walk-location-task'
 
 type DogListItem = Omit<DogResponse, 'requestId'>
 
@@ -111,12 +120,14 @@ function isLoadableKind(kind: ScreenState['kind']): boolean {
 
 export default function WalkScreen() {
   const router = useRouter()
-  const { session } = useAuth()
+  const { session, clearSession } = useAuth()
   const insets = useSafeAreaInsets()
   const [state, setState] = useState<ScreenState>({ kind: 'loading' })
   const [locationPermissionAction, setLocationPermissionAction] =
     useState<LocationPermissionAction>('request')
   const [cameraPosition, setCameraPosition] = useState<CameraPosition | undefined>()
+  const [pathPoints, setPathPoints] = useState<LocalTrackPoint[]>([])
+  const [recordingCamera, setRecordingCamera] = useState<CameraPosition | undefined>()
   const [now, setNow] = useState(() => Date.now())
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
@@ -124,6 +135,30 @@ export default function WalkScreen() {
   const startingRef = useRef(false)
   const loadGeneration = useRef(0)
   stateRef.current = state
+
+  const applyPathPoints = useCallback((points: LocalTrackPoint[]) => {
+    setPathPoints(points)
+    const latest = points.at(-1)
+    if (latest === undefined) {
+      return
+    }
+    setRecordingCamera((current) => {
+      if (
+        current !== undefined &&
+        current.coordinates.latitude === latest.latitude &&
+        current.coordinates.longitude === latest.longitude
+      ) {
+        return current
+      }
+      return {
+        coordinates: {
+          latitude: latest.latitude,
+          longitude: latest.longitude,
+        },
+        zoom: 15,
+      }
+    })
+  }, [])
 
   const applyLocation = useCallback(async (action: LocationPermissionAction) => {
     setLocationPermissionAction(action)
@@ -265,7 +300,8 @@ export default function WalkScreen() {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      handleWalkAppStateChange(next, stateRef.current.kind, {
+      const current = stateRef.current
+      handleWalkAppStateChange(next, current.kind, {
         loadReady: () => {
           void load('silent')
         },
@@ -273,11 +309,36 @@ export default function WalkScreen() {
           void verifyRecording()
         },
       })
+      if (next === 'active' && current.kind === 'recording') {
+        void loadPathForWalk(current.walk.walkId).then(applyPathPoints)
+      }
     })
     return () => {
       sub.remove()
     }
-  }, [load, verifyRecording])
+  }, [applyPathPoints, load, verifyRecording])
+
+  useEffect(() => {
+    if (state.kind !== 'recording') {
+      setTrackPointEvents(null)
+      setPathPoints([])
+      setRecordingCamera(undefined)
+      void stopTrackPointUpdates()
+      return
+    }
+    const walkId = state.walk.walkId
+    setTrackPointEvents({
+      onPathChange: applyPathPoints,
+      onUnauthenticated: () => {
+        void clearSession()
+      },
+    })
+    void startTrackPointUpdates(walkId)
+    void loadPathForWalk(walkId).then(applyPathPoints)
+    return () => {
+      setTrackPointEvents(null)
+    }
+  }, [applyPathPoints, clearSession, state.kind, state.kind === 'recording' ? state.walk.walkId : null])
 
   useEffect(() => {
     if (state.kind !== 'recording') {
@@ -363,12 +424,28 @@ export default function WalkScreen() {
     const walk = state.walk
     finishingRef.current = true
     setState({ kind: 'recording', walk, finishError: false, finishKey })
-    void finishWalk(session.accessToken, { walkId: walk.walkId, idempotencyKey: finishKey })
+    void (async () => {
+      await pauseTrackPointUpdates()
+      const flushResult = await flushTrackPointUpdates()
+      if (flushResult === 'unauthenticated') {
+        return
+      }
+      if (flushResult !== 'ok') {
+        throw new Error('TrackPoint queue is not empty')
+      }
+      return finishWalk(session.accessToken, { walkId: walk.walkId, idempotencyKey: finishKey })
+    })()
       .then((completed) => {
-        setState({ kind: 'completed', walk: completed })
+        if (completed !== undefined) {
+          setState({ kind: 'completed', walk: completed })
+        }
       })
       .catch(() => {
+        if (stateRef.current.kind !== 'recording') {
+          return
+        }
         finishingRef.current = false
+        void startTrackPointUpdates(walk.walkId)
         setState({ kind: 'recording', walk, finishError: true, finishKey })
       })
   }
@@ -392,6 +469,14 @@ export default function WalkScreen() {
     state.selectedDogIds.length > 0 &&
     locationGranted
 
+  const currentPoint = pathPoints.at(-1)
+  const pathCoordinates = pathPoints.map((point) => ({
+    latitude: point.latitude,
+    longitude: point.longitude,
+  }))
+  const mapCameraPosition =
+    state.kind === 'recording' && recordingCamera ? recordingCamera : cameraPosition
+
   return (
     <View style={[styles.container, showMap ? styles.containerMap : null]} testID="walk-root">
       {showMap ? (
@@ -402,7 +487,30 @@ export default function WalkScreen() {
             selectionEnabled: false,
             pointsOfInterest: { including: [] },
           }}
-          cameraPosition={cameraPosition}
+          cameraPosition={mapCameraPosition}
+          markers={
+            state.kind === 'recording' && currentPoint
+              ? [
+                  {
+                    id: 'current',
+                    coordinates: {
+                      latitude: currentPoint.latitude,
+                      longitude: currentPoint.longitude,
+                    },
+                  },
+                ]
+              : []
+          }
+          polylines={
+            state.kind === 'recording' && pathCoordinates.length >= 2
+              ? [
+                  {
+                    id: 'walk-path',
+                    coordinates: pathCoordinates,
+                  },
+                ]
+              : []
+          }
         />
       ) : null}
 

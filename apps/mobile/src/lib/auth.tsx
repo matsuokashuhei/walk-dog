@@ -11,7 +11,7 @@ import {
 import { setAuthenticationFailureHandler } from '@/lib/api'
 import { createAuthSessionStore, type AuthSession } from '@/lib/auth-session-store'
 
-const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
+export const ACCESS_TOKEN_KEY = 'walkdog.accessToken'
 const ID_TOKEN_KEY = 'walkdog.idToken'
 const REFRESH_TOKEN_KEY = 'walkdog.refreshToken'
 

@@ -79,6 +79,40 @@ Content-Type: application/json
 3. Verify `.env.local` includes `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for local emulators
 4. Confirm `WORKER_HEALTH_URL=http://worker:3001/health` inside Compose (use `http://localhost:3001/health` only when pinging the worker from the host)
 
+## TrackPoint acceptance
+
+`POST /v1/walks/:walkId/track-points` accepts a point while the Walk is `recording`:
+
+```json
+{
+  "recordedAt": "2026-08-17T03:12:14.000Z",
+  "latitude": 35.681234,
+  "longitude": 139.761234
+}
+```
+
+The API validates the request, persists an accepted row in PostgreSQL, and enqueues a message on the `track-points` SQS queue. The worker long-polls ElasticMQ, confirms the point in DynamoDB Local (`TrackPoints` table), then deletes the message.
+
+| Step | Component | Check |
+| --- | --- | --- |
+| Accept | API | `201` with `trackPointId`, `walkId`, `recordedAt`, coordinates |
+| Enqueue | ElasticMQ | API logs show no SQS errors |
+| Confirm | Worker | `docker compose -f compose.yml logs worker` shows no `failed to confirm` |
+| Persist | DynamoDB Local | Item keyed by `walkId` + `recordedAt` |
+
+Idempotency uses `walkId` and `recordedAt`. A retry with the same coordinates returns the existing point (`201`). Different coordinates for the same `recordedAt` return `409 IDEMPOTENCY_CONFLICT`.
+
+To inspect confirmed points in DynamoDB Local from the host:
+
+```bash
+aws dynamodb scan \
+  --table-name TrackPoints \
+  --endpoint-url http://localhost:8000 \
+  --region ap-northeast-1
+```
+
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from `.env.local` are sufficient for the local emulators.
+
 ## Quality checks
 
 From `apps/api`:

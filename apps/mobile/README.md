@@ -54,6 +54,35 @@ When the app returns to the foreground on Walk Ready or Recording, permission st
 
 Recording uses Apple MapKit for the map background, a pin at the current location, and a path from TrackPoints received on the device.
 
+## TrackPoint recording
+
+During Recording, the app samples location every 10 seconds and sends each point to `POST /v1/walks/:walkId/track-points`.
+
+| Layer | Module | Role |
+| --- | --- | --- |
+| Sampling | `walk-location-task.ts` | Foreground timer while active; `WALK_TRACK_POINT` background task while backgrounded |
+| Queue | `walk-track-point-queue.ts` | 10 s deduplication, serialized record/flush, retry policy |
+| Persistence | `walk-path-store.ts` | Path for map rendering; outbound queue for unsent points |
+| API | `walk-api.ts` | `postTrackPoint` with `recordedAt`, `latitude`, `longitude` |
+
+Each accepted sample is appended to the on-device path and outbound queue, then the queue is flushed in order. Retryable API errors keep the point in the queue and retry on the next sample or flush. Non-retryable errors (except `401`) drop the point.
+
+Finish pauses sampling, flushes the outbound queue, then calls `POST /v1/walks/:walkId/finish`. Finish fails when any point remains queued after flush.
+
+### Authentication expiry during Recording
+
+A TrackPoint `401` stops auto-retry and returns to Sign In, but does not fail the Active Walk on the server. Pending points stay in `walk-outbound-queue.json`. After re-sign-in, the app restores Recording from `GET /v1/walks/active` and resumes sampling and queue flush.
+
+This differs from other authenticated requests: the global `401` handler ignores stale tokens from a superseded session, but TrackPoint `401` during Recording always clears the current session so the user can re-authenticate and drain the queue.
+
+### On-device files
+
+| File | Contents |
+| --- | --- |
+| `walk-path.json` | TrackPoints per `walkId`, used to draw the Recording path |
+| `walk-outbound-queue.json` | Points waiting for `POST /track-points` |
+| `walk-recording.json` | Active `walkId` while Recording |
+
 ## Tests
 
 ```bash
@@ -61,7 +90,7 @@ npm test
 npm run lint
 ```
 
-Unit tests cover API error handling, authentication expiry, session persistence ordering, and location-permission action selection.
+Unit tests cover API error handling, authentication expiry, session persistence ordering, location-permission action selection, and TrackPoint queue retry / `401` behavior.
 
 ## API dependency
 

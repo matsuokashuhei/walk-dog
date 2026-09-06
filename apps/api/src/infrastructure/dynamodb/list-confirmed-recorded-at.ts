@@ -12,7 +12,7 @@ import type { DynamoDbConfig } from '../config/index.js'
 type DynamoDbSender = Pick<DynamoDBClient, 'send'>
 
 function numberFromItem(item: Record<string, AttributeValue>, key: 'latitude' | 'longitude'): number {
-  const value = item[key]?.N
+  const value = item[key].N
   if (value === undefined) {
     throw new Error(`confirmed track point missing ${key}`)
   }
@@ -20,7 +20,7 @@ function numberFromItem(item: Record<string, AttributeValue>, key: 'latitude' | 
 }
 
 function pointFromItem(item: Record<string, AttributeValue>): ConfirmedTrackPoint {
-  const recordedAt = item.recordedAt?.S
+  const recordedAt = item.recordedAt.S
   if (recordedAt === undefined) {
     throw new Error('confirmed track point missing recordedAt')
   }

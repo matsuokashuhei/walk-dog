@@ -54,8 +54,6 @@ export type AcceptTrackPointInput = Pick<NewWalkTrackPoint, 'walkId' | 'recorded
   ownerId: typeof walks.$inferSelect['ownerId']
 }
 
-export type EventType = WalkEventRow['type']
-
 export type WalkEvent = Pick<
   WalkEventRow,
   'eventId' | 'walkId' | 'participantDogId' | 'type' | 'occurredAt' | 'latitude' | 'longitude'

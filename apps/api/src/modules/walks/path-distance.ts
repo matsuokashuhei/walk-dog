@@ -9,13 +9,13 @@ function haversineMeters(
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180
   const deltaLatitude = toRadians(latitude2 - latitude1)
   const deltaLongitude = toRadians(longitude2 - longitude1)
-  const a =
+  const chord =
     Math.sin(deltaLatitude / 2) ** 2 +
     Math.cos(toRadians(latitude1)) *
       Math.cos(toRadians(latitude2)) *
       Math.sin(deltaLongitude / 2) ** 2
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return EARTH_RADIUS_METERS * c
+  const centralAngle = 2 * Math.atan2(Math.sqrt(chord), Math.sqrt(1 - chord))
+  return EARTH_RADIUS_METERS * centralAngle
 }
 
 export function pathDistanceMeters(
@@ -27,8 +27,8 @@ export function pathDistanceMeters(
 
   let totalMeters = 0
   for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1]!
-    const current = points[index]!
+    const previous = points[index - 1]
+    const current = points[index]
     totalMeters += haversineMeters(
       previous.latitude,
       previous.longitude,

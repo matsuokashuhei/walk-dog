@@ -158,10 +158,10 @@ function createSut(opts: {
         return events
       },
     }),
-    confirmedFake(async (id) => {
-      listPointsCalls.push(id)
+    confirmedFake(async (walkId) => {
+      listPointsCalls.push(walkId)
       if (opts.listPoints) {
-        return opts.listPoints(id)
+        return opts.listPoints(walkId)
       }
       return trackPoints
     }),

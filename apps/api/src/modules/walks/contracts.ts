@@ -22,7 +22,7 @@ export const acceptTrackPointRequestSchema = z.strictObject({
   longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
 })
 
-export const walkEventTypeSchema = z.enum(['pee', 'poop', 'sniff', 'greet'])
+const walkEventTypeSchema = z.enum(['pee', 'poop', 'sniff', 'greet'])
 
 export const recordEventRequestSchema = z.strictObject({
   eventId: z.uuid(),

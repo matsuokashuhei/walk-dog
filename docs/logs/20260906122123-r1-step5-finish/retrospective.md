@@ -29,14 +29,14 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 - **Trigger:** ユーザーがマージを依頼した時点で `check / lint` が失敗していた。修正コミットを後から載せた。
 - **Missed behavior:** マージ実行の前に必須チェックが緑かを確認し、赤なら先に直す、という順序を守らなかった。
 - **Desired behavior:** マージ前に必須 checks を確認する。赤なら原因を直し push して緑を待ってからマージする。
-- **Skill action:** `finishing-a-development-branch` — マージ実行前に必須 CI が緑であることを確認する。
+- **Skill action:** `publishing-pull-requests` — マージ実行前に必須 CI が緑であることを確認する。
 
 ### 4. 既存 PR があるのに「create a PR」経路のように振る舞った
 
 - **Trigger:** マージ承認をスキップしたあとユーザーが「sorry, create a pr」と言い、既存の #93 を更新する必要があった。
 - **Missed behavior:** 既に open な PR がある状態で、更新と新規作成の区別をはっきり言わなかった。
 - **Desired behavior:** 同じブランチに open PR があるときは「既存 PR を更新する」と明言し、新規作成しない。
-- **Skill action:** Finding 3 と同じ `finishing-a-development-branch` — open PR があるときは update、create と言わない。
+- **Skill action:** Finding 3 と同じ `publishing-pull-requests` — open PR があるときは update、create と言わない。
 
 ### 5. Codex 実行の E2E を親が未確認のまま進みうる
 
@@ -47,10 +47,10 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 
 ### 6. E2E 概要を PR description に載せることがワークフローに無かった
 
-- **Trigger:** ユーザーがマージ済み PR の description に E2E 結果概要を画像付きで書くよう求め、続けて「ワークフローにも追加しろ」と指示した。
-- **Missed behavior:** 証跡をセッションディレクトリに残すだけで、PR description への概要掲載をスキル手順にしていなかった。
-- **Desired behavior:** iOS E2E 証跡があるセッションでは、PR の作成・更新時に必須状態ごとの概要と埋め込み画像を description に載せる。
-- **Skill action:** `recording-ios-e2e-evidence` と `finishing-a-development-branch` — PR description に E2E 概要と画像を含める。
+- **Trigger:** ユーザーがマージ済み PR の description に E2E 結果概要を画像付きで書くよう求め、続けて既存スキルを肥大化させず PR 用スキルを作れと指示した。
+- **Missed behavior:** 証跡をセッションディレクトリに残すだけで、PR description への概要掲載を独立スキルにしていなかった。既存スキルへ追記して肥大化させた。
+- **Desired behavior:** PR の作成・更新・description・マージ確認は専用スキルに置く。iOS E2E 証跡があるときは必須状態ごとの概要と埋め込み画像を description に載せる。
+- **Skill action:** `publishing-pull-requests` を新設。`recording-ios-e2e-evidence` / `finishing-a-development-branch` には短い委任だけ残す。
 
 ## Skill outcomes
 
@@ -58,7 +58,9 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 | --- | --- | --- |
 | Update | `.agents/skills/confirming-development-specifications/SKILL.md` | implemented |
 | Update | `AGENTS.md` | implemented |
-| Update | `.agents/skills/finishing-a-development-branch/SKILL.md` | implemented |
-| Update | `.agents/skills/recording-ios-e2e-evidence/SKILL.md` | implemented |
+| Update | `.agents/skills/finishing-a-development-branch/SKILL.md` | implemented（PR 手順は委任） |
+| Update | `.agents/skills/recording-ios-e2e-evidence/SKILL.md` | implemented（親確認 + PR へ委任） |
+| Update | `.agents/skills/run-dev-session/SKILL.md` | implemented（公開フェーズで PR スキルを指名） |
+| Create | `.agents/skills/publishing-pull-requests/SKILL.md` | implemented |
 
-ユーザーが全提案を承認した。加えて E2E 概要の PR description 掲載をワークフローへ追加した。公開は PR #94。
+ユーザーが全提案を承認した。E2E 概要の PR 掲載は `publishing-pull-requests` に切り出した。公開は PR #94。

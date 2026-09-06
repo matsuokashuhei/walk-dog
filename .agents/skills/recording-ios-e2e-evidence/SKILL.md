@@ -15,7 +15,7 @@ description: iOS 自動 E2E の実行結果、成功状態、入力エラー状�
 4. `e2e-report.md` に実行環境、実行コマンド、確認した画面状態、スクリーンショットを記載する。
 5. 成功状態は遷移完了を示す画面で撮る。入力エラー状態は検証メッセージが見える画面で撮る。送信しない契約でも、client invalid を起こしてから撮る。未入力の Idle を入力エラーと名乗らない。認証後状態は認証済み画面で撮る。
 6. レポートの相対パスと保存済み画像を確認し、テスト結果と画面証跡を同じセッション成果物に含める。
-7. セッションの Pull Request がある（または作る）とき、PR description に E2E 結果の概要を書く。各必須状態について、何を確認したかの一文と、対応する PNG を Markdown 画像として埋め込む。画像 URL はリポジトリ上の証跡パス（例: `raw.githubusercontent.com/.../docs/logs/<timestamp>-<slug>/screenshots/ios-....png`）を使う。詳細は `e2e-report.md` へリンクする。
+7. PR description への概要掲載は `publishing-pull-requests` に任せる。
 
 ## 記録形式
 
@@ -33,4 +33,3 @@ description: iOS 自動 E2E の実行結果、成功状態、入力エラー状�
 - `e2e-report.md` は各 PNG を Markdown で添付し、実行結果を記載する。
 - E2E が返した結果と、画面で確認した状態を対応付ける。
 - シミュレータ操作を別エージェントに委任した場合も、親が必須 PNG と `e2e-report.md` を契約どおり確認するまで合格にしない。委任先の完了宣言だけでは足りない。
-- セッション PR の description に、必須状態ごとの概要文と埋め込み画像がある。

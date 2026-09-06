@@ -118,30 +118,9 @@ git push -u origin <feature-branch>
 # git push origin HEAD:refs/heads/<new-branch>
 ```
 
-If an open pull request already exists for this branch, update that PR
-(push commits, edit description). Say you are updating the existing PR.
-Do not describe the work as creating a new PR.
-
-Otherwise create the pull/merge request against <base-branch> with the
-forge's tooling — its CLI if one is available, or the creation URL most
-forges print when you push — following the repo's PR template and
-conventions if present, and report the URL to your human partner.
-
-When the session has iOS E2E evidence (`e2e-report.md` and required
-`screenshots/*.png`), the PR description must include an E2E overview:
-one short result line per required state plus embedded Markdown images
-for those PNGs (follow `recording-ios-e2e-evidence`). Do this when
-creating or updating the PR. If evidence lands after the PR exists,
-edit the PR description then — including after merge if the partner
-asks to publish the summary on that PR.
+Push のあと、PR の作成と更新・説明文（E2E 証跡があるときの概要と画像を含む）・マージ確認は `publishing-pull-requests` に従う。PR の URL を相手に返す。
 
 Keep the worktree — your human partner iterates on PR feedback there.
-
-When your human partner asks to merge the PR:
-
-1. Confirm required CI checks are green.
-2. If any required check is red, fix, push, and wait for green before merging.
-3. Only then run the forge merge command.
 
 When your human partner confirms the PR merged, continue with `run-dev-session` phase 9 (`retrospecting-dev-session`). Merge is not session complete.
 
@@ -235,8 +214,6 @@ place. If your platform provides a workspace-exit tool, use it.
 |--------|---------|
 | "Tests passed earlier this session" | Run the suite on the tree you are about to integrate. A green run only proves the tree it ran on. |
 | "They obviously want it merged" | Integration is your human partner's decision. Present the menu and wait. |
-| "CI was green earlier — merge now" | Re-check required checks on the commit you are merging. Red means fix first. |
-| "Open PR exists, but they said create a PR" | Update the existing PR. Say update, not create. |
 | "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when your human partner asks for it in so many words. |
 | "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |
 | "The PR is up, so the worktree is clutter now" | PR feedback gets fixed in that worktree. It stays until the work lands. |

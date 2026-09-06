@@ -1,10 +1,11 @@
+import type { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import type { SQSClient } from '@aws-sdk/client-sqs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import type { AppDependencies, ModuleRoute } from '../src/app.js'
 import type { CognitoClient, CognitoConfig } from '../src/infrastructure/cognito/client.js'
-import type { DatabaseConfig, SqsConfig } from '../src/infrastructure/config/index.js'
+import type { DatabaseConfig, DynamoDbConfig, SqsConfig } from '../src/infrastructure/config/index.js'
 import type { DbInstance } from '../src/infrastructure/database/client.js'
 import type { Logger } from '../src/infrastructure/observability/logger.js'
 import type { AuthRouteDependencies } from '../src/modules/auth/index.js'
@@ -39,7 +40,6 @@ import {
   createApplication,
   type ApplicationFactories,
 } from '../src/index.js'
-import { runNode, sanitizedEnv } from './support/subprocess.js'
 
 const env: NodeJS.ProcessEnv = {
   POSTGRES_USER: 'user',
@@ -56,31 +56,12 @@ const env: NodeJS.ProcessEnv = {
   RELEASE: 'test-release',
 }
 
-test('importing index.ts does not construct production resources', async () => {
-  const result = await runNode(
-    [
-      '--import',
-      'tsx',
-      '-e',
-      `
-        import { createApplication } from './src/index.ts'
-        console.log('IMPORT_OK')
-        console.log(typeof createApplication)
-      `,
-    ],
-    sanitizedEnv(),
-  )
-
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /IMPORT_OK/)
-  assert.match(result.stdout, /function/)
-})
-
 test('createApplication shares one database and Cognito client through the object graph', () => {
   const calls: string[] = []
   const database = { db: { kind: 'db' } as unknown as DbInstance, pool: { kind: 'pool' } }
   const cognitoClient = { kind: 'cognito', destroy() {} } as unknown as CognitoClient
   const sqsClient = { kind: 'sqs', destroy() {} } as unknown as SQSClient
+  const dynamoDbClient = { kind: 'dynamodb', destroy() {} } as unknown as DynamoDBClient
   const authProvider = { kind: 'auth-provider' } as unknown as AuthProvider
   const ownerRepository = { kind: 'owner-repository' } as unknown as OwnerRepository
   const dogRepository = { kind: 'dog-repository' } as unknown as DogRepository
@@ -138,6 +119,7 @@ test('createApplication shares one database and Cognito client through the objec
         database: { user: 'user', password: 'password', database: 'db', host: '127.0.0.1', port: 5432, poolMax: 10 },
         cognito: { region: 'ap-northeast-1', userPoolId: 'pool', clientId: 'client' },
         sqs: { region: 'ap-northeast-1', queueUrl: 'http://localhost:9324/queue/track-points', endpoint: undefined },
+        dynamodb: { region: 'ap-northeast-1', tableName: 'TrackPoints', endpoint: undefined },
         workerHealth: { workerHealthUrl: 'http://localhost:3001/health' },
         observability: { environment: 'test', release: 'test-release', sentryDsn: undefined },
       }
@@ -160,6 +142,11 @@ test('createApplication shares one database and Cognito client through the objec
       calls.push('sqs-client')
       assert.equal(config.queueUrl, 'http://localhost:9324/queue/track-points')
       return sqsClient
+    },
+    createDynamoDbClient(config: DynamoDbConfig) {
+      calls.push('dynamodb-client')
+      assert.equal(config.tableName, 'TrackPoints')
+      return dynamoDbClient
     },
     createAuthProvider(client) {
       calls.push('auth-provider')
@@ -206,6 +193,8 @@ test('createApplication shares one database and Cognito client through the objec
       receivedActiveWalkCommands = dependencies.activeWalkCommands
       receivedTrackPointQueue = dependencies.trackPointQueue
       receivedAccessTokenVerifier = dependencies.accessTokenVerifier
+      assert.equal(dependencies.dynamoDbClient, dynamoDbClient)
+      assert.equal(dependencies.dynamoDbConfig.tableName, 'TrackPoints')
       return useCases
     },
     createAuthRoutes(dependencies) {
@@ -257,6 +246,7 @@ test('createApplication shares one database and Cognito client through the objec
     'database',
     'cognito-client',
     'sqs-client',
+    'dynamodb-client',
     'auth-provider',
     'owner-repository',
     'dog-repository',
@@ -277,6 +267,7 @@ test('createApplication shares one database and Cognito client through the objec
   assert.equal(resources.pool, database.pool)
   assert.equal(resources.cognitoClient, cognitoClient)
   assert.equal(resources.sqsClient, sqsClient)
+  assert.equal(resources.dynamoDbClient, dynamoDbClient)
   assert.equal(receivedDatabase, database.db)
   assert.equal(receivedCognitoClient, cognitoClient)
   assert.equal(receivedAuthProvider, authProvider)

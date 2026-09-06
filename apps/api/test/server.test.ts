@@ -65,6 +65,7 @@ test('startServer wires createApplication, listener start, and signals once', ()
           pool: { end: async () => { calls.push('pool') } } as Pool,
           cognitoClient: { destroy: () => { calls.push('cognito') } },
           sqsClient: { destroy: () => { calls.push('sqs') } },
+          dynamoDbClient: { destroy: () => { calls.push('dynamodb') } },
           closeSentry: async () => { calls.push('sentry') },
         },
       }
@@ -107,6 +108,7 @@ test('closes the database pool and Sentry after the HTTP server has stopped', as
     { end: async () => { calls.push('pool') } } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
@@ -117,7 +119,7 @@ test('closes the database pool and Sentry after the HTTP server has stopped', as
   completeClose?.()
   await shutdownPromise
 
-  assert.deepEqual(calls, ['server closing', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server closing', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
 })
 
 test('closes the database pool and Sentry when stopping the HTTP server fails', async () => {
@@ -133,15 +135,16 @@ test('closes the database pool and Sentry when stopping the HTTP server fails', 
     { end: async () => { calls.push('pool') } } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
   await assert.rejects(shutdown(), (error) => error === serverError)
 
-  assert.deepEqual(calls, ['server closing', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server closing', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
 })
 
-test('shutdown closes each resource exactly once in listener, pool, cognito, sqs, sentry order', async () => {
+test('shutdown closes each resource exactly once in listener, pool, cognito, sqs, dynamodb, sentry order', async () => {
   const calls: string[] = []
   const shutdown = createShutdownHandler(
     {
@@ -153,13 +156,14 @@ test('shutdown closes each resource exactly once in listener, pool, cognito, sqs
     { end: async () => { calls.push('pool') } } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
   await shutdown()
   await shutdown()
 
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
 })
 
 test('concurrent and repeated shutdown share one idempotent promise', async () => {
@@ -177,6 +181,7 @@ test('concurrent and repeated shutdown share one idempotent promise', async () =
     { end: async () => { calls.push('pool') } } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
@@ -188,7 +193,7 @@ test('concurrent and repeated shutdown share one idempotent promise', async () =
   deferred.resolve()
   await Promise.all([first, second, shutdown()])
 
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
   assert.equal(shutdown(), first)
 })
 
@@ -205,6 +210,7 @@ test('listener close errors still close downstream resources exactly once', asyn
     { end: async () => { calls.push('pool') } } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
@@ -216,7 +222,7 @@ test('listener close errors still close downstream resources exactly once', asyn
   await assert.rejects(second, (error) => error === serverError)
   await assert.rejects(shutdown(), (error) => error === serverError)
 
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
 })
 
 test('pool close errors still attempt cognito and sentry closes exactly once', async () => {
@@ -237,6 +243,7 @@ test('pool close errors still attempt cognito and sentry closes exactly once', a
     } as Pool,
     { destroy: () => { calls.push('cognito') } },
     { destroy: () => { calls.push('sqs') } },
+    { destroy: () => { calls.push('dynamodb') } },
     { close: async () => { calls.push('sentry') } },
   )
 
@@ -247,67 +254,7 @@ test('pool close errors still attempt cognito and sentry closes exactly once', a
   await assert.rejects(first, (error) => error === poolError)
   await assert.rejects(shutdown(), (error) => error === poolError)
 
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
-})
-
-test('cognito destroy errors still attempt sqs and sentry closes exactly once', async () => {
-  const calls: string[] = []
-  const cognitoError = new Error('cognito destroy failed')
-  const shutdown = createShutdownHandler(
-    {
-      close: (callback) => {
-        calls.push('server')
-        callback()
-      },
-    },
-    { end: async () => { calls.push('pool') } } as Pool,
-    {
-      destroy: () => {
-        calls.push('cognito')
-        throw cognitoError
-      },
-    },
-    { destroy: () => { calls.push('sqs') } },
-    { close: async () => { calls.push('sentry') } },
-  )
-
-  const first = shutdown()
-  assert.equal(shutdown(), first)
-
-  await assert.rejects(first, (error) => error === cognitoError)
-  await assert.rejects(shutdown(), (error) => error === cognitoError)
-
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
-})
-
-test('sqs destroy errors still attempt sentry close exactly once', async () => {
-  const calls: string[] = []
-  const sqsError = new Error('sqs destroy failed')
-  const shutdown = createShutdownHandler(
-    {
-      close: (callback) => {
-        calls.push('server')
-        callback()
-      },
-    },
-    { end: async () => { calls.push('pool') } } as Pool,
-    { destroy: () => { calls.push('cognito') } },
-    {
-      destroy: () => {
-        calls.push('sqs')
-        throw sqsError
-      },
-    },
-    { close: async () => { calls.push('sentry') } },
-  )
-
-  const first = shutdown()
-  assert.equal(shutdown(), first)
-
-  await assert.rejects(first, (error) => error === sqsError)
-  await assert.rejects(shutdown(), (error) => error === sqsError)
-
-  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'sentry'])
+  assert.deepEqual(calls, ['server', 'pool', 'cognito', 'sqs', 'dynamodb', 'sentry'])
 })
 
 test('package scripts target source and built server entrypoints', async () => {

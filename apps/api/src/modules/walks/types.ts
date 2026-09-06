@@ -62,13 +62,28 @@ export type StartWalk = (input: {
   | { ok: false; error: 'not_found' | 'active_walk_exists' | 'idempotency_conflict' }
 >
 
+export type FinishWalkClock = {
+  now(): number
+}
+
+export type FinishWalkSleep = {
+  sleep(delayMs: number): Promise<void>
+}
+
 export type FinishWalk = (input: {
   cognitoSubject: string
   walkId: string
   idempotencyKey: string
 }) => Promise<
   | { ok: true; walk: CompletedWalk }
-  | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
+  | {
+      ok: false
+      error:
+        | 'not_found'
+        | 'walk_not_recording'
+        | 'idempotency_conflict'
+        | 'service_unavailable'
+    }
 >
 
 export type DeleteWalk = (input: {

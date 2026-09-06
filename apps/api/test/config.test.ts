@@ -8,6 +8,7 @@ import {
   loadSqsConfig,
   loadWorkerHealthConfig,
   loadWorkerListenConfig,
+  FINISH_CONFIRMATION_TIMEOUT_MS,
 } from '../src/infrastructure/config/index.js'
 
 const validPostgresEnv = {
@@ -188,6 +189,10 @@ test('rejects a missing DYNAMODB_TABLE', () => {
   const env = { ...validDynamoDbEnv }
   delete (env as { DYNAMODB_TABLE?: string }).DYNAMODB_TABLE
   assert.throws(() => loadDynamoDbConfig(env), /DYNAMODB_TABLE/)
+})
+
+test('finish confirmation timeout is 30 seconds', () => {
+  assert.equal(FINISH_CONFIRMATION_TIMEOUT_MS, 30_000)
 })
 
 test('loads WORKER_HEALTH_URL', () => {

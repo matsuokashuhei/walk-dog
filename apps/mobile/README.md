@@ -67,7 +67,9 @@ During Recording, the app samples location every 10 seconds and sends each point
 
 Each accepted sample is appended to the on-device path and outbound queue, then the queue is flushed in order. Retryable API errors keep the point in the queue and retry on the next sample or flush. Non-retryable errors (except `401`) drop the point.
 
-Finish pauses sampling, flushes the outbound queue, then calls `POST /v1/walks/:walkId/finish`. Finish fails when any point remains queued after flush.
+Finish pauses sampling, flushes the outbound queue, then calls `POST /v1/walks/:walkId/finish`. The client waits for the API to confirm the walk is finished in DynamoDB before leaving Recording. Finish fails when any point remains queued after flush.
+
+When finish fails, Recording stays active and **終了する** remains available for retry. A `503` with `code: "SERVICE_UNAVAILABLE"` shows the API message (for example「終了処理を完了できませんでした。もう一度お試しください。」). Other failures show a generic retry message.
 
 ### Authentication expiry during Recording
 

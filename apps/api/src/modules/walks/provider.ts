@@ -7,3 +7,7 @@ export interface TrackPointQueue {
 export interface ConfirmTrackPoint {
   confirm(trackPoint: TrackPoint): Promise<void>
 }
+
+export type ConfirmedTrackPoints = {
+  listRecordedAt(walkId: string): Promise<Date[]>
+}

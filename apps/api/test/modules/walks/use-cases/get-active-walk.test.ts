@@ -56,6 +56,9 @@ function walksFake(getActiveByOwner: WalkRepository['getActiveByOwner']): WalkRe
     async acceptTrackPoint() {
       throw new Error('unexpected acceptTrackPoint')
     },
+    async listAcceptedRecordedAt() {
+      throw new Error('unexpected listAcceptedRecordedAt')
+    },
   }
 }
 

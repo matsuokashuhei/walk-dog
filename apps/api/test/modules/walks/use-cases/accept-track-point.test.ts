@@ -66,6 +66,9 @@ function walksFake(acceptTrackPoint: WalkRepository['acceptTrackPoint']): WalkRe
       throw new Error('unexpected failIfPresent')
     },
     acceptTrackPoint,
+    async listAcceptedRecordedAt() {
+      throw new Error('unexpected listAcceptedRecordedAt')
+    },
   }
 }
 

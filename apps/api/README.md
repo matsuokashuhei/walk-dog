@@ -113,6 +113,21 @@ aws dynamodb scan \
 
 `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from `.env.local` are sufficient for the local emulators.
 
+## Finish
+
+`POST /v1/walks/:walkId/finish` waits up to 30 seconds for every accepted TrackPoint on that Walk to appear in DynamoDB, then returns the Completed Walk. A Walk with zero accepted points completes without waiting.
+
+When confirmation is still incomplete after 30 seconds, the API returns:
+
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+
+{"code":"SERVICE_UNAVAILABLE","message":"終了処理を完了できませんでした。もう一度お試しください。","requestId":"…","retryable":true}
+```
+
+The Walk stays `recording`. Retry the same Finish with the same `Idempotency-Key`.
+
 ## Quality checks
 
 From `apps/api`:

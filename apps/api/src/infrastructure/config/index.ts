@@ -88,6 +88,8 @@ export function loadSqsConfig(env: NodeJS.ProcessEnv): SqsConfig {
   }
 }
 
+export const FINISH_CONFIRMATION_TIMEOUT_MS = 30_000
+
 export type DynamoDbConfig = {
   region: string
   tableName: string

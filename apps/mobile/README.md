@@ -19,6 +19,22 @@ EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3000
 
 Rebuild the native app after changing `EXPO_PUBLIC_*` values.
 
+### Physical iPhone (same LAN as Compose)
+
+Simulator can use `http://127.0.0.1:3000`. A physical device cannot.
+
+1. Start Compose from `apps/` (`docker compose -f compose.yml up --build -d`).
+2. Confirm `curl --fail http://127.0.0.1:3000/health` on the Mac.
+3. Find the Mac LAN address (e.g. `ipconfig getifaddr en0`).
+4. Set the device-reachable URL in `apps/mobile/.env`:
+
+```
+EXPO_PUBLIC_API_BASE_URL=http://<mac-lan-ip>:3000
+```
+
+5. Rebuild the native app (`npx expo run:ios --device`) after any `EXPO_PUBLIC_*` change.
+6. Ensure the iPhone and Mac share Wi-Fi, and that macOS firewall allows inbound TCP 3000 if prompted.
+
 ## Run
 
 ```bash

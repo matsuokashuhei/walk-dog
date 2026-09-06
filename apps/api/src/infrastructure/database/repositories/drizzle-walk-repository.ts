@@ -22,6 +22,7 @@ import { walkParticipants } from '../schema/walk-participant.js'
 import { walkTrackPoints } from '../schema/walk-track-point.js'
 import { walks } from '../schema/walk.js'
 import { acceptWalkTrackPoint } from './accept-track-point.js'
+import { recordWalkEvent } from './record-event.js'
 
 type WalkRow = typeof walks.$inferSelect
 type WalkParticipantRow = typeof walkParticipants.$inferSelect
@@ -40,6 +41,7 @@ export function createDrizzleWalkRepository(database: DbInstance): WalkRepositor
     failIfPresent: (input) => failIfPresent(database, input),
     acceptTrackPoint: (input) => acceptWalkTrackPoint(database, input),
     listAcceptedRecordedAt: (input) => listAcceptedRecordedAt(database, input),
+    recordEvent: (input) => recordWalkEvent(database, input),
   }
 }
 

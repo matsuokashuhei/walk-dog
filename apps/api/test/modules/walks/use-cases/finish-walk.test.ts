@@ -81,6 +81,9 @@ function walksFake(opts: {
       throw new Error('unexpected acceptTrackPoint')
     },
     listAcceptedRecordedAt: opts.listAccepted,
+    async recordEvent() {
+      throw new Error('unexpected recordEvent')
+    },
   }
 }
 

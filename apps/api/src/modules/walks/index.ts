@@ -3,6 +3,7 @@ export type {
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
+  RecordEvent,
   StartWalk,
 } from './types.js'
 export type { TrackPointQueue } from './provider.js'

@@ -2,9 +2,11 @@ import type {
   AcceptTrackPointInput,
   CompletedWalk,
   FinishWalkInput,
+  RecordEventInput,
   RecordingWalk,
   StartWalkInput,
   TrackPoint,
+  WalkEvent,
 } from './types.js'
 
 export interface WalkRepository {
@@ -15,4 +17,5 @@ export interface WalkRepository {
   failIfPresent(input: { ownerId: string }): Promise<void>
   acceptTrackPoint(input: AcceptTrackPointInput): Promise<TrackPoint>
   listAcceptedRecordedAt(input: { ownerId: string; walkId: string }): Promise<Date[]>
+  recordEvent(input: RecordEventInput): Promise<{ event: WalkEvent; created: boolean }>
 }

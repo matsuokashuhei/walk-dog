@@ -59,6 +59,9 @@ function walksFake(getActiveByOwner: WalkRepository['getActiveByOwner']): WalkRe
     async listAcceptedRecordedAt() {
       throw new Error('unexpected listAcceptedRecordedAt')
     },
+    async recordEvent() {
+      throw new Error('unexpected recordEvent')
+    },
   }
 }
 

@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy'
+import type { LocalWalkEvent } from './walk-event-schema.ts'
 import type { LocalTrackPoint } from './walk-track-point-schema.ts'
 
 type PathFile = Record<string, LocalTrackPoint[]>
@@ -17,6 +18,10 @@ function pathUri() {
 
 function queueUri() {
   return documentUri('walk-outbound-queue.json')
+}
+
+function eventQueueUri() {
+  return documentUri('walk-event-outbound-queue.json')
 }
 
 function recordingUri() {
@@ -71,6 +76,28 @@ export function createFileTrackPointStorage(walkId: string) {
       const all = await loadOutboundQueue()
       const others = all.filter((point) => point.walkId !== walkId)
       await saveOutboundQueue([...others, ...points])
+    },
+  }
+}
+
+export async function loadEventOutboundQueue(): Promise<LocalWalkEvent[]> {
+  return readJson<LocalWalkEvent[]>(eventQueueUri(), [])
+}
+
+export async function saveEventOutboundQueue(events: LocalWalkEvent[]): Promise<void> {
+  await writeJson(eventQueueUri(), events)
+}
+
+export function createFileEventStorage(walkId: string) {
+  return {
+    loadQueue: async () => {
+      const all = await loadEventOutboundQueue()
+      return all.filter((event) => event.walkId === walkId)
+    },
+    saveQueue: async (events: LocalWalkEvent[]) => {
+      const all = await loadEventOutboundQueue()
+      const others = all.filter((event) => event.walkId !== walkId)
+      await saveEventOutboundQueue([...others, ...events])
     },
   }
 }

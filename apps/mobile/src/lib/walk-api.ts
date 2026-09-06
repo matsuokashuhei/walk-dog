@@ -1,6 +1,18 @@
 import { apiRequest } from './api.ts'
+import type { WalkEventResponse, WalkEventType } from './walk-event-schema.ts'
 import type { LocalTrackPoint } from './walk-track-point-schema.ts'
 
+export {
+  localWalkEventSchema,
+  toLocalWalkEvent,
+  walkEventResponseSchema,
+  walkEventTypeSchema,
+} from './walk-event-schema.ts'
+export type {
+  LocalWalkEvent,
+  WalkEventResponse,
+  WalkEventType,
+} from './walk-event-schema.ts'
 export {
   localTrackPointSchema,
   toLocalTrackPoint,
@@ -32,9 +44,38 @@ export type CompletedWalkResponse = {
   startedAt: string
   completedAt: string
   durationSeconds: number
-  distanceMeters: 0
-  paceSecondsPerMeter: null
+  distanceMeters: number
+  paceSecondsPerMeter: number | null
   participants: WalkParticipantResponse[]
+}
+
+export type WalkDetailTrackPointResponse = {
+  recordedAt: string
+  latitude: number
+  longitude: number
+}
+
+export type WalkDetailEventResponse = {
+  eventId: string
+  participantDogId: string
+  type: WalkEventType
+  occurredAt: string
+  latitude: number
+  longitude: number
+}
+
+export type WalkDetailResponse = CompletedWalkResponse & {
+  trackPoints: WalkDetailTrackPointResponse[]
+  events: WalkDetailEventResponse[]
+}
+
+export type PostEventBody = {
+  eventId: string
+  participantDogId: string
+  type: WalkEventType
+  occurredAt: string
+  latitude: number
+  longitude: number
 }
 
 export async function getActiveWalk(accessToken: string): Promise<RecordingWalkResponse | null> {
@@ -72,6 +113,31 @@ export async function deleteWalk(accessToken: string, walkId: string): Promise<v
   await apiRequest(`/v1/walks/${walkId}`, {
     method: 'DELETE',
     accessToken,
+  })
+}
+
+export function getWalkDetail(accessToken: string, walkId: string): Promise<WalkDetailResponse> {
+  return apiRequest<WalkDetailResponse>(`/v1/walks/${walkId}`, {
+    accessToken,
+  })
+}
+
+export function postEvent(
+  accessToken: string,
+  walkId: string,
+  body: PostEventBody,
+): Promise<WalkEventResponse> {
+  return apiRequest<WalkEventResponse>(`/v1/walks/${walkId}/events`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      eventId: body.eventId,
+      participantDogId: body.participantDogId,
+      type: body.type,
+      occurredAt: body.occurredAt,
+      latitude: body.latitude,
+      longitude: body.longitude,
+    },
   })
 }
 

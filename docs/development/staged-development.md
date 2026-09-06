@@ -73,13 +73,15 @@ R1は次の縦切り順で進める。
 - 認証済みシェルは Dogs と Walk のタブを置く。Walk 画面は `/(tabs)/walk` で Ready、Starting、Recording、Completed、Failed を API の Active Walk と同期して表示する。
 - Walk Ready は同じ Owner の Dog を1頭以上選択し、foreground と background の位置情報を許可すると開始する。不足条件は理由を表示する。
 - 位置情報を許可している Walk 画面は Apple MapKit を背景にし、現在地にピンを表示する。未許可のときは地図と現在地を出さない。
-- Recording 中は取得した TrackPoint を `recordedAt` 順に結んで経路を描く。距離・pace・Walk Detail は後続。
+- Recording 中は取得した TrackPoint を `recordedAt` 順に結んで経路を描く。距離・pace・Event・Walk Detail は縦切り 6。
 - `POST /v1/walks` は開始成功時に `recording` を返す。Starting は開始要求中の画面状態。
 - この縦切りの Finish は受理済み点の確定を待たず Completed にする。TrackPoint 0件の Completed は距離 0。受理済み点の確定待ちは縦切り 5。
 - 10秒ごとのTrackPointを送信し、SQSワーカーがDynamoDBへ保存する。
 - TrackPoint の送信失敗は取得時刻と位置を保持し、Walk が `recording` のあいだ回数上限なく自動再送する。
 - Finishは、端末が未送信 TrackPoint を API へ吐き出したあと、`POST /v1/walks/:walkId/finish` がその Walk の PostgreSQL 受理済み点がすべて DynamoDB に存在するまで待ってから Completed へ遷移する。TrackPoint 0件は待ちなし。確定待ちが再試行可能な失敗のときは Completed にせず、Recording を維持して同じ Finish を Retry する。
 - Participant別のPee、Poop、Sniff、Greet、同一eventIdでの手動Retry、Walk Detailの経路、距離、時間、Eventを実装する。
+- Recording 中の距離と pace は端末が保持する TrackPoint から表示する。Finish と Walk Detail の `distanceMeters` / `paceSecondsPerMeter` は DynamoDB の確定 TrackPoint を `recordedAt` 順に結んだ経路長から算出する。TrackPoint 0件または距離 0 のとき `distanceMeters` は 0、`paceSecondsPerMeter` は `null`。
+- Finish 成功後の Completed から `/walks/:walkId` の Walk Detail へ遷移する。履歴一覧の offset ページングは R2。
 - 起動、Foreground復帰、タブ移動時にActive Walkを照合し、バックグラウンド位置記録をiPhone実機で検証する。
 
 ## R2: 振り返りとDog管理
@@ -109,10 +111,12 @@ R1は次の縦切り順で進める。
 - `GET /v1/dogs/:dogId` はAccess Tokenで認証し、そのOwnerが管理するDogとcurrentGoalを返す。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
 - `GET /v1/walks/active` はAccess Tokenで認証し、そのOwnerのActive Walkを返す。無いときは204。この縦切りの Active Walk の `state` は `recording`。`participants` は `walkParticipantId`、`dogId`、応答時点の `name`。
 - `POST /v1/walks` はAccess Tokenで認証し、`participantDogIds` と `Idempotency-Key` を受け、`recording` のWalkを返す。`participantDogIds` は同一OwnerのDogを1頭以上、重複なし。既にActive Walkがあるときは 409 `ACTIVE_WALK_EXISTS`。同一Keyで異なるbodyは 409 `IDEMPOTENCY_CONFLICT`。別Ownerまたは存在しない `dogId` は 404 `NOT_FOUND`。
-- `POST /v1/walks/:walkId/finish` はAccess Tokenで認証し、空のbody `{}` と `Idempotency-Key` を受け、その Walk の PostgreSQL 受理済み点がすべて DynamoDB に揃ったあと Completed Walkを返す。TrackPoint 0件は待ちなし。`durationSeconds` は `startedAt` から `completedAt` までの秒。`distanceMeters` はこの縦切りでは 0。`paceSecondsPerMeter` は距離0のため `null`。確定待ちの再試行可能な失敗は Recording を維持したまま Retry できる。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
+- `POST /v1/walks/:walkId/finish` はAccess Tokenで認証し、空のbody `{}` と `Idempotency-Key` を受け、その Walk の PostgreSQL 受理済み点がすべて DynamoDB に揃ったあと Completed Walkを返す。TrackPoint 0件は待ちなし。`durationSeconds` は `startedAt` から `completedAt` までの秒。`distanceMeters` は DynamoDB の確定 TrackPoint を `recordedAt` 順に結んだ経路長（メートル、整数）。TrackPoint 0件または距離 0 のとき `distanceMeters` は 0、`paceSecondsPerMeter` は `null`。距離が 1 以上のとき `paceSecondsPerMeter` は `durationSeconds / distanceMeters`。確定待ちの再試行可能な失敗は Recording を維持したまま Retry できる。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
 - `POST /v1/walks/:walkId/track-points` はAccess Tokenで認証し、`recordedAt`、`latitude`、`longitude` を受け、TrackPointを返す。`recordedAt` はモバイルが位置を取得した時刻で、Walk内の順序と冪等の正本。同一 `walkId` と `recordedAt` の再送は、同じ位置なら受理済みTrackPointを返す。位置が違うときは 409 `IDEMPOTENCY_CONFLICT`。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Ownerまたは存在しない `walkId` は 404 `NOT_FOUND`。
+- `POST /v1/walks/:walkId/events` はAccess Tokenで認証し、`eventId`、`participantDogId`、`type`、`occurredAt`、`latitude`、`longitude` を受け、Eventを返す。`type` は `pee` / `poop` / `sniff` / `greet`。`participantDogId` はその Walk の Participant。`eventId` はモバイルが生成する冪等キー。同一 `eventId` で同一内容の再送は受理済み Event を返す。内容が違うときは 409 `IDEMPOTENCY_CONFLICT`。`recording` ではないWalkは 409 `WALK_NOT_RECORDING`。別Owner、存在しない `walkId`、またはその Walk にいない `participantDogId` は 404 `NOT_FOUND`。
+- `GET /v1/walks/:walkId` はAccess Tokenで認証し、その Owner の Completed Walk Detail を返す。応答は Participant、`recordedAt` 順の経路点、`durationSeconds` / `distanceMeters` / `paceSecondsPerMeter`、Event 一覧。Event 0件は空配列。TrackPoint 0件は経路空配列と距離 0。`completed` ではない Walk、別Owner、または存在しない `walkId` は 404 `NOT_FOUND`。
 - `Idempotency-Key` はWalk開始、Finish、Goal追加で使用する。開始とFinishはEndpointごとに別名前空間。有効期間は処理開始から24時間。
-- `eventId` はEventの冪等キー。`recordedAt` はTrackPointのWalk内順序と冪等の正本。
+- `eventId` はEventの冪等キー。`recordedAt` はTrackPointのWalk内順序と冪等の正本。`occurredAt` と Event の位置は最初の操作時刻・位置を Retry でも保持する。
 - PostgreSQLはOwner、Dog、Goal Revision、Walk、Participant、Event、Preferenceを扱い、DynamoDBはTrackPointを扱う。
 
 ## 検証

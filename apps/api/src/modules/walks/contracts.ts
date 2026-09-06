@@ -22,6 +22,17 @@ export const acceptTrackPointRequestSchema = z.strictObject({
   longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
 })
 
+const walkEventTypeSchema = z.enum(['pee', 'poop', 'sniff', 'greet'])
+
+export const recordEventRequestSchema = z.strictObject({
+  eventId: z.uuid(),
+  participantDogId: z.uuid(),
+  type: walkEventTypeSchema,
+  occurredAt: z.iso.datetime(),
+  latitude: z.number().gte(-90).lte(90).pipe(latitudeSchema),
+  longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
+})
+
 export const walkIdParamSchema = z.object({
   walkId: z.uuid(),
 })
@@ -52,8 +63,8 @@ const completedWalkSchema = z.object({
   startedAt: z.string(),
   completedAt: z.string(),
   durationSeconds: z.number(),
-  distanceMeters: z.literal(0),
-  paceSecondsPerMeter: z.null(),
+  distanceMeters: z.number().int().nonnegative(),
+  paceSecondsPerMeter: z.number().nullable(),
   participants: z.array(walkParticipantSchema),
 })
 
@@ -65,11 +76,42 @@ export const completedWalkResponseSchema = completedWalkSchema.extend({
   requestId: z.string(),
 })
 
+const walkDetailTrackPointSchema = z.object({
+  recordedAt: acceptTrackPointRequestSchema.shape.recordedAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+const walkDetailEventSchema = z.object({
+  eventId: recordEventRequestSchema.shape.eventId,
+  participantDogId: recordEventRequestSchema.shape.participantDogId,
+  type: walkEventTypeSchema,
+  occurredAt: recordEventRequestSchema.shape.occurredAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+export const walkDetailResponseSchema = completedWalkResponseSchema.extend({
+  trackPoints: z.array(walkDetailTrackPointSchema),
+  events: z.array(walkDetailEventSchema),
+})
+
 export const trackPointResponseSchema = z.strictObject({
   requestId: errorSchema.shape.requestId,
   trackPointId: z.uuid(),
   walkId: walkIdParamSchema.shape.walkId,
   recordedAt: acceptTrackPointRequestSchema.shape.recordedAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+export const eventResponseSchema = z.strictObject({
+  requestId: errorSchema.shape.requestId,
+  eventId: recordEventRequestSchema.shape.eventId,
+  walkId: walkIdParamSchema.shape.walkId,
+  participantDogId: recordEventRequestSchema.shape.participantDogId,
+  type: walkEventTypeSchema,
+  occurredAt: recordEventRequestSchema.shape.occurredAt,
   latitude: latitudeSchema,
   longitude: longitudeSchema,
 })

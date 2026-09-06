@@ -5,9 +5,19 @@ import {
   WalkNotFoundError,
   WalkNotRecordingError,
 } from '../errors.js'
+import { pathDistanceMeters } from '../path-distance.js'
 import type { ConfirmedTrackPoints } from '../provider.js'
 import type { WalkRepository } from '../repository.js'
 import type { FinishWalk, FinishWalkClock, FinishWalkSleep } from '../types.js'
+
+type FinishWalkDeps = {
+  owners: OwnerRepository
+  walks: WalkRepository
+  confirmed: ConfirmedTrackPoints
+  clock: FinishWalkClock
+  sleep: FinishWalkSleep
+  timeoutMs: number
+}
 
 async function waitForConfirmation(
   confirmed: ConfirmedTrackPoints,
@@ -67,6 +77,64 @@ function mapFinishError(
   return null
 }
 
+async function loadConfirmedPoints(
+  confirmed: ConfirmedTrackPoints,
+  walkId: string,
+  acceptedCount: number,
+): Promise<{ ok: true; points: Awaited<ReturnType<ConfirmedTrackPoints['listPoints']>> } | { ok: false; error: 'service_unavailable' }> {
+  if (acceptedCount === 0) {
+    return { ok: true, points: [] }
+  }
+  try {
+    return { ok: true, points: await confirmed.listPoints(walkId) }
+  } catch {
+    return { ok: false, error: 'service_unavailable' }
+  }
+}
+
+async function finishWalk(
+  deps: FinishWalkDeps,
+  input: Parameters<FinishWalk>[0],
+): Promise<Awaited<ReturnType<FinishWalk>>> {
+  const owner = await deps.owners.resolveByCognitoSubject(input.cognitoSubject)
+  const bodyHash = createHash('sha256').update('{}').digest('hex')
+  try {
+    const accepted = await loadAccepted(deps.walks, owner.ownerId, input.walkId)
+    if (accepted.length > 0) {
+      const status = await waitForConfirmation(
+        deps.confirmed,
+        deps.clock,
+        deps.sleep,
+        deps.timeoutMs,
+        input.walkId,
+        accepted,
+      )
+      if (status === 'service_unavailable') {
+        return { ok: false, error: 'service_unavailable' }
+      }
+    }
+    const loaded = await loadConfirmedPoints(deps.confirmed, input.walkId, accepted.length)
+    if (!loaded.ok) {
+      return loaded
+    }
+    const distanceMeters = pathDistanceMeters(loaded.points)
+    const walk = await deps.walks.finish({
+      ownerId: owner.ownerId,
+      walkId: input.walkId,
+      idempotencyKey: input.idempotencyKey,
+      bodyHash,
+      distanceMeters,
+    })
+    return { ok: true, walk }
+  } catch (error) {
+    const mapped = mapFinishError(error)
+    if (mapped !== null) {
+      return mapped
+    }
+    throw error
+  }
+}
+
 export function createFinishWalk(
   owners: OwnerRepository,
   walks: WalkRepository,
@@ -75,37 +143,6 @@ export function createFinishWalk(
   sleep: FinishWalkSleep,
   timeoutMs: number,
 ): FinishWalk {
-  return async (input) => {
-    const owner = await owners.resolveByCognitoSubject(input.cognitoSubject)
-    const bodyHash = createHash('sha256').update('{}').digest('hex')
-    try {
-      const accepted = await loadAccepted(walks, owner.ownerId, input.walkId)
-      if (accepted.length > 0) {
-        const status = await waitForConfirmation(
-          confirmed,
-          clock,
-          sleep,
-          timeoutMs,
-          input.walkId,
-          accepted,
-        )
-        if (status === 'service_unavailable') {
-          return { ok: false, error: 'service_unavailable' }
-        }
-      }
-      const walk = await walks.finish({
-        ownerId: owner.ownerId,
-        walkId: input.walkId,
-        idempotencyKey: input.idempotencyKey,
-        bodyHash,
-      })
-      return { ok: true, walk }
-    } catch (error) {
-      const mapped = mapFinishError(error)
-      if (mapped !== null) {
-        return mapped
-      }
-      throw error
-    }
-  }
+  const deps = { owners, walks, confirmed, clock, sleep, timeoutMs }
+  return async (input) => finishWalk(deps, input)
 }

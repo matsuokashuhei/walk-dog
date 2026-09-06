@@ -16,7 +16,7 @@ export const recordingWalkRow = {
   walkId, ownerId, state: 'recording' as const, startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt,
 }
 export const completedWalkRow = {
-  walkId, ownerId, state: 'completed' as const, startedAt, completedAt, createdAt: startedAt, updatedAt: completedAt,
+  walkId, ownerId, state: 'completed' as const, startedAt, completedAt, distanceMeters: 0, createdAt: startedAt, updatedAt: completedAt,
 }
 export const failedWalkRow = {
   walkId, ownerId, state: 'failed' as const, startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt,
@@ -37,10 +37,10 @@ export const expectedRecordingWalk = {
 }
 export const expectedCompletedWalk = {
   walkId, ownerId, state: 'completed' as const, startedAt, completedAt,
-  durationSeconds: 630, distanceMeters: 0 as const, paceSecondsPerMeter: null, participants: expectedParticipants,
+  durationSeconds: 630, distanceMeters: 0, paceSecondsPerMeter: null, participants: expectedParticipants,
 }
 export const startInput = { ownerId, participantDogIds: [dogId1, dogId2], idempotencyKey: startKey, bodyHash: startHash }
-export const finishInput = { ownerId, walkId, idempotencyKey: finishKey, bodyHash: finishHash }
+export const finishInput = { ownerId, walkId, idempotencyKey: finishKey, bodyHash: finishHash, distanceMeters: 0 }
 export const ownedDogs = [{ dogId: dogId1, name: 'Mugi' }, { dogId: dogId2, name: 'Sora' }]
 export const startCommandKeyRow = {
   walkCommandKeyId: '019fc322-aaaa-73c4-9351-2a6ea25e4f01', ownerId, namespace: 'start' as const,

@@ -12,7 +12,6 @@ import type {
   FinishWalkInput,
   RecordingWalk,
   StartWalkInput,
-  WalkParticipant,
 } from '../../../modules/walks/types.js'
 import type { DbInstance } from '../client.js'
 import { isUniqueViolation, uniqueConstraint } from '../unique-violation.js'
@@ -22,6 +21,9 @@ import { walkParticipants } from '../schema/walk-participant.js'
 import { walkTrackPoints } from '../schema/walk-track-point.js'
 import { walks } from '../schema/walk.js'
 import { acceptWalkTrackPoint } from './accept-track-point.js'
+import { listWalkEvents } from './list-events.js'
+import { recordWalkEvent } from './record-event.js'
+import { toCompletedWalk, toRecordingWalk } from './walk-mappers.js'
 
 type WalkRow = typeof walks.$inferSelect
 type WalkParticipantRow = typeof walkParticipants.$inferSelect
@@ -34,12 +36,15 @@ const COMMAND_KEY_UNIQUE = 'walk_command_keys_owner_id_namespace_key_unique'
 export function createDrizzleWalkRepository(database: DbInstance): WalkRepositorySatisfiesActiveWalkCommands {
   return {
     getActiveByOwner: (ownerId) => getActiveByOwner(database, ownerId),
+    getCompletedByOwner: (input) => getCompletedByOwner(database, input),
     start: (input) => startWithRecovery(database, input),
     finish: (input) => finishWithRecovery(database, input),
     fail: (input) => failWalk(database, input),
     failIfPresent: (input) => failIfPresent(database, input),
     acceptTrackPoint: (input) => acceptWalkTrackPoint(database, input),
     listAcceptedRecordedAt: (input) => listAcceptedRecordedAt(database, input),
+    listEvents: (input) => listWalkEvents(database, input),
+    recordEvent: (input) => recordWalkEvent(database, input),
   }
 }
 
@@ -78,6 +83,17 @@ async function getActiveByOwner(database: WalkDb, ownerId: string): Promise<Reco
   return toRecordingWalk(walkRows[0], await selectParticipants(database, walkRows[0].walkId))
 }
 
+async function getCompletedByOwner(
+  database: WalkDb,
+  input: { ownerId: string; walkId: string },
+): Promise<CompletedWalk> {
+  const walkRow = await selectOwnedWalk(database, input.ownerId, input.walkId)
+  if (walkRow.state !== 'completed') {
+    throw new WalkNotFoundError()
+  }
+  return toCompletedWalk(walkRow, await selectParticipants(database, input.walkId))
+}
+
 async function startWalk(trx: WalkDb, input: StartWalkInput): Promise<RecordingWalk> {
   const existing = await resolveCommand(trx, input.ownerId, 'start', input.idempotencyKey, input.bodyHash)
   if (existing) {
@@ -102,7 +118,7 @@ async function finishWalk(trx: WalkDb, input: FinishWalkInput): Promise<Complete
   const completedAt = new Date()
   const updatedWalks = await trx
     .update(walks)
-    .set({ state: 'completed', completedAt })
+    .set({ state: 'completed', completedAt, distanceMeters: input.distanceMeters })
     .where(and(eq(walks.walkId, input.walkId), eq(walks.ownerId, input.ownerId), eq(walks.state, 'recording')))
     .returning()
   if (updatedWalks.length === 0) {
@@ -270,36 +286,6 @@ async function selectParticipants(database: WalkDb, walkId: string): Promise<Wal
     .from(walkParticipants)
     .where(eq(walkParticipants.walkId, walkId))
     .orderBy(asc(walkParticipants.position))
-}
-
-function toRecordingWalk(walk: WalkRow, participantRows: WalkParticipantRow[]): RecordingWalk {
-  return {
-    walkId: walk.walkId,
-    ownerId: walk.ownerId,
-    state: 'recording',
-    startedAt: walk.startedAt,
-    completedAt: null,
-    participants: participantRows.map(toParticipant),
-  }
-}
-
-function toCompletedWalk(walk: WalkRow, participantRows: WalkParticipantRow[]): CompletedWalk {
-  const completedAt = walk.completedAt as Date
-  return {
-    walkId: walk.walkId,
-    ownerId: walk.ownerId,
-    state: 'completed',
-    startedAt: walk.startedAt,
-    completedAt,
-    durationSeconds: Math.floor((completedAt.getTime() - walk.startedAt.getTime()) / 1000),
-    distanceMeters: 0,
-    paceSecondsPerMeter: null,
-    participants: participantRows.map(toParticipant),
-  }
-}
-
-function toParticipant(row: WalkParticipantRow): WalkParticipant {
-  return { walkParticipantId: row.walkParticipantId, dogId: row.dogId, name: row.name }
 }
 
 function throwIfRecordingUnique(error: unknown): void {

@@ -1,6 +1,13 @@
 import type { z } from 'zod'
-import { trackPointResponseSchema } from './contracts.js'
-import type { CompletedWalk, RecordingWalk, TrackPoint, WalkParticipant } from './types.js'
+import { eventResponseSchema, trackPointResponseSchema } from './contracts.js'
+import type {
+  CompletedWalk,
+  RecordingWalk,
+  TrackPoint,
+  WalkDetail,
+  WalkEvent,
+  WalkParticipant,
+} from './types.js'
 
 function toParticipantFields(participant: WalkParticipant) {
   return {
@@ -37,6 +44,25 @@ export function toCompletedWalkResponse(requestId: string, walk: CompletedWalk) 
   }
 }
 
+export function toWalkDetailResponse(requestId: string, detail: WalkDetail) {
+  return {
+    ...toCompletedWalkResponse(requestId, detail),
+    trackPoints: detail.trackPoints.map((point) => ({
+      recordedAt: point.recordedAt.toISOString(),
+      latitude: point.latitude,
+      longitude: point.longitude,
+    })),
+    events: detail.events.map((event) => ({
+      eventId: event.eventId,
+      participantDogId: event.participantDogId,
+      type: event.type,
+      occurredAt: event.occurredAt.toISOString(),
+      latitude: event.latitude,
+      longitude: event.longitude,
+    })),
+  }
+}
+
 export function toTrackPointResponse(
   requestId: string,
   trackPoint: TrackPoint,
@@ -48,5 +74,21 @@ export function toTrackPointResponse(
     recordedAt: trackPoint.recordedAt.toISOString(),
     latitude: trackPoint.latitude,
     longitude: trackPoint.longitude,
+  }
+}
+
+export function toEventResponse(
+  requestId: string,
+  event: WalkEvent,
+): z.infer<typeof eventResponseSchema> {
+  return {
+    requestId,
+    eventId: event.eventId,
+    walkId: event.walkId,
+    participantDogId: event.participantDogId,
+    type: event.type,
+    occurredAt: event.occurredAt.toISOString(),
+    latitude: event.latitude,
+    longitude: event.longitude,
   }
 }

@@ -141,11 +141,26 @@ test('finish completes the recording walk and stores a finish command key', asyn
   assert.ok(calls.includes('update'))
   assert.ok(calls.includes('insert'))
   assert.deepEqual(updateTables, [walks])
-  const updateSet = updateSets[0] as { state: string; completedAt: Date }
+  const updateSet = updateSets[0] as { state: string; completedAt: Date; distanceMeters: number }
   assert.equal(updateSet.state, 'completed')
+  assert.equal(updateSet.distanceMeters, 0)
   assert.ok(updateSet.completedAt instanceof Date)
   assert.deepEqual(insertTables, [walkCommandKeys])
   assert.deepEqual(insertValues[0], { ownerId, namespace: 'finish', key: finishKey, bodyHash: finishHash, walkId })
+})
+
+test('finish persists distanceMeters and returns pace when distance is positive', async () => {
+  const distanceMeters = 2100
+  const { database, updateSets } = createWalkDatabaseFake({
+    selectResults: [[], [recordingWalkRow], [participantRow1, participantRow2]],
+    updateResult: [{ ...completedWalkRow, distanceMeters }],
+    insertResults: [[finishCommandKeyRow]],
+  })
+  const result = await createDrizzleWalkRepository(database).finish({ ...finishInput, distanceMeters })
+  assert.equal(result.distanceMeters, distanceMeters)
+  assert.equal(result.paceSecondsPerMeter, 630 / distanceMeters)
+  const updateSet = updateSets[0] as { distanceMeters: number }
+  assert.equal(updateSet.distanceMeters, distanceMeters)
 })
 
 test('finish returns the existing completed walk when the finish key and body hash match', async () => {

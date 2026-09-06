@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Event + Detail — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --pin: #e23d28;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f3eee4;
+      min-height: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      position: relative;
+      z-index: 3;
+    }
+    .screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      padding: 0 12px 12px;
+      min-height: 420px;
+    }
+    .map-layer {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(160deg, #d7e4d8 0%, #c5d4c8 40%, #b7c9bc 100%);
+      z-index: 0;
+    }
+    .route {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .pin {
+      position: absolute;
+      left: 52%;
+      top: 28%;
+      width: 14px;
+      height: 14px;
+      margin-left: -7px;
+      margin-top: -7px;
+      background: var(--pin);
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      z-index: 2;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .pin-hole {
+      display: block;
+      width: 5px;
+      height: 5px;
+      margin: 4.5px auto 0;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .overlay {
+      position: relative;
+      z-index: 3;
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      margin-top: 4px;
+    }
+    .label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .overlay h4 {
+      margin: 4px 0 8px;
+      font-size: 1.05rem;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .metric {
+      text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .metric b { display: block; font-size: 1rem; }
+    .metric span { color: var(--muted); font-size: 0.68rem; }
+    .dogs, .error, .empty-msg {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      margin: 4px 0 0;
+    }
+    .error { color: var(--danger); }
+    .empty-msg { color: var(--muted); }
+    .event-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+    }
+    .event-row:first-of-type { border-top: none; margin-top: 6px; }
+    .event-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chip {
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #fff;
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+    .spacer { flex: 1; min-height: 12px; position: relative; z-index: 1; }
+    .btn {
+      position: relative;
+      z-index: 3;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .btn.warn { background: var(--danger); }
+    .btn.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      margin-top: 8px;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 10px 0;
+      background: var(--card);
+      position: relative;
+      z-index: 3;
+    }
+    .tabs .on { color: var(--accent); font-weight: 700; }
+    .caption { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
+    .detail-body {
+      position: relative;
+      z-index: 3;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+    }
+    .detail-body h5 {
+      margin: 0 0 6px;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .event-list-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-top: 1px solid var(--line);
+    }
+    .event-list-item:first-of-type { border-top: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Event + Detail 画面</h1>
+    <p class="lede">
+      Recording は距離・pace と Participant 別 Event 操作を表示する。
+      Event 失敗は同じ内容で手動 Retry する。Completed から Walk Detail へ進み、経路・距離・時間・Event を見る。
+    </p>
+    <div class="note">
+      Recording 中の距離・pace は端末が保持する TrackPoint から算出する。
+      Finish / Walk Detail の距離・pace は DynamoDB 確定点の経路長。
+      履歴一覧はこのセッションに含めない。Photo は含めない。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>RecordingMetrics</code> — 経過時間・距離・pace（端末点）</li>
+        <li><code>ParticipantEventActions</code> — Dog ごとの Pee / Poop / Sniff / Greet</li>
+        <li><code>EventOutboundQueue</code> — Event の永続送信と同一 payload の手動 Retry</li>
+        <li><code>CompletedSummary</code> — Finish 後の時間・距離・pace と Walk Detail 導線</li>
+        <li><code>WalkDetail</code> — <code>/walks/:walkId</code> の経路・メトリクス・Event 一覧</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onEventPress</code> — <code>eventId</code> と発生時刻・位置を固定し、Event を送信キューへ載せる</li>
+        <li><code>onEventAccepted</code> — 送信成功。失敗表示を消す</li>
+        <li><code>onEventRetryableFailure</code> — 「記録に失敗しました」と手動 Retry</li>
+        <li><code>onEventRetryPress</code> — 同じ <code>eventId</code>・種別・Participant・時刻・位置で再送</li>
+        <li><code>onViewWalkDetail</code> — Completed から <code>/walks/:walkId</code> へ遷移</li>
+        <li><code>onWalkDetailLoad</code> — <code>GET /v1/walks/:walkId</code> で経路・Event・メトリクスを表示</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>WALK-03 · Recording · Event</h3>
+        <div class="phone" aria-label="Walk recording with events">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>18:42</b><span>time</span></div>
+                <div class="metric"><b>1.34</b><span>km</span></div>
+                <div class="metric"><b>13:57</b><span>pace</span></div>
+              </div>
+              <div class="event-row">
+                <b>Mugi</b>
+                <div class="event-actions">
+                  <span class="chip">Pee</span>
+                  <span class="chip">Poop</span>
+                  <span class="chip">Sniff</span>
+                  <span class="chip">Greet</span>
+                </div>
+              </div>
+              <div class="event-row">
+                <b>Sora</b>
+                <div class="event-actions">
+                  <span class="chip">Pee</span>
+                  <span class="chip">Poop</span>
+                  <span class="chip">Sniff</span>
+                  <span class="chip">Greet</span>
+                </div>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">距離・pace は端末の点 · Participant 別 Event</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Event 失敗 Retry</h3>
+        <div class="phone" aria-label="Walk event retry">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>18:42</b><span>time</span></div>
+                <div class="metric"><b>1.34</b><span>km</span></div>
+                <div class="metric"><b>13:57</b><span>pace</span></div>
+              </div>
+              <div class="event-row">
+                <b>Mugi · Pee</b>
+                <div class="event-actions"><span class="chip">Retry</span></div>
+              </div>
+              <p class="error">記録に失敗しました</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">同じ eventId・時刻・位置で手動 Retry</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Completed</h3>
+        <div class="phone" aria-label="Walk completed with detail link">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">walk complete</div>
+              <h4>Walk complete</h4>
+              <div class="metrics">
+                <div class="metric"><b>32</b><span>min</span></div>
+                <div class="metric"><b>2.10</b><span>km</span></div>
+                <div class="metric"><b>15:14</b><span>pace</span></div>
+              </div>
+              <p class="dogs">Participants · Mugi, Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn">Walk Detail を見る</div>
+            <div class="btn secondary">Ready に戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Finish の距離・pace · Detail へ遷移</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>HIST-02 · Walk Detail</h3>
+        <div class="phone" aria-label="Walk detail">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">walk detail</div>
+              <h4>Completed walk</h4>
+              <div class="metrics">
+                <div class="metric"><b>32</b><span>min</span></div>
+                <div class="metric"><b>2.10</b><span>km</span></div>
+                <div class="metric"><b>15:14</b><span>pace</span></div>
+              </div>
+              <p class="dogs">Mugi, Sora</p>
+            </div>
+            <div class="detail-body">
+              <h5>Events</h5>
+              <div class="event-list-item"><span>Mugi · Pee</span><span>03:20</span></div>
+              <div class="event-list-item"><span>Sora · Sniff</span><span>03:28</span></div>
+            </div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">GET /walks/:walkId · 確定経路と Event</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>HIST-02 · Event 空</h3>
+        <div class="phone" aria-label="Walk detail empty events">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">walk detail</div>
+              <h4>Completed walk</h4>
+              <div class="metrics">
+                <div class="metric"><b>0</b><span>min</span></div>
+                <div class="metric"><b>0</b><span>m</span></div>
+                <div class="metric"><b>—</b><span>pace</span></div>
+              </div>
+              <p class="dogs">Mugi</p>
+            </div>
+            <div class="detail-body">
+              <h5>Events</h5>
+              <p class="empty-msg">記録された Event はありません</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn secondary">戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Event 0件 · TrackPoint 0件は距離 0</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

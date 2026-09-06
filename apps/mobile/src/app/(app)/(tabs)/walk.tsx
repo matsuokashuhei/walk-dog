@@ -20,17 +20,24 @@ import {
   handleWalkAppStateChange,
   type LocationPermissionAction,
 } from '@/lib/location-permission'
+import { pathDistanceMeters, paceSecondsPerMeter } from '@/lib/path-distance'
 import {
   deleteWalk,
   finishWalk,
   getActiveWalk,
   startWalk,
+  toLocalWalkEvent,
   type CompletedWalkResponse,
   type LocalTrackPoint,
+  type LocalWalkEvent,
   type RecordingWalkResponse,
+  type WalkEventType,
 } from '@/lib/walk-api'
+import { createEventCoordinator } from '@/lib/walk-event-queue'
+import { postWalkEvent } from '@/lib/walk-event-post'
 import { walkFinishErrorMessage } from '@/lib/walk-finish-error-message'
-import { loadPathForWalk } from '@/lib/walk-path-store'
+import { formatDistanceMeters, formatPacePerKm } from '@/lib/walk-metrics-format'
+import { createFileEventStorage, loadPathForWalk } from '@/lib/walk-path-store'
 import {
   flushTrackPointUpdates,
   pauseTrackPointUpdates,
@@ -38,6 +45,27 @@ import {
   startTrackPointUpdates,
   stopTrackPointUpdates,
 } from '@/lib/walk-location-task'
+
+const EVENT_TYPES: WalkEventType[] = ['pee', 'poop', 'sniff', 'greet']
+
+const EVENT_LABELS: Record<WalkEventType, string> = {
+  pee: 'Pee',
+  poop: 'Poop',
+  sniff: 'Sniff',
+  greet: 'Greet',
+}
+
+function createClientUuid(): string {
+  const randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto)
+  if (randomUUID !== undefined) {
+    return randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const value = Math.floor(Math.random() * 16)
+    const nibble = char === 'x' ? value : (value & 0x3) | 0x8
+    return nibble.toString(16)
+  })
+}
 
 type DogListItem = Omit<DogResponse, 'requestId'>
 
@@ -130,12 +158,16 @@ export default function WalkScreen() {
   const [pathPoints, setPathPoints] = useState<LocalTrackPoint[]>([])
   const [recordingCamera, setRecordingCamera] = useState<CameraPosition | undefined>()
   const [now, setNow] = useState(() => Date.now())
+  const [failedEvents, setFailedEvents] = useState<LocalWalkEvent[]>([])
   const stateRef = useRef(state)
   const finishingRef = useRef(false)
   const failingRef = useRef(false)
   const startingRef = useRef(false)
   const loadGeneration = useRef(0)
+  const eventCoordinatorRef = useRef<ReturnType<typeof createEventCoordinator> | null>(null)
+  const pathPointsRef = useRef(pathPoints)
   stateRef.current = state
+  pathPointsRef.current = pathPoints
 
   const applyPathPoints = useCallback((points: LocalTrackPoint[]) => {
     setPathPoints(points)
@@ -354,6 +386,27 @@ export default function WalkScreen() {
     }
   }, [state.kind])
 
+  useEffect(() => {
+    if (state.kind !== 'recording' || !session) {
+      eventCoordinatorRef.current = null
+      setFailedEvents([])
+      return
+    }
+    const walkId = state.walk.walkId
+    const accessToken = session.accessToken
+    const coordinator = createEventCoordinator({
+      ...createFileEventStorage(walkId),
+      post: (event) => postWalkEvent(accessToken, event),
+    })
+    eventCoordinatorRef.current = coordinator
+    void coordinator.failed().then(setFailedEvents)
+    return () => {
+      if (eventCoordinatorRef.current === coordinator) {
+        eventCoordinatorRef.current = null
+      }
+    }
+  }, [session, state.kind, state.kind === 'recording' ? state.walk.walkId : null])
+
   const onAllowLocation = async () => {
     const foreground = await Location.requestForegroundPermissionsAsync()
     if (foreground.status === Location.PermissionStatus.GRANTED) {
@@ -460,6 +513,70 @@ export default function WalkScreen() {
     void load('full')
   }
 
+  const resolveEventLocation = async (): Promise<{ latitude: number; longitude: number } | null> => {
+    const latest = pathPointsRef.current.at(-1)
+    if (latest !== undefined) {
+      return { latitude: latest.latitude, longitude: latest.longitude }
+    }
+    try {
+      const position = await Location.getCurrentPositionAsync()
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const onEventPress = (participantDogId: string, type: WalkEventType) => {
+    if (!session || state.kind !== 'recording') {
+      return
+    }
+    const coordinator = eventCoordinatorRef.current
+    if (coordinator === null) {
+      return
+    }
+    const walkId = state.walk.walkId
+    void (async () => {
+      const location = await resolveEventLocation()
+      if (location === null || eventCoordinatorRef.current !== coordinator) {
+        return
+      }
+      const event = toLocalWalkEvent({
+        eventId: createClientUuid(),
+        walkId,
+        participantDogId,
+        type,
+        occurredAt: new Date().toISOString(),
+        latitude: location.latitude,
+        longitude: location.longitude,
+      })
+      const action = await coordinator.enqueue(event)
+      if (eventCoordinatorRef.current !== coordinator) {
+        return
+      }
+      if (action === 'ok' || action === 'drop') {
+        setFailedEvents(await coordinator.failed())
+        return
+      }
+      setFailedEvents(await coordinator.failed())
+    })()
+  }
+
+  const onEventRetry = () => {
+    const coordinator = eventCoordinatorRef.current
+    if (coordinator === null) {
+      return
+    }
+    void coordinator.retryFailed().then(async () => {
+      if (eventCoordinatorRef.current !== coordinator) {
+        return
+      }
+      setFailedEvents(await coordinator.failed())
+    })
+  }
+
   const locationGranted = locationPermissionAction === 'granted'
   const showMap =
     locationGranted &&
@@ -482,6 +599,27 @@ export default function WalkScreen() {
   }))
   const mapCameraPosition =
     state.kind === 'recording' && recordingCamera ? recordingCamera : cameraPosition
+
+  const recordingDistanceMeters =
+    state.kind === 'recording' ? pathDistanceMeters(pathPoints) : 0
+  const recordingDurationSeconds =
+    state.kind === 'recording'
+      ? Math.max(0, Math.floor((now - Date.parse(state.walk.startedAt)) / 1000))
+      : 0
+  const recordingDistance = formatDistanceMeters(recordingDistanceMeters)
+  const recordingPace = formatPacePerKm(
+    paceSecondsPerMeter(recordingDurationSeconds, recordingDistanceMeters),
+  )
+  const completedDistance =
+    state.kind === 'completed' ? formatDistanceMeters(state.walk.distanceMeters) : null
+  const completedPace =
+    state.kind === 'completed' ? formatPacePerKm(state.walk.paceSecondsPerMeter) : null
+
+  const participantNameByDogId = new Map(
+    state.kind === 'recording' || state.kind === 'completed'
+      ? state.walk.participants.map((participant) => [participant.dogId, participant.name] as const)
+      : [],
+  )
 
   return (
     <View style={[styles.container, showMap ? styles.containerMap : null]} testID="walk-root">
@@ -703,15 +841,67 @@ export default function WalkScreen() {
                 <Text style={styles.metricValue}>{formatElapsed(state.walk.startedAt, now)}</Text>
                 <Text style={styles.metricLabel}>経過</Text>
               </View>
+              <View style={styles.metric} testID="walk-distance">
+                <Text style={styles.metricValue}>{recordingDistance.value}</Text>
+                <Text style={styles.metricLabel}>{recordingDistance.unit}</Text>
+              </View>
+              <View style={styles.metric} testID="walk-pace">
+                <Text style={styles.metricValue}>{recordingPace}</Text>
+                <Text style={styles.metricLabel}>pace</Text>
+              </View>
             </View>
             {state.walk.participants.map((participant) => (
-              <View key={participant.walkParticipantId} style={styles.row}>
-                <View>
-                  <Text style={styles.rowName}>{participant.name}</Text>
-                  <Text style={styles.rowMeta}>participant</Text>
+              <View key={participant.walkParticipantId} style={styles.eventRow}>
+                <Text style={styles.rowName}>{participant.name}</Text>
+                <View style={styles.eventActions}>
+                  {EVENT_TYPES.map((type) => (
+                    <Pressable
+                      key={type}
+                      testID={`walk-event-${type}-${participant.dogId}`}
+                      accessible
+                      accessibilityRole="button"
+                      accessibilityLabel={`${participant.name} ${EVENT_LABELS[type]}`}
+                      style={styles.chip}
+                      onPress={() => {
+                        onEventPress(participant.dogId, type)
+                      }}
+                    >
+                      <Text style={styles.chipText} accessible={false}>
+                        {EVENT_LABELS[type]}
+                      </Text>
+                    </Pressable>
+                  ))}
                 </View>
               </View>
             ))}
+            {failedEvents.length > 0 ? (
+              <>
+                {failedEvents.map((event) => (
+                  <View key={event.eventId} style={styles.eventRow}>
+                    <Text style={styles.rowName}>
+                      {participantNameByDogId.get(event.participantDogId) ?? event.participantDogId}
+                      {' · '}
+                      {EVENT_LABELS[event.type]}
+                    </Text>
+                  </View>
+                ))}
+                <Text style={styles.error} testID="walk-event-error">
+                  記録に失敗しました
+                </Text>
+                <Pressable
+                  testID="walk-event-retry"
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry"
+                  style={styles.chip}
+                  onPress={onEventRetry}
+                >
+                  <Text style={styles.chipText} accessible={false}>
+                    Retry
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
             {state.finishErrorMessage ? (
               <Text style={styles.error} testID="walk-finish-error">
                 {state.finishErrorMessage}
@@ -744,9 +934,13 @@ export default function WalkScreen() {
                 <Text style={styles.metricValue}>{formatDuration(state.walk.durationSeconds)}</Text>
                 <Text style={styles.metricLabel}>時間</Text>
               </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>0 m</Text>
-                <Text style={styles.metricLabel}>距離</Text>
+              <View style={styles.metric} testID="walk-completed-distance">
+                <Text style={styles.metricValue}>{completedDistance?.value}</Text>
+                <Text style={styles.metricLabel}>{completedDistance?.unit}</Text>
+              </View>
+              <View style={styles.metric} testID="walk-completed-pace">
+                <Text style={styles.metricValue}>{completedPace}</Text>
+                <Text style={styles.metricLabel}>pace</Text>
               </View>
             </View>
             <View style={styles.row}>
@@ -759,14 +953,28 @@ export default function WalkScreen() {
             </View>
             <View style={styles.spacer} />
             <Pressable
+              testID="walk-completed-detail"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Walk Detail を見る"
+              style={styles.primary}
+              onPress={() => {
+                router.push(`/walks/${state.walk.walkId}`)
+              }}
+            >
+              <Text style={styles.primaryText} accessible={false}>
+                Walk Detail を見る
+              </Text>
+            </Pressable>
+            <Pressable
               testID="walk-back-ready"
               accessible
               accessibilityRole="button"
               accessibilityLabel="Ready へ戻る"
-              style={styles.primary}
+              style={styles.secondary}
               onPress={onBackToReady}
             >
-              <Text style={styles.primaryText} accessible={false}>
+              <Text style={styles.secondaryText} accessible={false}>
                 Ready へ戻る
               </Text>
             </Pressable>
@@ -943,5 +1151,50 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  secondary: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2F5D50',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  secondaryText: {
+    color: '#2F5D50',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    backgroundColor: 'rgba(255, 253, 248, 0.92)',
+    borderWidth: 1,
+    borderColor: '#D9D0C3',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  eventActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 4,
+    flexShrink: 1,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: '#2F5D50',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FFF',
+  },
+  chipText: {
+    color: '#2F5D50',
+    fontSize: 12,
+    fontWeight: '700',
   },
 })

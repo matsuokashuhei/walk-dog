@@ -6,6 +6,8 @@ import {
   unusedAcceptTrackPoint,
   unusedDeleteWalk,
   unusedFinishWalk,
+  unusedGetWalkDetail,
+  unusedRecordEvent,
   unusedStartWalk,
 } from '../fixtures.js'
 
@@ -13,10 +15,12 @@ test('registerWalkRoutes serves GET /v1/walks/active on the mounted child app', 
   const response = await createWalkApp((routeApp) => {
     routeApp.route('/', registerWalkRoutes({
       getActiveWalk: async () => null,
+      getWalkDetail: unusedGetWalkDetail,
       startWalk: unusedStartWalk,
       finishWalk: unusedFinishWalk,
       deleteWalk: unusedDeleteWalk,
       acceptTrackPoint: unusedAcceptTrackPoint,
+      recordEvent: unusedRecordEvent,
       accessTokenVerifier: {
         async verify() {
           return { cognitoSubject: 'sub-1' }

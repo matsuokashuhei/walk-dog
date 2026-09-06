@@ -1,6 +1,8 @@
 import type { owners } from '../../infrastructure/database/schema/owner.js'
 import type { walks } from '../../infrastructure/database/schema/walk.js'
+import type { NewWalkEvent, WalkEvent as WalkEventRow } from '../../infrastructure/database/schema/walk-event.js'
 import type { NewWalkTrackPoint, WalkTrackPoint } from '../../infrastructure/database/schema/walk-track-point.js'
+import type { ConfirmedTrackPoint } from './provider.js'
 
 export type WalkParticipant = {
   walkParticipantId: string
@@ -24,8 +26,8 @@ export type CompletedWalk = {
   startedAt: Date
   completedAt: Date
   durationSeconds: number
-  distanceMeters: 0
-  paceSecondsPerMeter: null
+  distanceMeters: number
+  paceSecondsPerMeter: number | null
   participants: WalkParticipant[]
 }
 
@@ -43,11 +45,29 @@ export type FinishWalkInput = {
   walkId: string
   idempotencyKey: string
   bodyHash: string
+  distanceMeters: number
 }
 
 export type TrackPoint = Pick<WalkTrackPoint, 'trackPointId' | 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>
 
 export type AcceptTrackPointInput = Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'> & {
+  ownerId: typeof walks.$inferSelect['ownerId']
+}
+
+export type WalkEvent = Pick<
+  WalkEventRow,
+  'eventId' | 'walkId' | 'participantDogId' | 'type' | 'occurredAt' | 'latitude' | 'longitude'
+>
+
+export type WalkDetail = CompletedWalk & {
+  trackPoints: ConfirmedTrackPoint[]
+  events: WalkEvent[]
+}
+
+export type RecordEventInput = Pick<
+  NewWalkEvent,
+  'eventId' | 'walkId' | 'participantDogId' | 'type' | 'occurredAt' | 'latitude' | 'longitude'
+> & {
   ownerId: typeof walks.$inferSelect['ownerId']
 }
 
@@ -99,4 +119,22 @@ export type AcceptTrackPoint = (input: {
 } & Pick<NewWalkTrackPoint, 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>) => Promise<
   | { ok: true; trackPoint: TrackPoint }
   | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
+>
+
+export type RecordEvent = (input: {
+  cognitoSubject: typeof owners.$inferSelect['cognitoSubject']
+} & Pick<
+  NewWalkEvent,
+  'eventId' | 'walkId' | 'participantDogId' | 'type' | 'occurredAt' | 'latitude' | 'longitude'
+>) => Promise<
+  | { ok: true; event: WalkEvent; created: boolean }
+  | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
+>
+
+export type GetWalkDetail = (input: {
+  cognitoSubject: string
+  walkId: string
+}) => Promise<
+  | { ok: true; detail: WalkDetail }
+  | { ok: false; error: 'not_found' }
 >

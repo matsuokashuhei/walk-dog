@@ -38,6 +38,7 @@ function AppStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="dogs/new" />
         <Stack.Screen name="dogs/[dogId]" />
+        <Stack.Screen name="walks/[walkId]" />
       </Stack.Protected>
       <Stack.Protected guard={needsDisplayName}>
         <Stack.Screen name="owner/display-name" />

@@ -19,6 +19,7 @@ import { isUniqueViolation, uniqueConstraint } from '../unique-violation.js'
 import { dogs } from '../schema/dog.js'
 import { walkCommandKeys } from '../schema/walk-command-key.js'
 import { walkParticipants } from '../schema/walk-participant.js'
+import { walkTrackPoints } from '../schema/walk-track-point.js'
 import { walks } from '../schema/walk.js'
 import { acceptWalkTrackPoint } from './accept-track-point.js'
 
@@ -38,6 +39,7 @@ export function createDrizzleWalkRepository(database: DbInstance): WalkRepositor
     fail: (input) => failWalk(database, input),
     failIfPresent: (input) => failIfPresent(database, input),
     acceptTrackPoint: (input) => acceptWalkTrackPoint(database, input),
+    listAcceptedRecordedAt: (input) => listAcceptedRecordedAt(database, input),
   }
 }
 
@@ -125,6 +127,22 @@ async function failWalk(database: WalkDb, input: { ownerId: string; walkId: stri
     return
   }
   throw new WalkNotRecordingError()
+}
+
+async function listAcceptedRecordedAt(
+  database: WalkDb,
+  input: { ownerId: string; walkId: string },
+): Promise<Date[]> {
+  const walkRow = await selectOwnedWalk(database, input.ownerId, input.walkId)
+  if (walkRow.state !== 'recording') {
+    throw new WalkNotRecordingError()
+  }
+  const rows = await database
+    .select({ recordedAt: walkTrackPoints.recordedAt })
+    .from(walkTrackPoints)
+    .where(eq(walkTrackPoints.walkId, input.walkId))
+    .orderBy(asc(walkTrackPoints.recordedAt))
+  return rows.map((row) => row.recordedAt)
 }
 
 async function failIfPresent(database: WalkDb, input: { ownerId: string }): Promise<void> {

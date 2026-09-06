@@ -328,3 +328,54 @@ test('acceptTrackPoint throws WalkNotRecordingError when the walk is completed o
     assert.deepEqual(insertTables, [])
   }
 })
+
+test('listAcceptedRecordedAt returns recordedAt values for a recording walk', async () => {
+  const recordedAt1 = new Date('2026-08-17T03:12:14.000Z')
+  const recordedAt2 = new Date('2026-08-17T03:12:44.000Z')
+  const { database, calls, selectTables } = createWalkDatabaseFake({
+    selectResults: [
+      [recordingWalkRow],
+      [{ recordedAt: recordedAt1 }, { recordedAt: recordedAt2 }],
+    ],
+  })
+  assert.deepEqual(
+    await createDrizzleWalkRepository(database).listAcceptedRecordedAt({ ownerId, walkId }),
+    [recordedAt1, recordedAt2],
+  )
+  assert.deepEqual(selectTables, [walks, walkTrackPoints])
+  assert.deepEqual(calls, ['select', 'orderBy', 'select'])
+})
+
+test('listAcceptedRecordedAt returns empty array when there are no points', async () => {
+  const { database, calls, selectTables } = createWalkDatabaseFake({
+    selectResults: [[recordingWalkRow], []],
+  })
+  assert.deepEqual(
+    await createDrizzleWalkRepository(database).listAcceptedRecordedAt({ ownerId, walkId }),
+    [],
+  )
+  assert.deepEqual(selectTables, [walks, walkTrackPoints])
+  assert.deepEqual(calls, ['select', 'orderBy', 'select'])
+})
+
+test('listAcceptedRecordedAt throws WalkNotFoundError for another owner', async () => {
+  const missing = createWalkDatabaseFake({ selectResults: [[]] })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(missing.database).listAcceptedRecordedAt({ ownerId, walkId }),
+    isError(WalkNotFoundError),
+  )
+
+  const otherOwner = createWalkDatabaseFake({ selectResults: [[]] })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(otherOwner.database).listAcceptedRecordedAt({ ownerId: otherOwnerId, walkId }),
+    isError(WalkNotFoundError),
+  )
+})
+
+test('listAcceptedRecordedAt throws WalkNotRecordingError when completed', async () => {
+  const { database } = createWalkDatabaseFake({ selectResults: [[completedWalkRow]] })
+  await assert.rejects(
+    () => createDrizzleWalkRepository(database).listAcceptedRecordedAt({ ownerId, walkId }),
+    isError(WalkNotRecordingError),
+  )
+})

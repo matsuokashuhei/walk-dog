@@ -14,4 +14,5 @@ export interface WalkRepository {
   fail(input: { ownerId: string; walkId: string }): Promise<void>
   failIfPresent(input: { ownerId: string }): Promise<void>
   acceptTrackPoint(input: AcceptTrackPointInput): Promise<TrackPoint>
+  listAcceptedRecordedAt(input: { ownerId: string; walkId: string }): Promise<Date[]>
 }

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finish — screen mockups</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --pin: #e23d28;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f3eee4;
+      min-height: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      position: relative;
+      z-index: 3;
+      background: transparent;
+    }
+    .screen {
+      padding: 8px 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .map-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 40% at 18% 22%, #cfe8c8 0 42%, transparent 43%),
+        radial-gradient(ellipse 50% 35% at 82% 70%, #cfe8c8 0 40%, transparent 41%),
+        radial-gradient(ellipse 55% 28% at 70% 18%, #b7d7ea 0 46%, transparent 47%),
+        #f3eee4;
+    }
+    .route {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .pin {
+      position: absolute;
+      left: 52%;
+      top: 30%;
+      z-index: 2;
+      width: 14px;
+      height: 14px;
+      border-radius: 50% 50% 50% 0;
+      background: var(--pin);
+      transform: translate(-50%, -100%) rotate(-45deg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .pin-hole {
+      display: block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #fff;
+      margin: 4.5px auto 0;
+      transform: rotate(45deg);
+    }
+    .overlay {
+      position: relative;
+      z-index: 3;
+      margin-top: 8px;
+    }
+    .label {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .overlay h4 { margin: 4px 0 8px; font-size: 1.15rem; }
+    .metrics { display: flex; gap: 12px; margin: 0 0 6px; }
+    .metric {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: rgba(255,253,248,0.92);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      min-width: 64px;
+    }
+    .metric b { display: block; font-size: 1rem; }
+    .metric span { color: var(--muted); font-size: 0.72rem; }
+    .dogs {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      margin: 0;
+      color: var(--ink);
+      background: rgba(255,253,248,0.92);
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: inline-block;
+    }
+    .error {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.82rem;
+      color: var(--danger);
+      background: rgba(255,253,248,0.95);
+      border: 1px solid #e2c4bc;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 0;
+    }
+    .spacer { flex: 1; min-height: 24px; position: relative; z-index: 3; }
+    .btn {
+      position: relative;
+      z-index: 3;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .btn.warn { background: var(--danger); }
+    .btn.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      margin-top: 8px;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 10px 0;
+      background: var(--card);
+      position: relative;
+      z-index: 3;
+    }
+    .tabs .on { color: var(--accent); font-weight: 700; }
+    .caption { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Finish 画面</h1>
+    <p class="lede">
+      Recording の Finish は、端末キューを吐き出したあと API が DynamoDB 確定を待って Completed にする。
+      失敗時は Recording を維持し、同じ Finish を Retry する。距離は 0。Walk Detail は後続。
+    </p>
+    <div class="note">
+      Walk 画面の状態は Ready / Starting / Recording / Completed / Failed を継続する。
+      Finish 専用の新しい状態は増やさない。確定待ち中も Recording として扱い、操作は Finish の進行中表示と Retry に限る。
+      Event・距離算出・Walk Detail は後続。
+    </div>
+
+    <h2>コンポーネント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>RecordingOverlay</code> — Participant 名と経過時間、Finish</li>
+        <li><code>OutboundQueueFlush</code> — Finish 前に端末キューを空にする</li>
+        <li><code>FinishWalkRequest</code> — <code>POST /v1/walks/:walkId/finish</code> と同一 <code>Idempotency-Key</code></li>
+        <li><code>FinishRetry</code> — 失敗時に Recording を維持し、同じ Finish を再試行する</li>
+        <li><code>CompletedSummary</code> — 経過時間と距離 0 の完了表示</li>
+      </ul>
+    </div>
+
+    <h2>イベント一覧</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>onFinishPress</code> — 位置取得を止め、outbound queue を吐き出す</li>
+        <li><code>onFlushComplete</code> — キューが空になったら <code>POST /finish</code> を送る。残件があるあいだは Finish 失敗</li>
+        <li><code>onFinishSuccess</code> — Completed を表示する。距離は 0</li>
+        <li><code>onFinishRetryableFailure</code> — Recording を維持し、理由と手動 Retry を表示する</li>
+        <li><code>onFinishNonRetryableFailure</code> — Recording を維持し、理由を表示する（状態が recording ではない場合など）</li>
+      </ul>
+    </div>
+
+    <h2>画面一覧</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>WALK-03 · Recording · Finish</h3>
+        <div class="phone" aria-label="Walk recording finish">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>32:04</b><span>経過</span></div>
+              </div>
+              <p class="dogs">Mugi · Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Finish で取得停止 → キュー吐き出し → POST /finish（DynamoDB 確定待ち）</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Finish 失敗 Retry</h3>
+        <div class="phone" aria-label="Walk finish retry">
+          <div class="screen">
+            <div class="map-layer" aria-hidden="true"></div>
+            <svg class="route" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="22,138 30,124 38,112 44,98 50,82 54,64 52,48" fill="none" stroke="#2f5d50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="pin" title="現在地"><span class="pin-hole"></span></div>
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">recording</div>
+              <h4>記録中</h4>
+              <div class="metrics">
+                <div class="metric"><b>32:04</b><span>経過</span></div>
+              </div>
+              <p class="dogs">Mugi · Sora</p>
+              <p class="error">終了処理を完了できませんでした。もう一度お試しください。</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">もう一度終了する</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">503 / flush 失敗など再試行可能 → Recording 維持 · 同じ Idempotency-Key で Retry</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>WALK-03 · Completed</h3>
+        <div class="phone" aria-label="Walk completed">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="overlay">
+              <div class="label">walk complete</div>
+              <h4>Walk complete</h4>
+              <div class="metrics">
+                <div class="metric"><b>32</b><span>min</span></div>
+                <div class="metric"><b>0</b><span>m</span></div>
+              </div>
+              <p class="dogs">Participants · Mugi, Sora</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn secondary">Ready に戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">距離 0 · Walk Detail は後続 · TrackPoint 0件も同じ Completed</p>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

@@ -55,6 +55,18 @@ const EVENT_LABELS: Record<WalkEventType, string> = {
   greet: 'Greet',
 }
 
+function createClientUuid(): string {
+  const randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto)
+  if (randomUUID !== undefined) {
+    return randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const value = Math.floor(Math.random() * 16)
+    const nibble = char === 'x' ? value : (value & 0x3) | 0x8
+    return nibble.toString(16)
+  })
+}
+
 type DogListItem = Omit<DogResponse, 'requestId'>
 
 type CameraPosition = {
@@ -532,7 +544,7 @@ export default function WalkScreen() {
         return
       }
       const event = toLocalWalkEvent({
-        eventId: crypto.randomUUID(),
+        eventId: createClientUuid(),
         walkId,
         participantDogId,
         type,

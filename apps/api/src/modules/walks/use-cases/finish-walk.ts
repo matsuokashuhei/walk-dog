@@ -94,7 +94,14 @@ export function createFinishWalk(
           return { ok: false, error: 'service_unavailable' }
         }
       }
-      const points = accepted.length === 0 ? [] : await confirmed.listPoints(input.walkId)
+      let points: Awaited<ReturnType<ConfirmedTrackPoints['listPoints']>> = []
+      if (accepted.length > 0) {
+        try {
+          points = await confirmed.listPoints(input.walkId)
+        } catch {
+          return { ok: false, error: 'service_unavailable' }
+        }
+      }
       const distanceMeters = pathDistanceMeters(points)
       const walk = await walks.finish({
         ownerId: owner.ownerId,

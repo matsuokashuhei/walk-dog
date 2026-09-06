@@ -352,6 +352,21 @@ test('finishWalk returns service_unavailable when listRecordedAt throws during c
   assert.deepEqual(finishCalls, [])
 })
 
+test('finishWalk returns service_unavailable when listPoints throws after confirmation', async () => {
+  const failure = new Error('dynamodb unavailable')
+  const { finishWalk, finishCalls, listPointsCalls } = createSut({
+    listAccepted: async () => [recordedAt],
+    listConfirmed: async () => [recordedAt],
+    listPoints: async () => {
+      throw failure
+    },
+  })
+
+  assert.deepEqual(await finishWalk(finishInput), { ok: false, error: 'service_unavailable' })
+  assert.deepEqual(listPointsCalls, [walkId])
+  assert.deepEqual(finishCalls, [])
+})
+
 test('finishWalk returns not_found when the walk is missing', async () => {
   const { finishWalk } = createSut({
     finish: async () => {

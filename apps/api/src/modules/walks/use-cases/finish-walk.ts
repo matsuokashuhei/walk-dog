@@ -20,7 +20,12 @@ async function waitForConfirmation(
   const deadline = clock.now() + timeoutMs
   const needed = new Set(accepted.map((recordedAt) => recordedAt.toISOString()))
   for (;;) {
-    const confirmedAt = await confirmed.listRecordedAt(walkId)
+    let confirmedAt: Date[]
+    try {
+      confirmedAt = await confirmed.listRecordedAt(walkId)
+    } catch {
+      return 'service_unavailable'
+    }
     const have = new Set(confirmedAt.map((recordedAt) => recordedAt.toISOString()))
     if ([...needed].every((key) => have.has(key))) {
       return 'confirmed'
@@ -44,10 +49,18 @@ export function createFinishWalk(
     const owner = await owners.resolveByCognitoSubject(input.cognitoSubject)
     const bodyHash = createHash('sha256').update('{}').digest('hex')
     try {
-      const accepted = await walks.listAcceptedRecordedAt({
-        ownerId: owner.ownerId,
-        walkId: input.walkId,
-      })
+      let accepted: Date[]
+      try {
+        accepted = await walks.listAcceptedRecordedAt({
+          ownerId: owner.ownerId,
+          walkId: input.walkId,
+        })
+      } catch (error) {
+        if (!(error instanceof WalkNotRecordingError)) {
+          throw error
+        }
+        accepted = []
+      }
       if (accepted.length > 0) {
         const status = await waitForConfirmation(
           confirmed,

@@ -206,14 +206,51 @@ test('finishWalk returns not_found when listAcceptedRecordedAt throws WalkNotFou
   assert.deepEqual(finishCalls, [])
 })
 
-test('finishWalk returns walk_not_recording when listAcceptedRecordedAt throws WalkNotRecordingError', async () => {
+test('finishWalk returns completed walk when listAcceptedRecordedAt throws WalkNotRecordingError and finish replays', async () => {
   const { finishWalk, finishCalls } = createSut({
     listAccepted: async () => {
       throw new WalkNotRecordingError()
     },
   })
 
+  assert.deepEqual(await finishWalk(finishInput), { ok: true, walk })
+  assert.deepEqual(finishCalls, [{
+    ownerId: owner.ownerId,
+    walkId,
+    idempotencyKey,
+    bodyHash,
+  }])
+})
+
+test('finishWalk returns walk_not_recording when listAcceptedRecordedAt and finish both throw WalkNotRecordingError', async () => {
+  const { finishWalk, finishCalls } = createSut({
+    listAccepted: async () => {
+      throw new WalkNotRecordingError()
+    },
+    finish: async () => {
+      throw new WalkNotRecordingError()
+    },
+  })
+
   assert.deepEqual(await finishWalk(finishInput), { ok: false, error: 'walk_not_recording' })
+  assert.deepEqual(finishCalls, [{
+    ownerId: owner.ownerId,
+    walkId,
+    idempotencyKey,
+    bodyHash,
+  }])
+})
+
+test('finishWalk returns service_unavailable when listRecordedAt throws during confirmation wait', async () => {
+  const failure = new Error('dynamodb unavailable')
+  const { finishWalk, finishCalls } = createSut({
+    listAccepted: async () => [recordedAt],
+    listConfirmed: async () => {
+      throw failure
+    },
+  })
+
+  assert.deepEqual(await finishWalk(finishInput), { ok: false, error: 'service_unavailable' })
   assert.deepEqual(finishCalls, [])
 })
 

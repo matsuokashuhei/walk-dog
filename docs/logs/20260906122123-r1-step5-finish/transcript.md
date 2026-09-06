@@ -16,6 +16,7 @@
   - `docs/logs/20260906122123-r1-step5-finish/finish-spec-mockups.html`
   - `docs/logs/20260906122123-r1-step5-finish/design.md`
   - `docs/logs/20260906122123-r1-step5-finish/plan.md`
+  - `docs/logs/20260906122123-r1-step5-finish/e2e-codex-brief.md`
 
 ## Messages
 
@@ -52,3 +53,4 @@ Step 4 振り返りのスキル変更を declined にし、所有ワークツリ
 - concerns: none
 - `2026-09-06 13:30 JST`: Final review Critical/Important fixed in `210a1d4` (finish replay + wait failure → 503). Re-review clean. Ready for publish options.
 - `2026-09-06 13:20 JST`: Pushed branch and opened https://github.com/matsuokashuhei/walk-dog/pull/93 . Worktree kept for PR feedback.
+- `2026-09-06 13:23 JST`: Wrote Finish iOS E2E brief for Codex simulator run (Completed / 503 Retry / Retry Completed).

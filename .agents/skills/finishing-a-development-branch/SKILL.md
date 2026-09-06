@@ -13,7 +13,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 ## Step 1: Verify Tests
 
-Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`). Also run the repository CI check equivalents for changed packages (at least `lint`, `knip`, and `typecheck` when those scripts exist). PR create/update gating details live in `publishing-pull-requests`.
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 

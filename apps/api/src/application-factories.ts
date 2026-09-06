@@ -81,6 +81,7 @@ import {
 import { createAcceptTrackPoint } from './modules/walks/use-cases/accept-track-point.js'
 import { createDeleteWalk } from './modules/walks/use-cases/delete-walk.js'
 import { createGetActiveWalk } from './modules/walks/use-cases/get-active-walk.js'
+import { createRecordEvent } from './modules/walks/use-cases/record-event.js'
 import { createStartWalk } from './modules/walks/use-cases/start-walk.js'
 import type { AccessTokenVerifier } from './shared/http/access-token.js'
 import type { App } from './shared/http/types.js'
@@ -201,6 +202,7 @@ export const defaultFactories: ApplicationFactories = {
       ),
       deleteWalk: createDeleteWalk(ownerRepository, walkRepository),
       acceptTrackPoint: createAcceptTrackPoint(ownerRepository, walkRepository, trackPointQueue),
+      recordEvent: createRecordEvent(ownerRepository, walkRepository),
     }
   },
   createAuthRoutes: registerAuthRoutes,

@@ -22,6 +22,17 @@ export const acceptTrackPointRequestSchema = z.strictObject({
   longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
 })
 
+export const walkEventTypeSchema = z.enum(['pee', 'poop', 'sniff', 'greet'])
+
+export const recordEventRequestSchema = z.strictObject({
+  eventId: z.uuid(),
+  participantDogId: z.uuid(),
+  type: walkEventTypeSchema,
+  occurredAt: z.iso.datetime(),
+  latitude: z.number().gte(-90).lte(90).pipe(latitudeSchema),
+  longitude: z.number().gte(-180).lte(180).pipe(longitudeSchema),
+})
+
 export const walkIdParamSchema = z.object({
   walkId: z.uuid(),
 })
@@ -70,6 +81,17 @@ export const trackPointResponseSchema = z.strictObject({
   trackPointId: z.uuid(),
   walkId: walkIdParamSchema.shape.walkId,
   recordedAt: acceptTrackPointRequestSchema.shape.recordedAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+export const eventResponseSchema = z.strictObject({
+  requestId: errorSchema.shape.requestId,
+  eventId: recordEventRequestSchema.shape.eventId,
+  walkId: walkIdParamSchema.shape.walkId,
+  participantDogId: recordEventRequestSchema.shape.participantDogId,
+  type: walkEventTypeSchema,
+  occurredAt: recordEventRequestSchema.shape.occurredAt,
   latitude: latitudeSchema,
   longitude: longitudeSchema,
 })

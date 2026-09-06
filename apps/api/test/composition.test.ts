@@ -30,6 +30,7 @@ import type {
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
+  RecordEvent,
   StartWalk,
   TrackPointQueue,
   WalkRepository,
@@ -89,6 +90,7 @@ test('createApplication shares one database and Cognito client through the objec
     finishWalk: unused as FinishWalk,
     deleteWalk: unused as DeleteWalk,
     acceptTrackPoint: unused as AcceptTrackPoint,
+    recordEvent: unused as RecordEvent,
   } satisfies AuthRouteDependencies & OwnerRouteDependencies & DogRouteDependencies & WalkRouteDependencies
   const authRoutes = new OpenAPIHono<{ Variables: AppVariables }>()
   const ownerRoutes = new OpenAPIHono<{ Variables: AppVariables }>()

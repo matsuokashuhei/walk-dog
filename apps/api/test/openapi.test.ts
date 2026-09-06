@@ -22,6 +22,7 @@ import {
   unusedDeleteWalk,
   unusedFinishWalk,
   unusedGetActiveWalk,
+  unusedRecordEvent,
   unusedStartWalk,
 } from './modules/walks/fixtures.js'
 import { testLogger } from './support/test-logger.js'
@@ -77,6 +78,7 @@ const expectedOperations = {
   '/v1/walks/{walkId}': { delete: ['204', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500', '503'] },
   '/v1/walks/{walkId}/track-points': { post: ['201', '400', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}/events': { post: ['200', '201', '400', '401', '404', '409', '500'] },
 } as const
 
 /** Exact path → methods present in the generated document (`app.doc` is served, not listed). */
@@ -95,6 +97,7 @@ const expectedPathMethods = {
   '/v1/walks/{walkId}': ['delete'],
   '/v1/walks/{walkId}/finish': ['post'],
   '/v1/walks/{walkId}/track-points': ['post'],
+  '/v1/walks/{walkId}/events': ['post'],
 } as const
 
 const publicAuthPaths = [
@@ -139,6 +142,7 @@ function createOpenApiApp() {
           finishWalk: unusedFinishWalk,
           deleteWalk: unusedDeleteWalk,
           acceptTrackPoint: unusedAcceptTrackPoint,
+          recordEvent: unusedRecordEvent,
           accessTokenVerifier: unusedAccessTokenVerifier,
         }),
       },
@@ -213,6 +217,27 @@ function assertAcceptTrackPointRequestSchema(schema: JsonSchema): void {
   assert.equal(schema.properties.longitude.nullable, undefined)
 }
 
+function assertRecordEventRequestSchema(schema: JsonSchema): void {
+  assert.deepEqual(schema.required, [
+    'eventId',
+    'participantDogId',
+    'type',
+    'occurredAt',
+    'latitude',
+    'longitude',
+  ])
+  assert.equal(schema.additionalProperties, false)
+  assert.equal(schema.properties.eventId.format, 'uuid')
+  assert.equal(schema.properties.eventId.nullable, undefined)
+  assert.equal(schema.properties.participantDogId.format, 'uuid')
+  assert.equal(schema.properties.participantDogId.nullable, undefined)
+  assert.equal(schema.properties.type.nullable, undefined)
+  assert.equal(schema.properties.occurredAt.format, 'date-time')
+  assert.equal(schema.properties.occurredAt.nullable, undefined)
+  assert.equal(schema.properties.latitude.nullable, undefined)
+  assert.equal(schema.properties.longitude.nullable, undefined)
+}
+
 function assertVerifyRequestSchema(schema: JsonSchema, sessionNullable: boolean | undefined): void {
   assert.deepEqual(schema.required, ['username', 'session', 'code'])
   assert.equal(schema.properties.username.minLength, 1)
@@ -253,6 +278,7 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   assertOperationStatuses(document, '/v1/walks/{walkId}', 'delete', expectedOperations['/v1/walks/{walkId}'].delete)
   assertOperationStatuses(document, '/v1/walks/{walkId}/finish', 'post', expectedOperations['/v1/walks/{walkId}/finish'].post)
   assertOperationStatuses(document, '/v1/walks/{walkId}/track-points', 'post', expectedOperations['/v1/walks/{walkId}/track-points'].post)
+  assertOperationStatuses(document, '/v1/walks/{walkId}/events', 'post', expectedOperations['/v1/walks/{walkId}/events'].post)
 
   assert.deepEqual(
     operationAt(document, '/v1/auth/sign-out', 'post').security,
@@ -298,6 +324,10 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
     operationAt(document, '/v1/walks/{walkId}/track-points', 'post').security,
     [{ BearerAuth: [] }],
   )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks/{walkId}/events', 'post').security,
+    [{ BearerAuth: [] }],
+  )
   for (const path of publicAuthPaths) {
     assert.equal(operationAt(document, path, 'post').security, undefined)
   }
@@ -311,4 +341,5 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   assertStartWalkRequestSchema(requestSchema(document, '/v1/walks'))
   assertFinishWalkRequestSchema(requestSchema(document, '/v1/walks/{walkId}/finish'))
   assertAcceptTrackPointRequestSchema(requestSchema(document, '/v1/walks/{walkId}/track-points'))
+  assertRecordEventRequestSchema(requestSchema(document, '/v1/walks/{walkId}/events'))
 })

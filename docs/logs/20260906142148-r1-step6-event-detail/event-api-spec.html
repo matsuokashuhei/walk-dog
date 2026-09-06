@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Event + Detail — API specification</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --code-bg: #f7f4ef;
+      --code-ink: #1c1a16;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.5;
+    }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 24px; max-width: 68ch; }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 36px;
+    }
+    nav a { color: var(--accent); }
+    nav ul { margin: 8px 0 0; padding-left: 1.2em; }
+    article.endpoint {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 24px 28px;
+      margin: 0 0 28px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    h2 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 1.2rem;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .method {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      vertical-align: 2px;
+      margin-right: 8px;
+    }
+    .method.get { background: #3a5a7a; }
+    .summary { color: var(--muted); margin: 0 0 20px; }
+    h3 {
+      font-size: 1.05rem;
+      margin: 22px 0 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+    h4 {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+    }
+    code {
+      background: var(--soft);
+      color: var(--ink);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin: 8px 0 14px;
+      white-space: pre;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.85rem;
+    }
+    .status-list { list-style: none; padding: 0; margin: 0; }
+    .status-list > li { margin: 0 0 16px; }
+    .status-label {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .empty { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.88rem; }
+    ul.field-list {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.9rem;
+      margin: 0;
+      padding-left: 1.2em;
+    }
+    ul.field-list li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Event + Detail API</h1>
+    <p class="lede">
+      認証済み Owner が Recording 中に Participant 別 Event を記録し、Completed Walk の Detail で経路・距離・時間・Event を取得する。
+      Finish は DynamoDB 確定 TrackPoint から距離と pace を返す。
+    </p>
+    <div class="note">
+      Event の冪等キーはモバイル生成の <code>eventId</code>。Retry は同じ <code>eventId</code>・種別・Participant・発生時刻・位置を送る。
+      経路長は確定 TrackPoint を <code>recordedAt</code> 順に結んだメートル整数。距離 0 のとき pace は <code>null</code>。
+      履歴一覧（<code>GET /v1/walks</code>）はこの契約に含めない。
+    </div>
+    <nav>
+      エンドポイント
+      <ul>
+        <li><a href="#post-events">POST /v1/walks/:walkId/events</a></li>
+        <li><a href="#get-walk-detail">GET /v1/walks/:walkId</a></li>
+        <li><a href="#post-finish-distance">POST /v1/walks/:walkId/finish（距離・pace）</a></li>
+      </ul>
+    </nav>
+
+    <article class="endpoint" id="post-events">
+      <h2><span class="method">POST</span>/v1/walks/:walkId/events</h2>
+      <p class="summary">
+        Access Token に対応する Owner の <code>recording</code> Walk に Event を記録する。
+        同一 <code>eventId</code> で同一内容の再送は受理済み Event を返す。
+      </p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>content-type</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+          <tr>
+            <td><code>walkId</code></td>
+            <td>path</td>
+            <td>required</td>
+            <td>対象 Walk の UUID。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>eventId</code></td>
+            <td>string (UUID)</td>
+            <td>required</td>
+            <td>モバイルが生成する冪等キー。</td>
+          </tr>
+          <tr>
+            <td><code>participantDogId</code></td>
+            <td>string (UUID)</td>
+            <td>required</td>
+            <td>対象 Participant の Dog ID。その Walk の参加者。</td>
+          </tr>
+          <tr>
+            <td><code>type</code></td>
+            <td>string</td>
+            <td>required</td>
+            <td><code>pee</code> / <code>poop</code> / <code>sniff</code> / <code>greet</code>。</td>
+          </tr>
+          <tr>
+            <td><code>occurredAt</code></td>
+            <td>string (date-time)</td>
+            <td>required</td>
+            <td>最初の操作時刻。Retry でも同じ値を送る。</td>
+          </tr>
+          <tr>
+            <td><code>latitude</code></td>
+            <td>number</td>
+            <td>required</td>
+            <td>最初の操作時点の緯度。-90〜90。</td>
+          </tr>
+          <tr>
+            <td><code>longitude</code></td>
+            <td>number</td>
+            <td>required</td>
+            <td>最初の操作時点の経度。-180〜180。</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code class="language-json">{
+  "eventId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90",
+  "participantDogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+  "type": "pee",
+  "occurredAt": "2026-09-06T03:20:11.000Z",
+  "latitude": 35.681236,
+  "longitude": 139.767125
+}</code></pre>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>201</code></td><td>新規に Event を記録した</td><td>—</td></tr>
+          <tr><td><code>200</code></td><td>同一 <code>eventId</code>・同一内容の再送。受理済み Event</td><td>—</td></tr>
+          <tr><td><code>400</code></td><td>入力不正</td><td><code>false</code></td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>404</code></td><td>別 Owner、存在しない walkId、またはその Walk にいない participantDogId</td><td><code>false</code></td></tr>
+          <tr><td><code>409</code></td><td><code>recording</code> ではない、または同一 eventId で内容が違う</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>201 / 200 は Event。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>eventId</code></td><td>string (UUID)</td><td>冪等キー</td></tr>
+          <tr><td><code>walkId</code></td><td>string (UUID)</td><td>対象 Walk</td></tr>
+          <tr><td><code>participantDogId</code></td><td>string (UUID)</td><td>対象 Participant</td></tr>
+          <tr><td><code>type</code></td><td>string</td><td><code>pee</code> / <code>poop</code> / <code>sniff</code> / <code>greet</code></td></tr>
+          <tr><td><code>occurredAt</code></td><td>string (date-time)</td><td>最初の操作時刻</td></tr>
+          <tr><td><code>latitude</code></td><td>number</td><td>最初の操作時点の緯度</td></tr>
+          <tr><td><code>longitude</code></td><td>number</td><td>最初の操作時点の経度</td></tr>
+        </tbody>
+      </table>
+      <p>400 / 401 / 404 / 409 / 500 はエラー契約。</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>code</code></td>
+            <td>string</td>
+            <td><code>INVALID_INPUT</code>、<code>UNAUTHENTICATED</code>、<code>NOT_FOUND</code>、<code>WALK_NOT_RECORDING</code>、<code>IDEMPOTENCY_CONFLICT</code>、または <code>INTERNAL_ERROR</code></td>
+          </tr>
+          <tr><td><code>message</code></td><td>string</td><td>画面に表示する理由。送信失敗の再試行可能時は「記録に失敗しました」。内容衝突は「同じ要求を完了できません。最初からやり直してください。」</td></tr>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>retryable</code></td><td>boolean</td><td>同じ要求で再試行できるか。ネットワーク・5xx は <code>true</code>。409 内容衝突は <code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code class="language-bash">curl -X POST "$API_BASE_URL/v1/walks/$WALK_ID/events" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90",
+    "participantDogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+    "type": "pee",
+    "occurredAt": "2026-09-06T03:20:11.000Z",
+    "latitude": 35.681236,
+    "longitude": 139.767125
+  }'</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 201</div>
+          <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "eventId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90",
+  "walkId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80",
+  "participantDogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+  "type": "pee",
+  "occurredAt": "2026-09-06T03:20:11.000Z",
+  "latitude": 35.681236,
+  "longitude": 139.767125
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 200（同一 eventId・同一内容の再送）</div>
+          <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a202",
+  "eventId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90",
+  "walkId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80",
+  "participantDogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+  "type": "pee",
+  "occurredAt": "2026-09-06T03:20:11.000Z",
+  "latitude": 35.681236,
+  "longitude": 139.767125
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 409 IDEMPOTENCY_CONFLICT</div>
+          <pre><code class="language-json">{
+  "code": "IDEMPOTENCY_CONFLICT",
+  "message": "同じ要求を完了できません。最初からやり直してください。",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 409 WALK_NOT_RECORDING</div>
+          <pre><code class="language-json">{
+  "code": "WALK_NOT_RECORDING",
+  "message": "この散歩には記録できません。",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+
+    <article class="endpoint" id="get-walk-detail">
+      <h2><span class="method get">GET</span>/v1/walks/:walkId</h2>
+      <p class="summary">
+        Access Token に対応する Owner の Completed Walk Detail を返す。
+        Participant、経路点、距離・時間・pace、Event 一覧を含む。
+      </p>
+
+      <h3>Request parameters</h3>
+
+      <h4>Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>In</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>accept</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td><code>application/json</code> を要求する。</td>
+          </tr>
+          <tr>
+            <td><code>authorization</code></td>
+            <td>header</td>
+            <td>required</td>
+            <td>Cognito Access Token。<code>Bearer &lt;access_token&gt;</code>。</td>
+          </tr>
+          <tr>
+            <td><code>x-request-id</code></td>
+            <td>header</td>
+            <td>optional</td>
+            <td>相関 ID。未指定時は API が生成する。</td>
+          </tr>
+          <tr>
+            <td><code>walkId</code></td>
+            <td>path</td>
+            <td>required</td>
+            <td>対象 Walk の UUID。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Query</h4>
+      <p class="empty">なし</p>
+
+      <h4>Body</h4>
+      <p class="empty">なし</p>
+
+      <h3>Response</h3>
+
+      <h4>Status</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>retryable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>200</code></td><td>Completed Walk Detail</td><td>—</td></tr>
+          <tr><td><code>401</code></td><td>Access Token 欠如または不正</td><td><code>false</code></td></tr>
+          <tr><td><code>404</code></td><td>別 Owner、存在しない walkId、<code>completed</code> ではない Walk</td><td><code>false</code></td></tr>
+          <tr><td><code>500</code></td><td>サーバーエラー</td><td><code>false</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Body</h4>
+      <p>
+        200 は Walk Detail。
+        <code>trackPoints</code> は DynamoDB の確定点を <code>recordedAt</code> 昇順。
+        <code>distanceMeters</code> はその経路長。
+        <code>events</code> は <code>occurredAt</code> 昇順。0件は空配列。
+      </p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>requestId</code></td><td>string</td><td>相関 ID</td></tr>
+          <tr><td><code>walkId</code></td><td>string (UUID)</td><td>対象 Walk</td></tr>
+          <tr><td><code>ownerId</code></td><td>string (UUID)</td><td>開始した Owner</td></tr>
+          <tr><td><code>state</code></td><td>string</td><td><code>completed</code></td></tr>
+          <tr><td><code>startedAt</code></td><td>string (date-time)</td><td>開始成功日時</td></tr>
+          <tr><td><code>completedAt</code></td><td>string (date-time)</td><td>完了日時</td></tr>
+          <tr><td><code>durationSeconds</code></td><td>integer</td><td><code>startedAt</code> から <code>completedAt</code> までの秒</td></tr>
+          <tr><td><code>distanceMeters</code></td><td>integer</td><td>確定 TrackPoint 経路長。0件は 0</td></tr>
+          <tr><td><code>paceSecondsPerMeter</code></td><td>number | null</td><td>距離 0 のとき <code>null</code>。それ以外は <code>durationSeconds / distanceMeters</code></td></tr>
+          <tr><td><code>participants</code></td><td>array</td><td>参加 Dog。1件以上</td></tr>
+          <tr><td><code>participants[].walkParticipantId</code></td><td>string (UUID)</td><td>参加関係 ID</td></tr>
+          <tr><td><code>participants[].dogId</code></td><td>string (UUID)</td><td>参加 Dog</td></tr>
+          <tr><td><code>participants[].name</code></td><td>string</td><td>応答時点の Dog 名</td></tr>
+          <tr><td><code>trackPoints</code></td><td>array</td><td>経路点。0件は空配列</td></tr>
+          <tr><td><code>trackPoints[].recordedAt</code></td><td>string (date-time)</td><td>取得時刻</td></tr>
+          <tr><td><code>trackPoints[].latitude</code></td><td>number</td><td>緯度</td></tr>
+          <tr><td><code>trackPoints[].longitude</code></td><td>number</td><td>経度</td></tr>
+          <tr><td><code>events</code></td><td>array</td><td>Event 一覧。0件は空配列</td></tr>
+          <tr><td><code>events[].eventId</code></td><td>string (UUID)</td><td>冪等キー</td></tr>
+          <tr><td><code>events[].participantDogId</code></td><td>string (UUID)</td><td>対象 Participant</td></tr>
+          <tr><td><code>events[].type</code></td><td>string</td><td><code>pee</code> / <code>poop</code> / <code>sniff</code> / <code>greet</code></td></tr>
+          <tr><td><code>events[].occurredAt</code></td><td>string (date-time)</td><td>操作時刻</td></tr>
+          <tr><td><code>events[].latitude</code></td><td>number</td><td>緯度</td></tr>
+          <tr><td><code>events[].longitude</code></td><td>number</td><td>経度</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Example</h3>
+
+      <h4>Request</h4>
+      <pre><code class="language-bash">curl -X GET "$API_BASE_URL/v1/walks/$WALK_ID" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"</code></pre>
+
+      <h4>Response</h4>
+      <ul class="status-list">
+        <li>
+          <div class="status-label">Status: 200</div>
+          <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "walkId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "state": "completed",
+  "startedAt": "2026-09-06T03:12:04.000Z",
+  "completedAt": "2026-09-06T03:44:04.000Z",
+  "durationSeconds": 1920,
+  "distanceMeters": 2100,
+  "paceSecondsPerMeter": 0.914285714,
+  "participants": [
+    {
+      "walkParticipantId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e81",
+      "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+      "name": "Mugi"
+    },
+    {
+      "walkParticipantId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e82",
+      "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e72",
+      "name": "Sora"
+    }
+  ],
+  "trackPoints": [
+    {
+      "recordedAt": "2026-09-06T03:12:14.000Z",
+      "latitude": 35.6812,
+      "longitude": 139.7671
+    },
+    {
+      "recordedAt": "2026-09-06T03:12:24.000Z",
+      "latitude": 35.6815,
+      "longitude": 139.7674
+    }
+  ],
+  "events": [
+    {
+      "eventId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90",
+      "participantDogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+      "type": "pee",
+      "occurredAt": "2026-09-06T03:20:11.000Z",
+      "latitude": 35.681236,
+      "longitude": 139.767125
+    }
+  ]
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 200（Event なし・TrackPoint 0件）</div>
+          <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "walkId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "state": "completed",
+  "startedAt": "2026-09-06T03:12:04.000Z",
+  "completedAt": "2026-09-06T03:12:34.000Z",
+  "durationSeconds": 30,
+  "distanceMeters": 0,
+  "paceSecondsPerMeter": null,
+  "participants": [
+    {
+      "walkParticipantId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e81",
+      "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+      "name": "Mugi"
+    }
+  ],
+  "trackPoints": [],
+  "events": []
+}</code></pre>
+        </li>
+        <li>
+          <div class="status-label">Status: 404</div>
+          <pre><code class="language-json">{
+  "code": "NOT_FOUND",
+  "message": "The requested resource was not found.",
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "retryable": false
+}</code></pre>
+        </li>
+      </ul>
+    </article>
+
+    <article class="endpoint" id="post-finish-distance">
+      <h2><span class="method">POST</span>/v1/walks/:walkId/finish（距離・pace）</h2>
+      <p class="summary">
+        Finish の確定待ち・冪等・エラー契約は縦切り 5 のまま。
+        この縦切りで Completed 応答の距離と pace を経路由来値へ更新する。
+      </p>
+
+      <h3>Response Body（距離・pace）</h3>
+      <p>
+        200 の Completed Walk で、
+        <code>distanceMeters</code> は DynamoDB 確定 TrackPoint を <code>recordedAt</code> 順に結んだ経路長（メートル、整数）。
+        TrackPoint 0件または距離 0 のとき <code>distanceMeters</code> は <code>0</code>、
+        <code>paceSecondsPerMeter</code> は <code>null</code>。
+        距離が 1 以上のとき <code>paceSecondsPerMeter</code> は <code>durationSeconds / distanceMeters</code>。
+      </p>
+      <pre><code class="language-json">{
+  "requestId": "9a10c3d2-44b1-4f08-91ce-6d2e0b77a201",
+  "walkId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80",
+  "ownerId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e6f",
+  "state": "completed",
+  "startedAt": "2026-09-06T03:12:04.000Z",
+  "completedAt": "2026-09-06T03:44:04.000Z",
+  "durationSeconds": 1920,
+  "distanceMeters": 2100,
+  "paceSecondsPerMeter": 0.914285714,
+  "participants": [
+    {
+      "walkParticipantId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e81",
+      "dogId": "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70",
+      "name": "Mugi"
+    }
+  ]
+}</code></pre>
+    </article>
+  </main>
+</body>
+</html>

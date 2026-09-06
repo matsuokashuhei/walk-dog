@@ -1,6 +1,13 @@
 import type { z } from 'zod'
 import { eventResponseSchema, trackPointResponseSchema } from './contracts.js'
-import type { CompletedWalk, RecordingWalk, TrackPoint, WalkEvent, WalkParticipant } from './types.js'
+import type {
+  CompletedWalk,
+  RecordingWalk,
+  TrackPoint,
+  WalkDetail,
+  WalkEvent,
+  WalkParticipant,
+} from './types.js'
 
 function toParticipantFields(participant: WalkParticipant) {
   return {
@@ -34,6 +41,25 @@ export function toCompletedWalkResponse(requestId: string, walk: CompletedWalk) 
     distanceMeters: walk.distanceMeters,
     paceSecondsPerMeter: walk.paceSecondsPerMeter,
     participants: walk.participants.map(toParticipantFields),
+  }
+}
+
+export function toWalkDetailResponse(requestId: string, detail: WalkDetail) {
+  return {
+    ...toCompletedWalkResponse(requestId, detail),
+    trackPoints: detail.trackPoints.map((point) => ({
+      recordedAt: point.recordedAt.toISOString(),
+      latitude: point.latitude,
+      longitude: point.longitude,
+    })),
+    events: detail.events.map((event) => ({
+      eventId: event.eventId,
+      participantDogId: event.participantDogId,
+      type: event.type,
+      occurredAt: event.occurredAt.toISOString(),
+      latitude: event.latitude,
+      longitude: event.longitude,
+    })),
   }
 }
 

@@ -22,6 +22,7 @@ import {
   unusedDeleteWalk,
   unusedFinishWalk,
   unusedGetActiveWalk,
+  unusedGetWalkDetail,
   unusedRecordEvent,
   unusedStartWalk,
 } from './modules/walks/fixtures.js'
@@ -75,7 +76,7 @@ const expectedOperations = {
   '/v1/dogs/{dogId}': { get: ['200', '401', '404', '500'] },
   '/v1/walks/active': { get: ['200', '204', '401', '500'] },
   '/v1/walks': { post: ['201', '400', '401', '404', '409', '500'] },
-  '/v1/walks/{walkId}': { delete: ['204', '401', '404', '409', '500'] },
+  '/v1/walks/{walkId}': { get: ['200', '401', '404', '500'], delete: ['204', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/finish': { post: ['200', '400', '401', '404', '409', '500', '503'] },
   '/v1/walks/{walkId}/track-points': { post: ['201', '400', '401', '404', '409', '500'] },
   '/v1/walks/{walkId}/events': { post: ['200', '201', '400', '401', '404', '409', '500'] },
@@ -94,7 +95,7 @@ const expectedPathMethods = {
   '/v1/dogs/{dogId}': ['get'],
   '/v1/walks/active': ['get'],
   '/v1/walks': ['post'],
-  '/v1/walks/{walkId}': ['delete'],
+  '/v1/walks/{walkId}': ['get', 'delete'],
   '/v1/walks/{walkId}/finish': ['post'],
   '/v1/walks/{walkId}/track-points': ['post'],
   '/v1/walks/{walkId}/events': ['post'],
@@ -138,6 +139,7 @@ function createOpenApiApp() {
         path: '/v1/walks',
         app: registerWalkRoutes({
           getActiveWalk: unusedGetActiveWalk,
+          getWalkDetail: unusedGetWalkDetail,
           startWalk: unusedStartWalk,
           finishWalk: unusedFinishWalk,
           deleteWalk: unusedDeleteWalk,
@@ -275,6 +277,7 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   assertOperationStatuses(document, '/v1/dogs/{dogId}', 'get', expectedOperations['/v1/dogs/{dogId}'].get)
   assertOperationStatuses(document, '/v1/walks/active', 'get', expectedOperations['/v1/walks/active'].get)
   assertOperationStatuses(document, '/v1/walks', 'post', expectedOperations['/v1/walks'].post)
+  assertOperationStatuses(document, '/v1/walks/{walkId}', 'get', expectedOperations['/v1/walks/{walkId}'].get)
   assertOperationStatuses(document, '/v1/walks/{walkId}', 'delete', expectedOperations['/v1/walks/{walkId}'].delete)
   assertOperationStatuses(document, '/v1/walks/{walkId}/finish', 'post', expectedOperations['/v1/walks/{walkId}/finish'].post)
   assertOperationStatuses(document, '/v1/walks/{walkId}/track-points', 'post', expectedOperations['/v1/walks/{walkId}/track-points'].post)
@@ -310,6 +313,10 @@ test('GET /openapi.json characterizes health, auth, owner, dog, and walk operati
   )
   assert.deepEqual(
     operationAt(document, '/v1/walks', 'post').security,
+    [{ BearerAuth: [] }],
+  )
+  assert.deepEqual(
+    operationAt(document, '/v1/walks/{walkId}', 'get').security,
     [{ BearerAuth: [] }],
   )
   assert.deepEqual(

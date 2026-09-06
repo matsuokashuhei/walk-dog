@@ -41,6 +41,9 @@ function ownersFake(resolve: OwnerRepository['resolveByCognitoSubject']): OwnerR
 function walksFake(getActiveByOwner: WalkRepository['getActiveByOwner']): WalkRepository {
   return {
     getActiveByOwner,
+    async getCompletedByOwner() {
+      throw new Error('unexpected getCompletedByOwner')
+    },
     async start() {
       throw new Error('unexpected start')
     },
@@ -58,6 +61,9 @@ function walksFake(getActiveByOwner: WalkRepository['getActiveByOwner']): WalkRe
     },
     async listAcceptedRecordedAt() {
       throw new Error('unexpected listAcceptedRecordedAt')
+    },
+    async listEvents() {
+      throw new Error('unexpected listEvents')
     },
     async recordEvent() {
       throw new Error('unexpected recordEvent')

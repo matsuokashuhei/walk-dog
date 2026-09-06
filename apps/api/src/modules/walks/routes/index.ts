@@ -7,6 +7,7 @@ import type {
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
+  GetWalkDetail,
   RecordEvent,
   StartWalk,
 } from '../types.js'
@@ -14,11 +15,13 @@ import { registerAcceptTrackPointRoute } from './accept-track-point.js'
 import { registerDeleteWalkRoute } from './delete-walk.js'
 import { registerFinishWalkRoute } from './finish-walk.js'
 import { registerGetActiveWalkRoute } from './get-active-walk.js'
+import { registerGetWalkDetailRoute } from './get-walk-detail.js'
 import { registerRecordEventRoute } from './record-event.js'
 import { registerStartWalkRoute } from './start-walk.js'
 
 export type WalkRouteDependencies = {
   getActiveWalk: GetActiveWalk
+  getWalkDetail: GetWalkDetail
   startWalk: StartWalk
   finishWalk: FinishWalk
   deleteWalk: DeleteWalk
@@ -32,6 +35,7 @@ export function registerWalkRoutes(dependencies: WalkRouteDependencies): App {
   app.use('*', createAuthenticationMiddleware(dependencies.accessTokenVerifier))
   registerGetActiveWalkRoute(app, dependencies.getActiveWalk)
   registerStartWalkRoute(app, dependencies.startWalk)
+  registerGetWalkDetailRoute(app, dependencies.getWalkDetail)
   registerFinishWalkRoute(app, dependencies.finishWalk)
   registerDeleteWalkRoute(app, dependencies.deleteWalk)
   registerAcceptTrackPointRoute(app, dependencies.acceptTrackPoint)

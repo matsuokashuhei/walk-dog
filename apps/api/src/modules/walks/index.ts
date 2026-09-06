@@ -3,6 +3,7 @@ export type {
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
+  GetWalkDetail,
   RecordEvent,
   StartWalk,
 } from './types.js'

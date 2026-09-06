@@ -2,6 +2,7 @@ import type { owners } from '../../infrastructure/database/schema/owner.js'
 import type { walks } from '../../infrastructure/database/schema/walk.js'
 import type { NewWalkEvent, WalkEvent as WalkEventRow } from '../../infrastructure/database/schema/walk-event.js'
 import type { NewWalkTrackPoint, WalkTrackPoint } from '../../infrastructure/database/schema/walk-track-point.js'
+import type { ConfirmedTrackPoint } from './provider.js'
 
 export type WalkParticipant = {
   walkParticipantId: string
@@ -59,6 +60,11 @@ export type WalkEvent = Pick<
   WalkEventRow,
   'eventId' | 'walkId' | 'participantDogId' | 'type' | 'occurredAt' | 'latitude' | 'longitude'
 >
+
+export type WalkDetail = CompletedWalk & {
+  trackPoints: ConfirmedTrackPoint[]
+  events: WalkEvent[]
+}
 
 export type RecordEventInput = Pick<
   NewWalkEvent,
@@ -125,4 +131,12 @@ export type RecordEvent = (input: {
 >) => Promise<
   | { ok: true; event: WalkEvent; created: boolean }
   | { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' }
+>
+
+export type GetWalkDetail = (input: {
+  cognitoSubject: string
+  walkId: string
+}) => Promise<
+  | { ok: true; detail: WalkDetail }
+  | { ok: false; error: 'not_found' }
 >

@@ -7,6 +7,7 @@ import type {
   DeleteWalk,
   FinishWalk,
   GetActiveWalk,
+  GetWalkDetail,
   RecordEvent,
   StartWalk,
 } from '../../../src/modules/walks/types.js'
@@ -17,6 +18,10 @@ const appDependencies = { logger: testLogger, setRequestId: setRequestIdTag }
 
 export const unusedGetActiveWalk: GetActiveWalk = async () => {
   throw new Error('getActiveWalk should not run during walk fixture setup')
+}
+
+export const unusedGetWalkDetail: GetWalkDetail = async () => {
+  throw new Error('getWalkDetail should not run during walk fixture setup')
 }
 
 export const unusedStartWalk: StartWalk = async () => {

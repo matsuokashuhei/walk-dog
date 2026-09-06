@@ -53,6 +53,9 @@ function walksFake(acceptTrackPoint: WalkRepository['acceptTrackPoint']): WalkRe
     async getActiveByOwner() {
       throw new Error('unexpected getActiveByOwner')
     },
+    async getCompletedByOwner() {
+      throw new Error('unexpected getCompletedByOwner')
+    },
     async start() {
       throw new Error('unexpected start')
     },
@@ -68,6 +71,9 @@ function walksFake(acceptTrackPoint: WalkRepository['acceptTrackPoint']): WalkRe
     acceptTrackPoint,
     async listAcceptedRecordedAt() {
       throw new Error('unexpected listAcceptedRecordedAt')
+    },
+        async listEvents() {
+      throw new Error('unexpected listEvents')
     },
     async recordEvent() {
       throw new Error('unexpected recordEvent')

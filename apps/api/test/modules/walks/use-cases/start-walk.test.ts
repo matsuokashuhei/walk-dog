@@ -63,6 +63,9 @@ function walksFake(start: WalkRepository['start']): WalkRepository {
     async getActiveByOwner() {
       throw new Error('unexpected getActiveByOwner')
     },
+    async getCompletedByOwner() {
+      throw new Error('unexpected getCompletedByOwner')
+    },
     start,
     async finish() {
       throw new Error('unexpected finish')
@@ -78,6 +81,9 @@ function walksFake(start: WalkRepository['start']): WalkRepository {
     },
     async listAcceptedRecordedAt() {
       throw new Error('unexpected listAcceptedRecordedAt')
+    },
+        async listEvents() {
+      throw new Error('unexpected listEvents')
     },
     async recordEvent() {
       throw new Error('unexpected recordEvent')

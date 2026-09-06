@@ -76,6 +76,26 @@ export const completedWalkResponseSchema = completedWalkSchema.extend({
   requestId: z.string(),
 })
 
+const walkDetailTrackPointSchema = z.object({
+  recordedAt: acceptTrackPointRequestSchema.shape.recordedAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+const walkDetailEventSchema = z.object({
+  eventId: recordEventRequestSchema.shape.eventId,
+  participantDogId: recordEventRequestSchema.shape.participantDogId,
+  type: walkEventTypeSchema,
+  occurredAt: recordEventRequestSchema.shape.occurredAt,
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+})
+
+export const walkDetailResponseSchema = completedWalkResponseSchema.extend({
+  trackPoints: z.array(walkDetailTrackPointSchema),
+  events: z.array(walkDetailEventSchema),
+})
+
 export const trackPointResponseSchema = z.strictObject({
   requestId: errorSchema.shape.requestId,
   trackPointId: z.uuid(),

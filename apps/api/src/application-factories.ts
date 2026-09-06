@@ -34,6 +34,7 @@ import { createDrizzleDogRepository } from './infrastructure/database/repositori
 import { createDrizzleOwnerRepository } from './infrastructure/database/repositories/drizzle-owner-repository.js'
 import { createDrizzleWalkRepository } from './infrastructure/database/repositories/drizzle-walk-repository.js'
 import { createDynamoDbClient as createProductionDynamoDbClient } from './infrastructure/dynamodb/client.js'
+import { createListConfirmedRecordedAt } from './infrastructure/dynamodb/list-confirmed-recorded-at.js'
 import {
   createLogger as createProductionLogger,
   type Logger,
@@ -81,6 +82,7 @@ import {
 import { createAcceptTrackPoint } from './modules/walks/use-cases/accept-track-point.js'
 import { createDeleteWalk } from './modules/walks/use-cases/delete-walk.js'
 import { createGetActiveWalk } from './modules/walks/use-cases/get-active-walk.js'
+import { createGetWalkDetail } from './modules/walks/use-cases/get-walk-detail.js'
 import { createRecordEvent } from './modules/walks/use-cases/record-event.js'
 import { createStartWalk } from './modules/walks/use-cases/start-walk.js'
 import type { AccessTokenVerifier } from './shared/http/access-token.js'
@@ -193,6 +195,11 @@ export const defaultFactories: ApplicationFactories = {
       createDog: createCreateDog(ownerRepository, dogRepository),
       getDog: createGetDog(ownerRepository, dogRepository),
       getActiveWalk: createGetActiveWalk(ownerRepository, walkRepository),
+      getWalkDetail: createGetWalkDetail(
+        ownerRepository,
+        walkRepository,
+        createListConfirmedRecordedAt(dynamoDbClient, dynamoDbConfig),
+      ),
       startWalk: createStartWalk(ownerRepository, walkRepository),
       finishWalk: createWiredFinishWalk(
         ownerRepository,

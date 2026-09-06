@@ -68,6 +68,9 @@ function walksFake(opts: {
     async getActiveByOwner() {
       throw new Error('unexpected getActiveByOwner')
     },
+    async getCompletedByOwner() {
+      throw new Error('unexpected getCompletedByOwner')
+    },
     async start() {
       throw new Error('unexpected start')
     },
@@ -82,6 +85,9 @@ function walksFake(opts: {
       throw new Error('unexpected acceptTrackPoint')
     },
     listAcceptedRecordedAt: opts.listAccepted,
+        async listEvents() {
+      throw new Error('unexpected listEvents')
+    },
     async recordEvent() {
       throw new Error('unexpected recordEvent')
     },

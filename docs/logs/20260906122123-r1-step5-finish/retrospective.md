@@ -52,6 +52,13 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 - **Desired behavior:** PR の作成・更新・description・マージ確認は専用スキルに置く。iOS E2E 証跡があるときは必須状態ごとの概要と埋め込み画像を description に載せる。
 - **Skill action:** `publishing-pull-requests` を新設。`recording-ios-e2e-evidence` / `finishing-a-development-branch` には短い委任だけ残す。
 
+### 7. 画面契約セッションで iOS E2E を必須にしていなかった
+
+- **Trigger:** ユーザーが「E2Eテストを必須で行うことをワークフローにいれてほしい」と確認し、範囲は「モバイル／画面契約を含むセッションだけ」と選んだ。
+- **Missed behavior:** 証跡の載せ方だけを書き、公開前ゲートにしていなかった。
+- **Desired behavior:** 画面契約を含むセッションは、iOS E2E 証跡が揃うまで公開しない。
+- **Skill action:** `run-dev-session` のゲートと公開フェーズ、`publishing-pull-requests` の作成・マージ条件。
+
 ## Skill outcomes
 
 | Action | Path | Result |
@@ -63,4 +70,4 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 | Update | `.agents/skills/run-dev-session/SKILL.md` | implemented（公開フェーズで PR スキルを指名） |
 | Create | `.agents/skills/publishing-pull-requests/SKILL.md` | implemented |
 
-ユーザーが全提案を承認した。E2E 概要の PR 掲載は `publishing-pull-requests` に切り出した。公開は PR #94。
+ユーザーが全提案を承認した。E2E 概要の PR 掲載は `publishing-pull-requests` に切り出した。画面契約を含むセッションでは公開前の iOS E2E を必須ゲートにした。公開は PR #94。

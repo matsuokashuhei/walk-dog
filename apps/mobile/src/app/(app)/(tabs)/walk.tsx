@@ -29,6 +29,7 @@ import {
   type LocalTrackPoint,
   type RecordingWalkResponse,
 } from '@/lib/walk-api'
+import { walkFinishErrorMessage } from '@/lib/walk-finish-error-message'
 import { loadPathForWalk } from '@/lib/walk-path-store'
 import {
   flushTrackPointUpdates,
@@ -64,7 +65,7 @@ type ScreenState =
   | {
       kind: 'recording'
       walk: RecordingWalkResponse
-      finishError: boolean
+      finishErrorMessage: string | null
       finishKey: string | null
     }
   | { kind: 'completed'; walk: CompletedWalkResponse }
@@ -211,7 +212,7 @@ export default function WalkScreen() {
           finishingRef.current = false
           failingRef.current = false
           startingRef.current = false
-          setState({ kind: 'recording', walk, finishError: false, finishKey: null })
+          setState({ kind: 'recording', walk, finishErrorMessage: null, finishKey: null })
           return
         }
         const current = stateRef.current
@@ -402,7 +403,7 @@ export default function WalkScreen() {
       .then((walk) => {
         finishingRef.current = false
         startingRef.current = false
-        setState({ kind: 'recording', walk, finishError: false, finishKey: null })
+        setState({ kind: 'recording', walk, finishErrorMessage: null, finishKey: null })
       })
       .catch(() => {
         startingRef.current = false
@@ -423,7 +424,7 @@ export default function WalkScreen() {
     const finishKey = state.finishKey ?? newIdempotencyKey()
     const walk = state.walk
     finishingRef.current = true
-    setState({ kind: 'recording', walk, finishError: false, finishKey })
+    setState({ kind: 'recording', walk, finishErrorMessage: null, finishKey })
     void (async () => {
       await pauseTrackPointUpdates()
       const flushResult = await flushTrackPointUpdates()
@@ -440,13 +441,18 @@ export default function WalkScreen() {
           setState({ kind: 'completed', walk: completed })
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (stateRef.current.kind !== 'recording') {
           return
         }
         finishingRef.current = false
         void startTrackPointUpdates(walk.walkId)
-        setState({ kind: 'recording', walk, finishError: true, finishKey })
+        setState({
+          kind: 'recording',
+          walk,
+          finishErrorMessage: walkFinishErrorMessage(error),
+          finishKey,
+        })
       })
   }
 
@@ -706,9 +712,9 @@ export default function WalkScreen() {
                 </View>
               </View>
             ))}
-            {state.finishError ? (
+            {state.finishErrorMessage ? (
               <Text style={styles.error} testID="walk-finish-error">
-                終了に失敗しました。再試行してください。
+                {state.finishErrorMessage}
               </Text>
             ) : null}
             <View style={styles.spacer} />

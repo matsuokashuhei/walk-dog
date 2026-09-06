@@ -127,6 +127,14 @@ forge's tooling — its CLI if one is available, or the creation URL most
 forges print when you push — following the repo's PR template and
 conventions if present, and report the URL to your human partner.
 
+When the session has iOS E2E evidence (`e2e-report.md` and required
+`screenshots/*.png`), the PR description must include an E2E overview:
+one short result line per required state plus embedded Markdown images
+for those PNGs (follow `recording-ios-e2e-evidence`). Do this when
+creating or updating the PR. If evidence lands after the PR exists,
+edit the PR description then — including after merge if the partner
+asks to publish the summary on that PR.
+
 Keep the worktree — your human partner iterates on PR feedback there.
 
 When your human partner asks to merge the PR:

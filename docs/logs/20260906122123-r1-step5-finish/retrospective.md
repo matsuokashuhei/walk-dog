@@ -45,6 +45,13 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 - **Desired behavior:** 別エージェントがシミュレータを動かした場合も、親が必須状態の PNG と `e2e-report.md` を契約どおり確認してから合格とする。
 - **Skill action:** `recording-ios-e2e-evidence` — 委任実行でも親が証跡を確認するまで合格にしない。
 
+### 6. E2E 概要を PR description に載せることがワークフローに無かった
+
+- **Trigger:** ユーザーがマージ済み PR の description に E2E 結果概要を画像付きで書くよう求め、続けて「ワークフローにも追加しろ」と指示した。
+- **Missed behavior:** 証跡をセッションディレクトリに残すだけで、PR description への概要掲載をスキル手順にしていなかった。
+- **Desired behavior:** iOS E2E 証跡があるセッションでは、PR の作成・更新時に必須状態ごとの概要と埋め込み画像を description に載せる。
+- **Skill action:** `recording-ios-e2e-evidence` と `finishing-a-development-branch` — PR description に E2E 概要と画像を含める。
+
 ## Skill outcomes
 
 | Action | Path | Result |
@@ -54,4 +61,4 @@ Trigger と Desired は今回の事例。Skill action は別セッションで�
 | Update | `.agents/skills/finishing-a-development-branch/SKILL.md` | implemented |
 | Update | `.agents/skills/recording-ios-e2e-evidence/SKILL.md` | implemented |
 
-ユーザーが全提案を承認した。スキル本文と AGENTS.md を更新済み。公開は別 PR。
+ユーザーが全提案を承認した。加えて E2E 概要の PR description 掲載をワークフローへ追加した。公開は PR #94。

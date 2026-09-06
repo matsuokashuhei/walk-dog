@@ -24,6 +24,8 @@ AGENTS.md が示す計画書、仕様、セッションログをこの順で読�
 
 HTTP API を含むとき、method ごとの HTML をセッションディレクトリへ置く。各 method 節は Endpoint、Request parameters、Response、Example を持つ。
 
+概要（lede）は提供機能だけを書く。Base URL、日時表記、JSON の casing などのエンコーディング詳細は method 節の詳細に置く。
+
 各 method の成功 Response Body は、その method の節に全部書く。GET に書いた同じ形を会話で示すだけでは、POST の提示にならない。POST が作成と同時に返す入れ子フィールドは POST 成功節に書く。
 
 ## 状態

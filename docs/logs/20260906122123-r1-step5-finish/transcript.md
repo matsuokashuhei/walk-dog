@@ -50,3 +50,4 @@ Step 4 振り返りのスキル変更を declined にし、所有ワークツリ
 - artifacts updated: transcript, `plan.md`, `staged-development.md`, session log directory
 - artifacts already current: `design.md`, `specification-review.md`, `finish-api-spec.html`, `finish-spec-mockups.html`
 - concerns: none
+- `2026-09-06 13:30 JST`: Final review Critical/Important fixed in `210a1d4` (finish replay + wait failure → 503). Re-review clean. Ready for publish options.

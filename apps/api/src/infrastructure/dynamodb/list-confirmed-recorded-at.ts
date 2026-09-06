@@ -8,6 +8,14 @@ import type { DynamoDbConfig } from '../config/index.js'
 
 type DynamoDbSender = Pick<DynamoDBClient, 'send'>
 
+function recordedAtFromItem(item: Record<string, AttributeValue>): Date {
+  const recordedAt = item.recordedAt.S
+  if (recordedAt === undefined) {
+    throw new Error('confirmed track point missing recordedAt')
+  }
+  return new Date(recordedAt)
+}
+
 export function createListConfirmedRecordedAt(
   client: DynamoDbSender,
   config: DynamoDbConfig,
@@ -28,7 +36,7 @@ export function createListConfirmedRecordedAt(
         }))
 
         for (const item of response.Items ?? []) {
-          recordedAt.push(new Date(item.recordedAt!.S!))
+          recordedAt.push(recordedAtFromItem(item))
         }
 
         exclusiveStartKey = response.LastEvaluatedKey

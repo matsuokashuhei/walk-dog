@@ -37,6 +37,36 @@ async function waitForConfirmation(
   }
 }
 
+async function loadAccepted(
+  walks: WalkRepository,
+  ownerId: string,
+  walkId: string,
+): Promise<Date[]> {
+  try {
+    return await walks.listAcceptedRecordedAt({ ownerId, walkId })
+  } catch (error) {
+    if (!(error instanceof WalkNotRecordingError)) {
+      throw error
+    }
+    return []
+  }
+}
+
+function mapFinishError(
+  error: unknown,
+): { ok: false; error: 'not_found' | 'walk_not_recording' | 'idempotency_conflict' } | null {
+  if (error instanceof WalkNotFoundError) {
+    return { ok: false, error: 'not_found' }
+  }
+  if (error instanceof WalkNotRecordingError) {
+    return { ok: false, error: 'walk_not_recording' }
+  }
+  if (error instanceof IdempotencyConflictError) {
+    return { ok: false, error: 'idempotency_conflict' }
+  }
+  return null
+}
+
 export function createFinishWalk(
   owners: OwnerRepository,
   walks: WalkRepository,
@@ -49,18 +79,7 @@ export function createFinishWalk(
     const owner = await owners.resolveByCognitoSubject(input.cognitoSubject)
     const bodyHash = createHash('sha256').update('{}').digest('hex')
     try {
-      let accepted: Date[]
-      try {
-        accepted = await walks.listAcceptedRecordedAt({
-          ownerId: owner.ownerId,
-          walkId: input.walkId,
-        })
-      } catch (error) {
-        if (!(error instanceof WalkNotRecordingError)) {
-          throw error
-        }
-        accepted = []
-      }
+      const accepted = await loadAccepted(walks, owner.ownerId, input.walkId)
       if (accepted.length > 0) {
         const status = await waitForConfirmation(
           confirmed,
@@ -82,14 +101,9 @@ export function createFinishWalk(
       })
       return { ok: true, walk }
     } catch (error) {
-      if (error instanceof WalkNotFoundError) {
-        return { ok: false, error: 'not_found' }
-      }
-      if (error instanceof WalkNotRecordingError) {
-        return { ok: false, error: 'walk_not_recording' }
-      }
-      if (error instanceof IdempotencyConflictError) {
-        return { ok: false, error: 'idempotency_conflict' }
+      const mapped = mapFinishError(error)
+      if (mapped !== null) {
+        return mapped
       }
       throw error
     }

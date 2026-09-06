@@ -67,7 +67,7 @@ export type FinishWalkClock = {
 }
 
 export type FinishWalkSleep = {
-  sleep(ms: number): Promise<void>
+  sleep(delayMs: number): Promise<void>
 }
 
 export type FinishWalk = (input: {

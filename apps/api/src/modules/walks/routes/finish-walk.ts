@@ -29,6 +29,7 @@ export const finishWalkRoute = createRoute({
     401: { content: { 'application/json': { schema: walkErrorSchema } }, description: 'Unauthenticated' },
     404: { content: { 'application/json': { schema: walkErrorSchema } }, description: 'Not found' },
     409: { content: { 'application/json': { schema: walkErrorSchema } }, description: 'Conflict' },
+    503: { content: { 'application/json': { schema: walkErrorSchema } }, description: 'Service unavailable' },
     500: { content: { 'application/json': { schema: walkErrorSchema } }, description: 'Internal server error' },
   },
 })
@@ -65,6 +66,14 @@ export function registerFinishWalkRoute(app: App, finishWalk: FinishWalk): void 
         requestId: ctx.get('requestId'),
         retryable: false as const,
       }, 409)
+    }
+    if (result.error === 'service_unavailable') {
+      return ctx.json({
+        code: 'SERVICE_UNAVAILABLE' as const,
+        message: '終了処理を完了できませんでした。もう一度お試しください。',
+        requestId: ctx.get('requestId'),
+        retryable: true as const,
+      }, 503)
     }
     return ctx.json({
       code: 'IDEMPOTENCY_CONFLICT' as const,

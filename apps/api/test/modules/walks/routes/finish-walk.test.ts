@@ -269,3 +269,20 @@ test('POST /v1/walks/:walkId/finish returns 409 IDEMPOTENCY_CONFLICT when the sa
   assert.ok(body.requestId)
   assert.equal(body.retryable, false)
 })
+
+test('POST /v1/walks/:walkId/finish returns 503 SERVICE_UNAVAILABLE when confirmation times out', async () => {
+  const response = await createFinishWalkApp(async () => ({
+    ok: false,
+    error: 'service_unavailable',
+  })).request(`/v1/walks/${walkId}/finish`, {
+    method: 'POST',
+    headers: authorizedHeaders,
+    body: '{}',
+  })
+  const body = await response.json() as ErrorBody
+  assert.equal(response.status, 503)
+  assert.equal(body.code, 'SERVICE_UNAVAILABLE')
+  assert.equal(body.message, '終了処理を完了できませんでした。もう一度お試しください。')
+  assert.ok(body.requestId)
+  assert.equal(body.retryable, true)
+})

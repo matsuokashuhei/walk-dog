@@ -46,6 +46,8 @@ services:
         condition: service_healthy
       elasticmq:
         condition: service_started
+      dynamodb:
+        condition: service_started
 
 volumes:
   postgres-data:

@@ -21,6 +21,10 @@ export type SqsResource = {
   destroy: () => void
 }
 
+export type DynamoDbResource = {
+  destroy: () => void
+}
+
 export type StartServer = (options: {
   fetch: App['fetch']
   port: number
@@ -69,6 +73,7 @@ export function createShutdownHandler(
   pool: Pool,
   cognito: CognitoResource,
   sqs: SqsResource,
+  dynamodb: DynamoDbResource,
   sentry: { close: () => Promise<void> },
 ): () => Promise<void> {
   let shutdownPromise: Promise<void> | undefined
@@ -88,6 +93,9 @@ export function createShutdownHandler(
       }, firstError)
       await attemptClose(() => {
         sqs.destroy()
+      }, firstError)
+      await attemptClose(() => {
+        dynamodb.destroy()
       }, firstError)
       await attemptClose(() => sentry.close(), firstError)
 
@@ -124,6 +132,7 @@ export function startServer(options: StartServerOptions = {}): {
     resources.pool,
     resources.cognitoClient,
     resources.sqsClient,
+    resources.dynamoDbClient,
     { close: resources.closeSentry },
   )
 

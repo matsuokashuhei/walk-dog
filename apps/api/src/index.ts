@@ -1,3 +1,4 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { SQSClient } from '@aws-sdk/client-sqs'
 import type { Pool } from 'pg'
 import {
@@ -15,10 +16,13 @@ import { createCognitoAuthProvider } from './infrastructure/cognito/cognito-auth
 import {
   loadCognitoConfig,
   loadDatabaseConfig,
+  loadDynamoDbConfig,
   loadObservabilityConfig,
   loadSqsConfig,
   loadWorkerHealthConfig,
+  FINISH_CONFIRMATION_TIMEOUT_MS,
   type DatabaseConfig,
+  type DynamoDbConfig,
   type SqsConfig,
   type WorkerHealthConfig,
 } from './infrastructure/config/index.js'
@@ -29,6 +33,8 @@ import {
 import { createDrizzleDogRepository } from './infrastructure/database/repositories/drizzle-dog-repository.js'
 import { createDrizzleOwnerRepository } from './infrastructure/database/repositories/drizzle-owner-repository.js'
 import { createDrizzleWalkRepository } from './infrastructure/database/repositories/drizzle-walk-repository.js'
+import { createDynamoDbClient as createProductionDynamoDbClient } from './infrastructure/dynamodb/client.js'
+import { createListConfirmedRecordedAt } from './infrastructure/dynamodb/list-confirmed-recorded-at.js'
 import {
   createLogger as createProductionLogger,
   type Logger,
@@ -86,6 +92,7 @@ export type ApplicationConfigs = {
   database: DatabaseConfig
   cognito: CognitoConfig
   sqs: SqsConfig
+  dynamodb: DynamoDbConfig
   workerHealth: WorkerHealthConfig
   observability: {
     environment: string
@@ -98,6 +105,7 @@ export type ApplicationResources = {
   pool: Pool
   cognitoClient: CognitoClient
   sqsClient: SQSClient
+  dynamoDbClient: DynamoDBClient
   closeSentry: () => Promise<void>
 }
 
@@ -114,6 +122,7 @@ export type ApplicationFactories = {
   createWalkRepository: (db: DbInstance) => WalkRepository
   createActiveWalkCommands: (walks: WalkRepository) => ActiveWalkCommands
   createSqsClient: (config: SqsConfig) => SQSClient
+  createDynamoDbClient: (config: DynamoDbConfig) => DynamoDBClient
   createTrackPointQueue: (client: SQSClient, config: SqsConfig) => TrackPointQueue
   createAccessTokenVerifier: (config: CognitoConfig) => AccessTokenVerifier
   createUseCases: (dependencies: {
@@ -124,6 +133,8 @@ export type ApplicationFactories = {
     activeWalkCommands: ActiveWalkCommands
     trackPointQueue: TrackPointQueue
     accessTokenVerifier: AccessTokenVerifier
+    dynamoDbClient: DynamoDBClient
+    dynamoDbConfig: DynamoDbConfig
   }) => ApplicationUseCases
   createAuthRoutes: (dependencies: AuthRouteDependencies) => App
   createOwnerRoutes: (dependencies: OwnerRouteDependencies) => App
@@ -143,6 +154,7 @@ const defaultFactories: ApplicationFactories = {
       database: loadDatabaseConfig(env),
       cognito: loadCognitoConfig(env),
       sqs: loadSqsConfig(env),
+      dynamodb: loadDynamoDbConfig(env),
       workerHealth: loadWorkerHealthConfig(env),
       observability: loadObservabilityConfig(env),
     }
@@ -156,6 +168,7 @@ const defaultFactories: ApplicationFactories = {
   createWalkRepository: createDrizzleWalkRepository,
   createActiveWalkCommands: (walks) => walks,
   createSqsClient: createProductionSqsClient,
+  createDynamoDbClient: createProductionDynamoDbClient,
   createTrackPointQueue,
   createAccessTokenVerifier: createProductionAccessTokenVerifier,
   createUseCases({
@@ -166,6 +179,8 @@ const defaultFactories: ApplicationFactories = {
     activeWalkCommands,
     trackPointQueue,
     accessTokenVerifier,
+    dynamoDbClient,
+    dynamoDbConfig,
   }) {
     return {
       startSignUp: createStartSignUp(authProvider),
@@ -181,7 +196,14 @@ const defaultFactories: ApplicationFactories = {
       getDog: createGetDog(ownerRepository, dogRepository),
       getActiveWalk: createGetActiveWalk(ownerRepository, walkRepository),
       startWalk: createStartWalk(ownerRepository, walkRepository),
-      finishWalk: createFinishWalk(ownerRepository, walkRepository),
+      finishWalk: createFinishWalk(
+        ownerRepository,
+        walkRepository,
+        createListConfirmedRecordedAt(dynamoDbClient, dynamoDbConfig),
+        { now: () => Date.now() },
+        { sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) },
+        FINISH_CONFIRMATION_TIMEOUT_MS,
+      ),
       deleteWalk: createDeleteWalk(ownerRepository, walkRepository),
       acceptTrackPoint: createAcceptTrackPoint(ownerRepository, walkRepository, trackPointQueue),
     }
@@ -215,12 +237,14 @@ export function createApplication(
   const { db: database, pool } = factories.createDatabase(configs.database)
   const cognitoClient = factories.createCognitoClient(configs.cognito)
   const sqsClient = factories.createSqsClient(configs.sqs)
+  const dynamoDbClient = factories.createDynamoDbClient(configs.dynamodb)
   const app = composeApp(factories, configs, {
     logger,
     database,
     pool,
     cognitoClient,
     sqsClient,
+    dynamoDbClient,
   })
 
   return {
@@ -229,6 +253,7 @@ export function createApplication(
       pool,
       cognitoClient,
       sqsClient,
+      dynamoDbClient,
       closeSentry,
     },
   }
@@ -241,6 +266,7 @@ function composeUseCases(
     database: DbInstance
     cognitoClient: CognitoClient
     sqsClient: SQSClient
+    dynamoDbClient: DynamoDBClient
   },
 ): ApplicationUseCases {
   const authProvider = factories.createAuthProvider(resources.cognitoClient)
@@ -258,6 +284,8 @@ function composeUseCases(
     activeWalkCommands,
     trackPointQueue,
     accessTokenVerifier,
+    dynamoDbClient: resources.dynamoDbClient,
+    dynamoDbConfig: configs.dynamodb,
   })
 }
 
@@ -270,6 +298,7 @@ function composeApp(
     pool: Pool
     cognitoClient: CognitoClient
     sqsClient: SQSClient
+    dynamoDbClient: DynamoDBClient
   },
 ): App {
   const useCases = composeUseCases(factories, configs, resources)

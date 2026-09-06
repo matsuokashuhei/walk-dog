@@ -6,6 +6,7 @@ import {
   WalkNotRecordingError,
 } from '../../../modules/walks/errors.js'
 import type { WalkRepositorySatisfiesActiveWalkCommands } from '../../../modules/walks/active-walk-commands.js'
+import { paceSecondsPerMeter } from '../../../modules/walks/path-distance.js'
 import type {
   CommandNamespace,
   CompletedWalk,
@@ -104,7 +105,7 @@ async function finishWalk(trx: WalkDb, input: FinishWalkInput): Promise<Complete
   const completedAt = new Date()
   const updatedWalks = await trx
     .update(walks)
-    .set({ state: 'completed', completedAt })
+    .set({ state: 'completed', completedAt, distanceMeters: input.distanceMeters })
     .where(and(eq(walks.walkId, input.walkId), eq(walks.ownerId, input.ownerId), eq(walks.state, 'recording')))
     .returning()
   if (updatedWalks.length === 0) {
@@ -287,15 +288,17 @@ function toRecordingWalk(walk: WalkRow, participantRows: WalkParticipantRow[]): 
 
 function toCompletedWalk(walk: WalkRow, participantRows: WalkParticipantRow[]): CompletedWalk {
   const completedAt = walk.completedAt as Date
+  const durationSeconds = Math.floor((completedAt.getTime() - walk.startedAt.getTime()) / 1000)
+  const distanceMeters = walk.distanceMeters ?? 0
   return {
     walkId: walk.walkId,
     ownerId: walk.ownerId,
     state: 'completed',
     startedAt: walk.startedAt,
     completedAt,
-    durationSeconds: Math.floor((completedAt.getTime() - walk.startedAt.getTime()) / 1000),
-    distanceMeters: 0,
-    paceSecondsPerMeter: null,
+    durationSeconds,
+    distanceMeters,
+    paceSecondsPerMeter: paceSecondsPerMeter(durationSeconds, distanceMeters),
     participants: participantRows.map(toParticipant),
   }
 }

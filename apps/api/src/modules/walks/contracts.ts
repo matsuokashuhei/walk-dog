@@ -63,8 +63,8 @@ const completedWalkSchema = z.object({
   startedAt: z.string(),
   completedAt: z.string(),
   durationSeconds: z.number(),
-  distanceMeters: z.literal(0),
-  paceSecondsPerMeter: z.null(),
+  distanceMeters: z.number().int().nonnegative(),
+  paceSecondsPerMeter: z.number().nullable(),
   participants: z.array(walkParticipantSchema),
 })
 

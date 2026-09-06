@@ -8,7 +8,8 @@ import {
   WalkNotFoundError,
   WalkNotRecordingError,
 } from '../../../../src/modules/walks/errors.js'
-import type { ConfirmedTrackPoints } from '../../../../src/modules/walks/provider.js'
+import type { ConfirmedTrackPoint, ConfirmedTrackPoints } from '../../../../src/modules/walks/provider.js'
+import { pathDistanceMeters } from '../../../../src/modules/walks/path-distance.js'
 import type { WalkRepository } from '../../../../src/modules/walks/repository.js'
 import type { CompletedWalk, FinishWalkInput } from '../../../../src/modules/walks/types.js'
 import { createFinishWalk } from '../../../../src/modules/walks/use-cases/finish-walk.js'
@@ -91,6 +92,7 @@ function createSut(opts: {
   listAccepted?: WalkRepository['listAcceptedRecordedAt']
   finish?: WalkRepository['finish']
   listConfirmed?: ConfirmedTrackPoints['listRecordedAt']
+  listPoints?: ConfirmedTrackPoints['listPoints']
   nowValues?: number[]
   sleepCalls?: number[]
   resolveByCognitoSubject?: OwnerRepository['resolveByCognitoSubject']
@@ -98,6 +100,7 @@ function createSut(opts: {
   const remainingNow = [...(opts.nowValues ?? [])]
   const finishCalls: FinishWalkInput[] = []
   const confirmedCalls: string[] = []
+  const listPointsCalls: string[] = []
   const listAcceptedCalls: { ownerId: string; walkId: string }[] = []
   const finishWalk = createFinishWalk(
     ownersFake(opts.resolveByCognitoSubject ?? (async () => owner)),
@@ -114,7 +117,13 @@ function createSut(opts: {
         if (opts.finish) {
           return opts.finish(input)
         }
-        return walk
+        return {
+          ...walk,
+          distanceMeters: input.distanceMeters,
+          paceSecondsPerMeter: input.distanceMeters > 0
+            ? walk.durationSeconds / input.distanceMeters
+            : null,
+        }
       },
     }),
     {
@@ -124,6 +133,13 @@ function createSut(opts: {
           return opts.listConfirmed(targetWalkId)
         }
         throw new Error('unexpected listRecordedAt')
+      },
+      async listPoints(targetWalkId) {
+        listPointsCalls.push(targetWalkId)
+        if (opts.listPoints) {
+          return opts.listPoints(targetWalkId)
+        }
+        throw new Error('unexpected listPoints')
       },
     },
     {
@@ -142,11 +158,11 @@ function createSut(opts: {
     },
     30_000,
   )
-  return { finishWalk, finishCalls, confirmedCalls, listAcceptedCalls }
+  return { finishWalk, finishCalls, confirmedCalls, listPointsCalls, listAcceptedCalls }
 }
 
 test('finishWalk completes immediately when there are no accepted points', async () => {
-  const { finishWalk, finishCalls, confirmedCalls, listAcceptedCalls } = createSut({
+  const { finishWalk, finishCalls, confirmedCalls, listPointsCalls, listAcceptedCalls } = createSut({
     resolveByCognitoSubject: async (cognitoSubject) => {
       assert.equal(cognitoSubject, 'sub-1')
       return owner
@@ -156,31 +172,102 @@ test('finishWalk completes immediately when there are no accepted points', async
   assert.deepEqual(await finishWalk(finishInput), { ok: true, walk })
   assert.deepEqual(listAcceptedCalls, [{ ownerId: owner.ownerId, walkId }])
   assert.deepEqual(confirmedCalls, [])
+  assert.deepEqual(listPointsCalls, [])
   assert.deepEqual(finishCalls, [{
     ownerId: owner.ownerId,
     walkId,
     idempotencyKey,
     bodyHash,
+    distanceMeters: 0,
+  }])
+})
+
+test('finishWalk with zero points returns distanceMeters 0 and null pace', async () => {
+  const { finishWalk, finishCalls, listPointsCalls } = createSut()
+
+  const result = await finishWalk(finishInput)
+  assert.deepEqual(result, { ok: true, walk })
+  assert.equal(result.ok && result.walk.distanceMeters, 0)
+  assert.equal(result.ok && result.walk.paceSecondsPerMeter, null)
+  assert.deepEqual(listPointsCalls, [])
+  assert.deepEqual(finishCalls, [{
+    ownerId: owner.ownerId,
+    walkId,
+    idempotencyKey,
+    bodyHash,
+    distanceMeters: 0,
+  }])
+})
+
+test('finishWalk stores path distance from confirmed points', async () => {
+  const points: ConfirmedTrackPoint[] = [
+    {
+      recordedAt: new Date('2026-09-06T03:12:14.000Z'),
+      latitude: 35.0,
+      longitude: 139.0,
+    },
+    {
+      recordedAt: new Date('2026-09-06T03:13:00.000Z'),
+      latitude: 35.001,
+      longitude: 139.0,
+    },
+  ]
+  const distanceMeters = pathDistanceMeters(points)
+  const { finishWalk, finishCalls, listPointsCalls } = createSut({
+    listAccepted: async () => points.map((point) => point.recordedAt),
+    listConfirmed: async () => points.map((point) => point.recordedAt),
+    listPoints: async () => points,
+  })
+
+  const result = await finishWalk(finishInput)
+  assert.equal(result.ok, true)
+  if (!result.ok) {
+    throw new Error('expected ok')
+  }
+  assert.equal(result.walk.distanceMeters, distanceMeters)
+  assert.equal(result.walk.paceSecondsPerMeter, walk.durationSeconds / distanceMeters)
+  assert.deepEqual(listPointsCalls, [walkId])
+  assert.deepEqual(finishCalls, [{
+    ownerId: owner.ownerId,
+    walkId,
+    idempotencyKey,
+    bodyHash,
+    distanceMeters,
   }])
 })
 
 test('finishWalk finishes after confirmed set covers accepted recordedAt', async () => {
   const sleepCalls: number[] = []
   const confirmedAt: Date[][] = [[], [recordedAt]]
-  const { finishWalk, finishCalls, confirmedCalls } = createSut({
+  const point: ConfirmedTrackPoint = {
+    recordedAt,
+    latitude: 35.0,
+    longitude: 139.0,
+  }
+  const { finishWalk, finishCalls, confirmedCalls, listPointsCalls } = createSut({
     listAccepted: async () => [recordedAt],
     listConfirmed: async () => confirmedAt.shift() ?? [recordedAt],
+    listPoints: async () => [point],
     sleepCalls,
   })
 
-  assert.deepEqual(await finishWalk(finishInput), { ok: true, walk })
+  assert.deepEqual(await finishWalk(finishInput), {
+    ok: true,
+    walk: {
+      ...walk,
+      distanceMeters: 0,
+      paceSecondsPerMeter: null,
+    },
+  })
   assert.deepEqual(confirmedCalls, [walkId, walkId])
+  assert.deepEqual(listPointsCalls, [walkId])
   assert.deepEqual(sleepCalls, [200])
   assert.deepEqual(finishCalls, [{
     ownerId: owner.ownerId,
     walkId,
     idempotencyKey,
     bodyHash,
+    distanceMeters: 0,
   }])
 })
 
@@ -222,6 +309,7 @@ test('finishWalk returns completed walk when listAcceptedRecordedAt throws WalkN
     walkId,
     idempotencyKey,
     bodyHash,
+    distanceMeters: 0,
   }])
 })
 
@@ -241,6 +329,7 @@ test('finishWalk returns walk_not_recording when listAcceptedRecordedAt and fini
     walkId,
     idempotencyKey,
     bodyHash,
+    distanceMeters: 0,
   }])
 })
 

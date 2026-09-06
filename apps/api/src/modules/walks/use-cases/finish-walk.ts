@@ -5,6 +5,7 @@ import {
   WalkNotFoundError,
   WalkNotRecordingError,
 } from '../errors.js'
+import { pathDistanceMeters } from '../path-distance.js'
 import type { ConfirmedTrackPoints } from '../provider.js'
 import type { WalkRepository } from '../repository.js'
 import type { FinishWalk, FinishWalkClock, FinishWalkSleep } from '../types.js'
@@ -93,11 +94,14 @@ export function createFinishWalk(
           return { ok: false, error: 'service_unavailable' }
         }
       }
+      const points = accepted.length === 0 ? [] : await confirmed.listPoints(input.walkId)
+      const distanceMeters = pathDistanceMeters(points)
       const walk = await walks.finish({
         ownerId: owner.ownerId,
         walkId: input.walkId,
         idempotencyKey: input.idempotencyKey,
         bodyHash,
+        distanceMeters,
       })
       return { ok: true, walk }
     } catch (error) {

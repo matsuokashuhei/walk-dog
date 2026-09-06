@@ -25,8 +25,8 @@ export type CompletedWalk = {
   startedAt: Date
   completedAt: Date
   durationSeconds: number
-  distanceMeters: 0
-  paceSecondsPerMeter: null
+  distanceMeters: number
+  paceSecondsPerMeter: number | null
   participants: WalkParticipant[]
 }
 
@@ -44,6 +44,7 @@ export type FinishWalkInput = {
   walkId: string
   idempotencyKey: string
   bodyHash: string
+  distanceMeters: number
 }
 
 export type TrackPoint = Pick<WalkTrackPoint, 'trackPointId' | 'walkId' | 'recordedAt' | 'latitude' | 'longitude'>

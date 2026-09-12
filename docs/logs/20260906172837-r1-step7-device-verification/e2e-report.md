@@ -4,21 +4,21 @@ status: blocked
 
 # R1 Step 7 Device Verification — iOS E2E
 
-Physical-iPhone scenarios A–F did not run. The iPhone is selectable over CoreDevice, Compose LAN health is 200, and AWS SSO is valid. Native install of `com.cacheandbuffer.walkdog` failed on Apple Program License Agreement and missing development profiles. Simulator was not used.
+Physical-iPhone scenarios A–F did not run. Apple Program License Agreement is accepted: a signed `Debug-iphoneos` development client exists with an iOS Team Provisioning Profile. Install still fails because Shuhei’s iPhone is locked, so the developer disk image cannot mount. Simulator was not used.
 
 ## Environment
 
 | Item | Observed value |
 | --- | --- |
 | Checkout | `/Users/matsuokashuhei/Development/github.com/matsuokashuhei/walk-dog/.worktrees/agent/r1-step7-device-verification-20260906172837` |
-| Branch / commit at start | `agent/r1-step7-device-verification-20260906172837` / `88cab12` |
-| Device | Shuhei’s iPhone, iPhone 14 Pro (`iPhone15,2`), iOS 26.6.1, UDID `00008120-001A2DE83A3B401E`, CoreDevice `60CDD5CA-0DAA-50FA-B0A2-268D29F8A1FF` |
-| Device connection | `devicectl`: available (paired), `transportType=localNetwork`, `tunnelState=connected`, Developer Mode enabled, DDI usable. `xctrace` lists the same phone under Devices Offline. `xcdevice` / `xcodebuildmcp device list`: available. |
-| App on device | walk-dog not installed (listed apps are unrelated). No existing `Debug-iphoneos` binary in DerivedData (simulator-only `.app` copies exist). |
+| Branch / commit at start | `agent/r1-step7-device-verification-20260906172837` / `6657af6` |
+| Device | Shuhei’s iPhone, iPhone 14 Pro (`iPhone15,2`), iOS 26.6.2 (23G90), UDID `00008120-001A2DE83A3B401E`, CoreDevice `60CDD5CA-0DAA-50FA-B0A2-268D29F8A1FF` |
+| Device connection | USB (`xcdevice` available). `devicectl` tunnel acquired. Developer Mode enabled. `passcodeRequired=true`, `unlockedSinceBoot=true`. DDI mount: `kAMDMobileImageMounterDeviceLocked`. |
+| App on device | Install of `com.cacheandbuffer.walkdog` did not complete. Signed local binary exists: `DerivedData/mobile-dreejpeqhkesltafkqlqrmoxohjv/Build/Products/Debug-iphoneos/mobile.app` with `embedded.mobileprovision` named `iOS Team Provisioning Profile: *`. |
 | API URL | `EXPO_PUBLIC_API_BASE_URL=http://192.168.68.64:3000` in `apps/mobile/.env` |
 | Compose | `GET http://127.0.0.1:3000/health` 200 `{"status":"ok"}`; `GET http://192.168.68.64:3000/health` 200 `{"status":"ok"}`. api, worker, postgres (healthy), elasticmq, dynamodb up. |
-| AWS SSO | `docker run --rm -v "$HOME/.aws:/root/.aws" amazon/aws-cli sts get-caller-identity --profile walk-dog` succeeded (`arn:aws:sts::967026628831:assumed-role/AWSReservedSSO_walk-dog_5388bc4607b257b0/matsuokashuhei`). OTP was not requested. |
-| Signing | Expo selected `Apple Development: matzuokashuhei@gmail.com (D6K28S9P9J)`. Build stopped on PLA + missing profile. |
+| AWS SSO | `amazon/aws-cli sts get-caller-identity --profile walk-dog` failed: SSO session expired. Device-code login started (`https://d-9567554c74.awsapps.com/start/#/device`, code `NQLF-CCCW`) and was not completed. OTP was not requested. |
+| Signing | Team `CY4LJR5KMM`. Generic `iphoneos` `xcodebuild` with `-allowProvisioningUpdates` exited 0. PLA and missing-profile errors did not recur. |
 
 ## Commands
 
@@ -29,23 +29,28 @@ curl --fail http://192.168.68.64:3000/health
 xcrun xctrace list devices
 xcrun devicectl list devices
 xcrun xcdevice list
+xcrun devicectl device info lockState --device 00008120-001A2DE83A3B401E
 # apps/mobile:
 # EXPO_PUBLIC_API_BASE_URL=http://192.168.68.64:3000
 EXPO_PUBLIC_API_BASE_URL=http://192.168.68.64:3000 \
   REACT_NATIVE_PACKAGER_HOSTNAME=192.168.68.64 \
   npx expo run:ios --device 00008120-001A2DE83A3B401E -p 8082
+xcodebuild -workspace ios/mobile.xcworkspace -scheme mobile -configuration Debug \
+  -destination 'generic/platform=iOS' -allowProvisioningUpdates \
+  DEVELOPMENT_TEAM=CY4LJR5KMM CODE_SIGN_STYLE=Automatic
+xcrun devicectl device install app --device 00008120-001A2DE83A3B401E \
+  /Users/matsuokashuhei/Library/Developer/Xcode/DerivedData/mobile-dreejpeqhkesltafkqlqrmoxohjv/Build/Products/Debug-iphoneos/mobile.app
 ```
 
-`npx expo run:ios` completed prebuild and CocoaPods, then `xcodebuild` exited 65:
+`npx expo run:ios` selected the physical iPhone, then `xcodebuild` exited 70:
 
 ```text
-Unable to process request - PLA Update available: You currently don't have access
-to this membership resource. To resolve this issue, agree to the latest Program
-License Agreement in your developer account. (in target 'mobile' from project 'mobile')
-
-No profiles for 'com.cacheandbuffer.walkdog' were found: Xcode couldn't find any
-iOS App Development provisioning profiles matching 'com.cacheandbuffer.walkdog'.
+Timed out waiting for all destinations matching the provided destination specifier to become available
+{ platform:iOS, arch:arm64, id:00008120-001A2DE83A3B401E, name:Shuhei’s iPhone,
+  error:The developer disk image could not be mounted on this device. }
 ```
+
+`devicectl device install app` failed with the same DDI error, underlying `kAMDMobileImageMounterDeviceLocked`.
 
 ## Scenario results
 
@@ -69,9 +74,11 @@ Required PNGs were not captured:
 
 ## Blocker
 
-Apple Developer Program License Agreement is pending. Until it is accepted, Xcode cannot create or download an iOS App Development profile for `com.cacheandbuffer.walkdog`, so the development client cannot be installed on the physical iPhone.
+The iPhone is locked. CoreDevice can pair over USB, but mounting the developer disk image requires an unlocked device, so the development client cannot be installed or launched.
 
-**Human step:** open [https://developer.apple.com/account](https://developer.apple.com/account), sign in as the walk-dog Apple Development account, agree to the latest Program License Agreement, then retry from this worktree:
+PLA is resolved. A signed `com.cacheandbuffer.walkdog` `iphoneos` build is already on this Mac.
+
+**Human step:** unlock Shuhei’s iPhone (passcode or Face ID) while it stays USB-connected, leave it on the Home Screen with Auto-Lock off or a long Auto-Lock, then retry Task 4 from this worktree:
 
 ```sh
 cd apps/mobile
@@ -80,4 +87,4 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.68.64:3000 \
   npx expo run:ios --device 00008120-001A2DE83A3B401E -p 8082
 ```
 
-USB is not required for CoreDevice discovery (the phone is already paired on Wi‑Fi). If profile refresh still fails after PLA, connect the iPhone by USB, trust this Mac, and confirm the phone appears under Xcode → Window → Devices and Simulators as connected.
+Also run `aws sso login --profile walk-dog` (or `docker run --rm -v "$HOME/.aws:/root/.aws" amazon/aws-cli sso login --profile walk-dog`) before any Cognito Verify. OTP was not reached this run.

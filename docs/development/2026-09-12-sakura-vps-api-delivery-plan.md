@@ -1,6 +1,6 @@
 # Sakura VPS API delivery plan
 
-Developers publish a release image from main to ECR, then promote one digest onto a Sakura VPS so api and worker run the same build. The program enforces digest-first promote with migrate before api and worker. PR order is `vps-dockerfile`, `vps-ecr-oidc`, `vps-publish`, `vps-compose-runbook`.
+Developers publish a release image from main to ECR, then promote the `latest` tag onto a Sakura VPS so api and worker run the same build. The program enforces migrate before api and worker. Digests stay in the host state file for reboot pin and rollback. PR order is `vps-dockerfile`, `vps-ecr-oidc`, `vps-publish`, `vps-compose-runbook`.
 
 ## How to read this
 

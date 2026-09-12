@@ -26,7 +26,9 @@ services:
       - "8000:8000"
 
   worker:
-    build: ./api
+    build:
+      context: ./api
+      target: development
     command: npm run worker
     env_file: .env.local
     depends_on:
@@ -36,7 +38,9 @@ services:
       - "3001"
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      target: development
     command: npm run dev
     env_file: .env.local
     ports:

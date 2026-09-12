@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env.vps
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: ${RELEASE_IMAGE}
+    command: ["npm", "run", "migrate"]
+    env_file: .env.vps
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: ${RELEASE_IMAGE}
+    env_file: .env.vps
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    image: ${RELEASE_IMAGE}
+    command: ["npm", "run", "start:worker"]
+    env_file: .env.vps
+    expose:
+      - "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

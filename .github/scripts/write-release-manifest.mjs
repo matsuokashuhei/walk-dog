@@ -4,7 +4,7 @@
  * OpenAPI document number (for example 3.1.0).
  *
  * Usage:
- *   node scripts/write-release-manifest.mjs \
+ *   node .github/scripts/write-release-manifest.mjs \
  *     --commit-sha <sha> \
  *     --image-digest sha256:... \
  *     --openapi-json <path-or-> \

@@ -94,7 +94,6 @@ jobs:
           tags: ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
 
       - name: Write release manifest
-        working-directory: apps/api
         env:
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
@@ -102,10 +101,10 @@ jobs:
             echo "build-push-action did not emit image digest" >&2
             exit 1
           fi
-          node scripts/write-release-manifest.mjs \
+          node .github/scripts/write-release-manifest.mjs \
             --commit-sha "${{ github.sha }}" \
             --image-digest "$IMAGE_DIGEST" \
-            --openapi-json openapi-document.json \
+            --openapi-json apps/api/openapi-document.json \
             --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --out release-manifest.json
           cat release-manifest.json
@@ -114,5 +113,5 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-manifest
-          path: apps/api/release-manifest.json
+          path: release-manifest.json
           if-no-files-found: error

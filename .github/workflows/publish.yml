@@ -1,15 +1,117 @@
-# Calls reusable api-check on push to main.
-# ECR publish / OIDC / image build remain later R0 work.
+# OIDC trust on the role is repo:ORG/REPO:ref:refs/heads/main only.
 name: publish
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   check:
     uses: ./.github/workflows/api-check.yml
+
+  publish:
+    name: publish-ecr
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ECR_REPOSITORY_URL: ${{ vars.ECR_REPOSITORY_URL }}
+      ECR_ROLE_ARN: ${{ vars.ECR_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require ECR publish variables
+        run: |
+          missing=
+          for name in ECR_REPOSITORY_URL ECR_ROLE_ARN AWS_REGION; do
+            if [ -z "${!name}" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing GitHub repository variables:$missing" >&2
+            echo "Set them from Terraform outputs ecr_repository_url, github_actions_ecr_role_arn, and the AWS region." >&2
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Read OpenAPI info.version via GET /openapi.json
+        working-directory: apps/api
+        run: |
+          node --import tsx <<'EOF'
+          import { writeFileSync } from 'node:fs'
+          import { createOpenApiApp } from './test/support/openapi-document.ts'
+
+          const response = await createOpenApiApp().request('/openapi.json')
+          if (!response.ok) {
+            throw new Error(`GET /openapi.json failed with ${response.status}`)
+          }
+          const document = await response.json()
+          writeFileSync('openapi-document.json', `${JSON.stringify(document)}\n`)
+          console.log(`openapi info.version=${document.info.version}`)
+          EOF
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ env.ECR_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Build and push release image
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          target: runtime
+          push: true
+          tags: ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
+
+      - name: Write release manifest
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          if [ -z "$IMAGE_DIGEST" ]; then
+            echo "build-push-action did not emit image digest" >&2
+            exit 1
+          fi
+          bash .github/scripts/write-release-manifest.sh \
+            --commit-sha "${{ github.sha }}" \
+            --image-digest "$IMAGE_DIGEST" \
+            --openapi-json apps/api/openapi-document.json \
+            --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --out release-manifest.json
+          cat release-manifest.json
+
+      - name: Upload release-manifest artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-manifest
+          path: release-manifest.json
+          if-no-files-found: error

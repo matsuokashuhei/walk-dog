@@ -10,12 +10,27 @@
 2. このリポジトリを VPS 上に置く（clone または同等の同期）。
 3. ECR から pull できる AWS 認証を入れる。GitHub Actions の publish 用 OIDC role とは別 identity を使う。
 4. `apps/.env.vps.example` を基に `apps/.env.vps` を作る。root 所有にし、Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
-5. digest 状態ファイルをリポジトリ外に置く。ひな型は `apps/vps/digest-state.example` である。例の置き場は `/var/lib/walkdog/digest-state` である。
+5. digest 状態ファイルをリポジトリ外に置く。ひな型は `apps/vps/digest-state.example` である。例の置き場は `/var/lib/walkdog/digest-state` である。初回は example をそのパスへコピーしてから使う。
 6. ポート 3000 を、API を使う送信元だけに開ける。
+
+## digest を取る
+
+反映の正本は image digest（`sha256:…`）である。main の `publish` workflow が成果物 `release-manifest` を出す。
+
+1. GitHub の Actions で最新の成功した `publish` run を開く。
+2. Artifacts から `release-manifest` をダウンロードする。
+3. 中の digest と commit SHA を控える。`RELEASE` にはその commit SHA を入れる。
+
+CLI を使う場合の例である。
+
+```bash
+gh run list --workflow=publish.yml --branch main --limit 5
+gh run download <run-id> -n release-manifest -D /tmp/release-manifest
+```
 
 ## 初回起動
 
-release manifest の image digest を用意する。main の `publish` workflow が出す `release-manifest` artifact に commit SHA と `sha256:…` が入る。反映の正本は digest である。
+控えた digest を `NEW_DIGEST` に入れる。
 
 1. digest を pull する。
 
@@ -71,6 +86,23 @@ release manifest の image digest を用意する。main の `publish` workflow 
    ```
 
 初回は `PREVIOUS_DIGEST` が example のゼロ値のままでよい。差し戻しが必要になるのは、一度成功したあとである。
+
+## 再起動後に同じ digest で上げる
+
+Compose は digest 状態ファイルを読まない。`RELEASE_IMAGE` がシェルに無いと `api` / `worker` / `migrate` の image を解決できない。ホスト再起動のあと、または promote なしで container を上げ直すとき、先に状態から環境を載せる。
+
+```bash
+STATE=/var/lib/walkdog/digest-state
+set -a
+# shellcheck source=/dev/null
+. "$STATE"
+set +a
+export RELEASE_IMAGE="${RELEASE_REPOSITORY}@${CURRENT_DIGEST}"
+docker compose -f apps/compose.vps.yml up -d api worker
+curl -fsS http://127.0.0.1:3000/health
+```
+
+postgres のデータは volume `postgres-data` に残る。migrate は新しい digest を載せるときだけ再実行する。
 
 ## 新しい digest を反映する
 

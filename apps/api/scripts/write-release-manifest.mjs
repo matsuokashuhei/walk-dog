@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 /**
- * Writes release-manifest.json for the main publish workflow.
- *
  * openapiVersion is apps/api OpenAPI info.version (app version), not the
- * OpenAPI document number (for example 3.1.0). Obtain it from GET /openapi.json:
- *   createOpenApiApp().request('/openapi.json') then read info.version
- * or pass a saved response body via --openapi-json.
+ * OpenAPI document number (for example 3.1.0).
  *
  * Usage:
  *   node scripts/write-release-manifest.mjs \

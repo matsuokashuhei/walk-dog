@@ -1,12 +1,3 @@
-# After api-check on main, build the release image, push it to ECR by commit SHA,
-# and upload release-manifest.json (commitSha, imageDigest, openapiVersion, builtAt).
-# Promote uses imageDigest. Do not pin on a mutable latest tag.
-#
-# GitHub repository variables (Terraform output names in parentheses):
-#   ECR_REPOSITORY_URL          <- ecr_repository_url
-#   GITHUB_ACTIONS_ECR_ROLE_ARN <- github_actions_ecr_role_arn
-#   AWS_REGION                  <- AWS region of the ECR repository
-#
 # OIDC trust on the role is repo:ORG/REPO:ref:refs/heads/main only.
 name: publish
 
@@ -101,7 +92,6 @@ jobs:
           target: runtime
           push: true
           tags: ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
-          # Promote uses the digest from this step. Do not add a latest tag.
 
       - name: Write release manifest
         working-directory: apps/api

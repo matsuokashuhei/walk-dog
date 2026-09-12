@@ -1,1 +1,12 @@
-{"status":"ok"}
+{
+  "endpoint": "http://127.0.0.1:13000/health",
+  "httpStatus": 200,
+  "body": {"status": "ok"},
+  "image": "walkdog-api:local-verify",
+  "imageId": "sha256:3dfeb3c60abbc78dcf196f2ada0c4af0bcbd55d4e72c1114bd9746242cab3254",
+  "migrateExit": 0,
+  "migrateSecsApprox": 1,
+  "readySecsApprox": 2,
+  "migrateFailHold": "HOLD_OK",
+  "note": "Host port 13000 because apps-api-1 held 3000. Lane used temporary SQS_ENDPOINT and DYNAMODB_ENDPOINT for emulators; committed .env.vps.example omits them. Health-fail rollback not exercised in this lane."
+}

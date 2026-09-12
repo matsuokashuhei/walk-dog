@@ -41,6 +41,7 @@ Skip any step = lying, not verifying
 |-------|----------|----------------|
 | Tests pass | Test command output: 0 failures | Previous run, "should pass" |
 | Linter clean | Linter output: 0 errors | Partial check, extrapolation |
+| Lint FAIL is pre-existing | Failures only on paths outside this branch's diff, with file:line list | "probably old" without comparing to the diff |
 | Build succeeds | Build command: exit 0 | Linter passing, logs look good |
 | Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
 | Regression test works | Red-green cycle verified | Test passes once |
@@ -89,6 +90,13 @@ Skip any step = lying, not verifying
 ```
 ✅ [Run build] [See: exit 0] "Build passes"
 ❌ "Linter passed" (linter doesn't check compilation)
+```
+
+**Lint / typecheck failures:**
+```
+✅ Failures only outside the branch diff → report DONE_WITH_CONCERNS as pre-existing with file:line list; do not claim merge-ready lint clean
+✅ Failures on files this branch changed → fix before merge-ready
+❌ "Lint failed but pre-existing" without naming files or comparing to the diff
 ```
 
 **Requirements:**

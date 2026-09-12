@@ -13,7 +13,7 @@ description: Use when starting or continuing a development session.
 
 1. **目的** — 未確定なら `brainstorming` で探索し、確認を取る。確定した目的以外では実行しない。
 2. **隔離** — `using-git-worktrees` で作業空間を用意する。所有ワークツリーはセッション記録に残す。
-3. **記録** — AGENTS.md が示すセッションディレクトリにトランスクリプトを開き、目的・ベースライン・成果物を残す。記録が変わったら、主張が食い違わないよう更新してから次へ進む。
+3. **記録** — AGENTS.md が示すセッションディレクトリにトランスクリプトを開き、目的・ベースライン・成果物を残す。記録が変わったら、主張が食い違わないよう更新してから次へ進む。session docs / `e2e-report` / 証跡をコミットする直前に、`transcript.md` の Completion（HEAD・commit 一覧・gate 結果）をそのコミットの内容と一致させる。
 4. **仕様** — `confirming-development-specifications`。`ready` のときだけ設計へ進む。
 5. **設計と計画** — `brainstorming` で設計を固め、`writing-plans` で実装計画を書く。承認を待つ。
 6. **実装** — 承認済み計画を `subagent-driven-development`（サブエージェント可）または `executing-plans` で実行する。進捗はライブ todos。
@@ -27,7 +27,7 @@ description: Use when starting or continuing a development session.
 - 目的が未確認ならファイルを変えない
 - 仕様レビューが `ready` 以外なら設計・実装しない
 - 計画レベルの判断は、プロジェクトの計画書へ同期するまで次の判断や実装に進まない
-- セッション記録の主張が食い違うあいだ、レビューと公開をしない
+- セッション記録の主張が食い違うあいだ、レビューと公開をしない（transcript Completion の HEAD / commit 一覧が実 HEAD とずれたままコミットしない）
 - Critical / Important が残るあいだ merge-ready にしない
 - 画面契約（モバイル UI）を含むセッションは、iOS E2E 証跡（`recording-ios-e2e-evidence`）が揃うまで公開しない。PR への掲載とマージ確認は `publishing-pull-requests`
 - マージ済みで `retrospective.md` が無いあいだ、セッションを完了しない

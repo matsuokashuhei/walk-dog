@@ -24,7 +24,7 @@ jobs:
       id-token: write
     env:
       ECR_REPOSITORY_URL: ${{ vars.ECR_REPOSITORY_URL }}
-      GITHUB_ACTIONS_ECR_ROLE_ARN: ${{ vars.GITHUB_ACTIONS_ECR_ROLE_ARN }}
+      ECR_ROLE_ARN: ${{ vars.ECR_ROLE_ARN }}
       AWS_REGION: ${{ vars.AWS_REGION }}
     steps:
       - name: Checkout
@@ -33,7 +33,7 @@ jobs:
       - name: Require ECR publish variables
         run: |
           missing=
-          for name in ECR_REPOSITORY_URL GITHUB_ACTIONS_ECR_ROLE_ARN AWS_REGION; do
+          for name in ECR_REPOSITORY_URL ECR_ROLE_ARN AWS_REGION; do
             if [ -z "${!name}" ]; then
               missing="$missing $name"
             fi
@@ -74,7 +74,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
-          role-to-assume: ${{ env.GITHUB_ACTIONS_ECR_ROLE_ARN }}
+          role-to-assume: ${{ env.ECR_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR

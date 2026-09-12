@@ -243,6 +243,14 @@ any that finished without reporting. A bounded stretch keeps nearly
 all of a long wait's efficiency while guaranteeing a stuck or lost
 child is noticed within minutes, not at the end of the session.
 
+**Status monitor loops** (for long-running implementers, e.g. physical
+device E2E): one loop per purpose. Before re-arming, stop every existing
+loop for that purpose. On task DONE/BLOCKED final report, review
+dispatch handoff, or user stop — kill all matching PIDs/terminals and
+consume completion notifications. Do not leave Task N monitors alive
+after Task N finishes. Device E2E details live in
+`recording-ios-e2e-evidence`.
+
 ### 1. Dispatch the implementer
 
 Record BASE (`git rev-parse HEAD`) before dispatching — the review package

@@ -1,0 +1,4 @@
+migrate_secs≈1
+ready_secs≈2
+budget_migrate_max=120
+budget_ready_max=300

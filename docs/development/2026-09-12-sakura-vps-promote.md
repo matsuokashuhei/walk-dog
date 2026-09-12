@@ -18,7 +18,7 @@ Work from the repo root. Compose file: `apps/compose.vps.yml`.
 
    ```bash
    export RELEASE_REPOSITORY='123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/walkdog-api'
-   export NEW_DIGEST='sha256:…'   # from the release manifest
+   export NEW_DIGEST='sha256:…'
    export RELEASE_IMAGE="${RELEASE_REPOSITORY}@${NEW_DIGEST}"
    aws ecr get-login-password --region ap-northeast-1 \
      | docker login --username AWS --password-stdin "${RELEASE_REPOSITORY%%/*}"
@@ -53,11 +53,18 @@ Work from the repo root. Compose file: `apps/compose.vps.yml`.
 
    Ready means PostgreSQL and worker health both succeed and the response is the success JSON.
 
-6. Update digest state only after health succeeds.
+6. Update digest state only after health succeeds. Set `STATE` to your digest-state path.
 
    ```bash
-   # STATE=/var/lib/walkdog/digest-state
-   # Move the previous CURRENT_DIGEST into PREVIOUS_DIGEST, then set CURRENT_DIGEST to NEW_DIGEST.
+   STATE=/var/lib/walkdog/digest-state
+   set -a
+   # shellcheck source=/dev/null
+   . "$STATE"
+   set +a
+   PREVIOUS_DIGEST="$CURRENT_DIGEST"
+   CURRENT_DIGEST="$NEW_DIGEST"
+   printf 'CURRENT_DIGEST=%s\nPREVIOUS_DIGEST=%s\nRELEASE_REPOSITORY=%s\n' \
+     "$CURRENT_DIGEST" "$PREVIOUS_DIGEST" "$RELEASE_REPOSITORY" > "$STATE"
    ```
 
 ## Roll back after a health failure

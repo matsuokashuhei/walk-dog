@@ -25,3 +25,15 @@ variable "github_repo" {
   type    = string
   default = "walk-dog"
 }
+
+variable "sakura_vps_sqs_queue_name" {
+  type        = string
+  description = "SQS queue name used by api/worker on Sakura VPS (URL path suffix)."
+  default     = "track-points"
+}
+
+variable "sakura_vps_dynamodb_table_name" {
+  type        = string
+  description = "DynamoDB table name used by api/worker on Sakura VPS."
+  default     = "TrackPoints"
+}

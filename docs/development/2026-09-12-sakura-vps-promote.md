@@ -8,7 +8,7 @@
 
 1. Docker Engine と Compose plugin を入れる。
 2. このリポジトリを VPS 上に置く。clone でも同等の同期でもよい。
-3. ECR から pull できる AWS 認証を入れる。GitHub Actions の publish 用 OIDC role とは別 identity を使う。
+3. IAM ユーザー `walkdog-sakura-vps` のアクセスキーをホストの AWS CLI に入れる。GitHub Actions の publish 用 OIDC role は使わない。同じキーを `apps/.env.vps` の `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` にも入れる（ECR pull とアプリ実行で共用する）。キーは Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key` から取る。
 4. `apps/.env.vps.example` を基に `apps/.env.vps` を作る。root 所有にする。Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
 5. digest 状態ファイルをリポジトリ外に置く。ひな型は `apps/vps/digest-state.example` である。置き場の例は `/var/lib/walkdog/digest-state` である。初回は example をそのパスへコピーしてから使う。
 6. ポート 3000 を、API を使う送信元だけに開ける。

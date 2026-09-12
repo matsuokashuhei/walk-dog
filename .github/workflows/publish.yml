@@ -101,7 +101,7 @@ jobs:
             echo "build-push-action did not emit image digest" >&2
             exit 1
           fi
-          node .github/scripts/write-release-manifest.mjs \
+          bash .github/scripts/write-release-manifest.sh \
             --commit-sha "${{ github.sha }}" \
             --image-digest "$IMAGE_DIGEST" \
             --openapi-json apps/api/openapi-document.json \

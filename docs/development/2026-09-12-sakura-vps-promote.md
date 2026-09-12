@@ -1,16 +1,16 @@
-# Sakura VPS で API を動かす
+# さくら VPS でバックエンドを動かす
 
-同じ ECR image digest で `api` と `worker` を動かし、`GET /health` が成功する状態にする。作業は VPS 上で SSH 経由で行う。リポジトリ根から実行する。Compose ファイルは `apps/compose.vps.yml` である。
+同じ ECR image digest で `api` と `worker` を動かす。`GET /health` が成功する状態にする。SSH で VPS に入り、リポジトリ根から作業する。Compose ファイルは `apps/compose.vps.yml` である。設計の説明は [さくら VPS API 提供経路 設計](../specs/2026-09-12-sakura-vps-api-delivery-design.md) を見る。
 
 ## 一度だけのホスト準備
 
 次をそろえてから初回起動に進む。
 
 1. Docker Engine と Compose plugin を入れる。
-2. このリポジトリを VPS 上に置く（clone または同等の同期）。
+2. このリポジトリを VPS 上に置く。clone でも同等の同期でもよい。
 3. ECR から pull できる AWS 認証を入れる。GitHub Actions の publish 用 OIDC role とは別 identity を使う。
-4. `apps/.env.vps.example` を基に `apps/.env.vps` を作る。root 所有にし、Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
-5. digest 状態ファイルをリポジトリ外に置く。ひな型は `apps/vps/digest-state.example` である。例の置き場は `/var/lib/walkdog/digest-state` である。初回は example をそのパスへコピーしてから使う。
+4. `apps/.env.vps.example` を基に `apps/.env.vps` を作る。root 所有にする。Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
+5. digest 状態ファイルをリポジトリ外に置く。ひな型は `apps/vps/digest-state.example` である。置き場の例は `/var/lib/walkdog/digest-state` である。初回は example をそのパスへコピーしてから使う。
 6. ポート 3000 を、API を使う送信元だけに開ける。
 
 ## digest を取る
@@ -30,7 +30,7 @@ gh run download <run-id> -n release-manifest -D /tmp/release-manifest
 
 ## 初回起動
 
-控えた digest を `NEW_DIGEST` に入れる。
+控えた digest を `NEW_DIGEST` に入れる。初回は `PREVIOUS_DIGEST` が example のゼロ値のままでよい。
 
 1. digest を pull する。
 
@@ -49,7 +49,7 @@ gh run download <run-id> -n release-manifest -D /tmp/release-manifest
    docker compose -f apps/compose.vps.yml run --rm migrate
    ```
 
-   成功は exit 0 と、適用した migration version の構造化ログである。非ゼロならここで止める。`api` と `worker` はまだ上げない。修正入りの image を publish し、新しい digest で手順 1 からやり直す。
+   成功は exit 0 と、適用した migration version の構造化ログである。非ゼロならここで止める。`api` と `worker` はまだ上げない。修正入りの image を publish する。新しい digest で手順 1 からやり直す。
 
 3. `api` をその digest で起動する。
 
@@ -69,7 +69,7 @@ gh run download <run-id> -n release-manifest -D /tmp/release-manifest
    curl -fsS http://127.0.0.1:3000/health
    ```
 
-   成功は PostgreSQL と worker health の両方が通り、成功 JSON が返ることである。
+   成功は PostgreSQL と worker health の両方が通ることである。成功 JSON が返る。
 
 6. health 成功後だけ digest 状態を書く。`STATE` を実際のパスにする。
 
@@ -84,8 +84,6 @@ gh run download <run-id> -n release-manifest -D /tmp/release-manifest
    printf 'CURRENT_DIGEST=%s\nPREVIOUS_DIGEST=%s\nRELEASE_REPOSITORY=%s\n' \
      "$CURRENT_DIGEST" "$PREVIOUS_DIGEST" "$RELEASE_REPOSITORY" > "$STATE"
    ```
-
-初回は `PREVIOUS_DIGEST` が example のゼロ値のままでよい。差し戻しが必要になるのは、一度成功したあとである。
 
 ## 再起動後に同じ digest で上げる
 
@@ -106,9 +104,9 @@ postgres のデータは volume `postgres-data` に残る。migrate は新しい
 
 ## 新しい digest を反映する
 
-稼働中の VPS に別の digest を載せるときも、上の手順 1 から 6 を同じ順で実行する。
+稼働中の VPS に別の digest を載せるときも、初回起動の手順 1 から 6 を同じ順で実行する。新しい digest は「digest を取る」で用意する。
 
-migrate が失敗したら稼働中の `api` と `worker` はそのままにする。新しい digest で 1 からやり直す。
+migrate が失敗したら稼働中の `api` と `worker` はそのままにする。新しい digest で手順 1 からやり直す。
 
 ## health 失敗後の差し戻し
 
@@ -126,7 +124,7 @@ migrate が失敗したら稼働中の `api` と `worker` はそのままにす�
    export RELEASE_IMAGE="${RELEASE_REPOSITORY}@${PREVIOUS_DIGEST}"
    ```
 
-3. その digest で `api` を起動し、続けて `worker` を起動する。
+3. その digest で `api` を起動する。続けて `worker` を起動する。
 
    ```bash
    docker compose -f apps/compose.vps.yml up -d api
@@ -141,6 +139,7 @@ migration の自動 down は行わない。差し戻しは image の差し戻し
 
 - GitHub Actions から VPS への SSH deploy
 - TLS 終端、reverse proxy、カスタム DNS
+- migration の自動 down
 
 ## 関連
 

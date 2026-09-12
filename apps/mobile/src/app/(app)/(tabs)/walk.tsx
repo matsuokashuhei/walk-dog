@@ -36,6 +36,7 @@ import {
 import { createEventCoordinator } from '@/lib/walk-event-queue'
 import { postWalkEvent } from '@/lib/walk-event-post'
 import { walkFinishErrorMessage } from '@/lib/walk-finish-error-message'
+import { decideRecordingVerify, decideWalkLoad } from '@/lib/walk-reconcile'
 import { formatDistanceMeters, formatPacePerKm } from '@/lib/walk-metrics-format'
 import { createFileEventStorage, loadPathForWalk } from '@/lib/walk-path-store'
 import {
@@ -240,11 +241,17 @@ export default function WalkScreen() {
         if (!shouldApply()) {
           return
         }
-        if (walk !== null) {
+        const loadDecision = decideWalkLoad(walk)
+        if (loadDecision.kind === 'recording') {
           finishingRef.current = false
           failingRef.current = false
           startingRef.current = false
-          setState({ kind: 'recording', walk, finishErrorMessage: null, finishKey: null })
+          setState({
+            kind: 'recording',
+            walk: loadDecision.walk,
+            finishErrorMessage: null,
+            finishKey: null,
+          })
           return
         }
         const current = stateRef.current
@@ -289,18 +296,24 @@ export default function WalkScreen() {
     }
     const locationAction = await readLocationPermissionAction()
     if (locationAction !== 'granted') {
-      await applyLocation(locationAction)
-      failingRef.current = true
-      try {
-        await deleteWalk(session.accessToken, current.walk.walkId)
-        if (finishingRef.current || stateRef.current.kind !== 'recording') {
+      const decision = decideRecordingVerify({
+        locationGranted: false,
+        activeWalk: current.walk,
+      })
+      if (decision.action === 'fail_walk') {
+        await applyLocation(locationAction)
+        failingRef.current = true
+        try {
+          await deleteWalk(session.accessToken, current.walk.walkId)
+          if (finishingRef.current || stateRef.current.kind !== 'recording') {
+            return
+          }
+          setState({ kind: 'failed' })
+        } catch {
           return
+        } finally {
+          failingRef.current = false
         }
-        setState({ kind: 'failed' })
-      } catch {
-        return
-      } finally {
-        failingRef.current = false
       }
       return
     }
@@ -309,7 +322,11 @@ export default function WalkScreen() {
       if (finishingRef.current || stateRef.current.kind !== 'recording') {
         return
       }
-      if (walk === null) {
+      const decision = decideRecordingVerify({
+        locationGranted: true,
+        activeWalk: walk,
+      })
+      if (decision.action === 'mark_failed') {
         setState({ kind: 'failed' })
       }
     } catch {

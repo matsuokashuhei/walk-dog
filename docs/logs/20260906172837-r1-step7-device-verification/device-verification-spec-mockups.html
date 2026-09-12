@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Device verification — screen contracts</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a16;
+      --muted: #6b645a;
+      --line: #d9d0c3;
+      --card: #fffdf8;
+      --accent: #2f5d50;
+      --danger: #8a3b2c;
+      --soft: #ece5da;
+      --pin: #e23d28;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff8ea 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7efe9 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 28px; max-width: 68ch; }
+    h2 { font-size: 1.15rem; margin: 36px 0 14px; }
+    .note, .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+    .list-card { color: var(--ink); }
+    .list-card ul { margin: 0; padding-left: 1.2em; }
+    .list-card li { margin: 4px 0; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .screen-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(40, 30, 10, 0.04);
+    }
+    .screen-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .phone {
+      border: 1px solid var(--ink);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #f3eee4;
+      min-height: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem;
+      position: relative;
+      z-index: 3;
+    }
+    .screen {
+      padding: 8px 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .map-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 40% at 18% 22%, #cfe8c8 0 42%, transparent 43%),
+        radial-gradient(ellipse 50% 35% at 82% 70%, #cfe8c8 0 40%, transparent 41%),
+        radial-gradient(ellipse 55% 28% at 70% 18%, #b7d7ea 0 46%, transparent 47%),
+        #f3eee4;
+    }
+    .route {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .pin {
+      position: absolute;
+      left: 52%;
+      top: 30%;
+      z-index: 2;
+      width: 14px;
+      height: 14px;
+      border-radius: 50% 50% 50% 0;
+      background: var(--pin);
+      transform: translate(-50%, -100%) rotate(-45deg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .pin-hole {
+      display: block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #fff;
+      margin: 4.5px auto 0;
+      transform: rotate(45deg);
+    }
+    .overlay {
+      position: relative;
+      z-index: 3;
+      margin-top: 8px;
+    }
+    .label {
+      display: inline-block;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .overlay h4 { margin: 4px 0 8px; font-size: 1.15rem; }
+    .metrics { display: flex; gap: 12px; margin: 0 0 6px; }
+    .metric {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: rgba(255,253,248,0.92);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      min-width: 64px;
+    }
+    .metric b { display: block; font-size: 1rem; }
+    .metric span { color: var(--muted); font-size: 0.72rem; }
+    .dogs {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.85rem;
+      margin: 0;
+      color: var(--ink);
+      background: rgba(255,253,248,0.92);
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: inline-block;
+    }
+    .banner {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      color: var(--ink);
+      background: rgba(255,253,248,0.95);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 0;
+    }
+    .spacer { flex: 1; min-height: 24px; position: relative; z-index: 3; }
+    .btn {
+      position: relative;
+      z-index: 3;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .btn.warn { background: var(--danger); }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-top: 1px solid var(--line);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 10px 0;
+      background: var(--card);
+      position: relative;
+      z-index: 3;
+    }
+    .tabs .on { color: var(--accent); font-weight: 700; }
+    .caption { color: var(--muted); font-size: 0.82rem; margin: 10px 0 0; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>実機検証 画面契約</h1>
+    <p class="lede">
+      起動・Foreground 復帰・タブ移動で Active Walk を API と照合し、Background 中も位置取得と送信を継続する。
+      照合の正本は <code>GET /v1/walks/active</code> である。
+    </p>
+
+    <div class="list-card">
+      <ul>
+        <li><strong>入力:</strong> 認証済みセッション、位置情報 foreground + background 許可、ローカル Compose API（同一 LAN）</li>
+        <li><strong>照合タイミング:</strong> アプリ起動後の Walk 表示、AppState <code>active</code> 復帰、Walk タブ focus</li>
+        <li><strong>成功状態:</strong> API に Active Walk がある → Recording。無い → Ready（または Failed からの復帰操作）</li>
+        <li><strong>Active 消失:</strong> Recording 中に <code>GET /v1/walks/active</code> が 204 → Failed</li>
+        <li><strong>Background:</strong> 10 秒間隔の TrackPoint 取得・永続キュー送信が継続する</li>
+        <li><strong>通信復帰:</strong> Recording 中に未送信 TrackPoint を自動再送する（回数上限なし）</li>
+      </ul>
+    </div>
+
+    <h2>受け入れシナリオ</h2>
+    <div class="gallery">
+      <article class="screen-card">
+        <h3>1. 起動後の復元</h3>
+        <div class="phone">
+          <div class="status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="map-layer"></div>
+            <svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline fill="none" stroke="#2f5d50" stroke-width="2.5" points="18,72 34,58 48,52 62,40 74,28"></polyline>
+            </svg>
+            <div class="pin" style="left:74%;top:28%"><span class="pin-hole"></span></div>
+            <div class="overlay">
+              <span class="label">Recording</span>
+              <h4>散歩中</h4>
+              <div class="metrics">
+                <div class="metric"><b>12:40</b><span>時間</span></div>
+                <div class="metric"><b>0.4 km</b><span>距離</span></div>
+              </div>
+              <p class="dogs">Mugi</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">Finish</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given API に recording の Active Walk。When アプリを再起動して Walk を表示。Then Recording を表示し、Participant・経路を再開する。</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>2. Foreground 復帰</h3>
+        <div class="phone">
+          <div class="status"><span>9:45</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="map-layer"></div>
+            <svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline fill="none" stroke="#2f5d50" stroke-width="2.5" points="18,72 40,55 58,42 74,28 80,22"></polyline>
+            </svg>
+            <div class="pin" style="left:80%;top:22%"><span class="pin-hole"></span></div>
+            <div class="overlay">
+              <span class="label">Recording</span>
+              <h4>散歩中</h4>
+              <div class="metrics">
+                <div class="metric"><b>16:05</b><span>時間</span></div>
+                <div class="metric"><b>0.6 km</b><span>距離</span></div>
+              </div>
+              <p class="banner">Foreground 復帰で Active Walk を再照合。経路は端末保存分を再読込。</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">Finish</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given Recording 表示中に Home へ退避。When アプリを foreground に戻す。Then 引き続き Recording。Active が消えていれば Failed。</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>3. タブ移動での照合</h3>
+        <div class="phone">
+          <div class="status"><span>9:46</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="map-layer"></div>
+            <div class="pin"><span class="pin-hole"></span></div>
+            <div class="overlay">
+              <span class="label">Recording</span>
+              <h4>散歩中</h4>
+              <p class="dogs">Mugi</p>
+              <p class="banner">Dogs → Walk に戻ったときも <code>GET /v1/walks/active</code> で照合する。</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">Finish</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given Recording 中に Dogs タブへ移動。When Walk タブへ戻る。Then Active Walk を再照合し Recording を維持する。</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>4. Background 位置継続</h3>
+        <div class="phone">
+          <div class="status"><span>9:50</span><span>Home</span></div>
+          <div class="screen" style="justify-content:center;align-items:center;">
+            <p class="banner" style="max-width:90%;text-align:center;">
+              アプリが Background でも、foreground / background 許可済みなら 10 秒ごとに位置を取得し、永続キュー経由で <code>POST /v1/walks/:walkId/track-points</code> へ送る。
+            </p>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given Recording かつ位置許可済み。When アプリを Background にする。Then 取得時刻付き TrackPoint が継続し、通信可能なら API へ届く。</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>5. Active 消失 → Failed</h3>
+        <div class="phone">
+          <div class="status"><span>9:52</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="overlay">
+              <span class="label">Failed</span>
+              <h4>散歩を継続できません</h4>
+              <p class="banner">API 上の Active Walk が無い（204）。端末の Recording を破棄し Failed を表示する。</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn">Ready に戻る</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given 端末は Recording。When 照合で Active Walk が無い。Then Failed を表示する（AC-WALK-06）。</p>
+      </article>
+
+      <article class="screen-card">
+        <h3>6. 通信復帰の自動再送</h3>
+        <div class="phone">
+          <div class="status"><span>9:55</span><span>● ● ●</span></div>
+          <div class="screen">
+            <div class="map-layer"></div>
+            <div class="pin"><span class="pin-hole"></span></div>
+            <div class="overlay">
+              <span class="label">Recording</span>
+              <h4>散歩中</h4>
+              <p class="banner">通信断中も取得点を端末キューに保持。復帰後、Recording のあいだ回数上限なく自動再送する。</p>
+            </div>
+            <div class="spacer"></div>
+            <div class="btn warn">Finish</div>
+          </div>
+          <div class="tabs"><span>Dogs</span><span class="on">Walk</span></div>
+        </div>
+        <p class="caption">Given Recording 中に一時的に API 不通。When 通信が復帰する。Then 未送信 TrackPoint が自動で送られ、画面は Recording のまま。</p>
+      </article>
+    </div>
+
+    <h2>この縦切りで使っている既存 API</h2>
+    <div class="list-card">
+      <ul>
+        <li><code>GET /v1/walks/active</code> — Active Walk または 204。照合の正本。</li>
+        <li><code>POST /v1/walks/:walkId/track-points</code> — Background / Foreground の位置送信。失敗時は端末キュー保持。</li>
+        <li><code>DELETE /v1/walks/:walkId</code> — 位置許可喪失時など、Recording を Failed にするときに使用（既存契約）。</li>
+      </ul>
+      <p style="margin:10px 0 0;color:var(--muted);">新規 HTTP 契約は追加しない。振る舞い変更がある場合のみ既存契約を更新する。</p>
+    </div>
+
+    <h2>受け入れ環境</h2>
+    <div class="note">
+      iPhone 実機 + 同一 LAN 上のローカル Compose API（<code>EXPO_PUBLIC_API_BASE_URL</code> は端末から到達可能なホスト。127.0.0.1 ではない）。
+      VPS API 実機検証は後続。
+    </div>
+  </main>
+</body>
+</html>

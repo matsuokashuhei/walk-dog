@@ -1,5 +1,3 @@
-# VPS runtime. Pin RELEASE_IMAGE to a digest (repo@sha256:…).
-# Promote steps: docs/development/2026-09-12-sakura-vps-promote.md
 services:
   postgres:
     image: postgres:16-alpine

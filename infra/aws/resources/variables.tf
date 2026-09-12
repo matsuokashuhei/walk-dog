@@ -13,5 +13,15 @@ variable "aws_region" {
 }
 
 variable "domain" {
+  type = string
+}
+
+variable "github_org" {
   type    = string
+  default = "matsuokashuhei"
+}
+
+variable "github_repo" {
+  type    = string
+  default = "walk-dog"
 }

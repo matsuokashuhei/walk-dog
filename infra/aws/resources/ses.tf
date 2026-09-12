@@ -5,11 +5,11 @@ resource "aws_ses_domain_identity" "cognito" {
 
 resource "aws_ses_domain_dkim" "cognito" {
   for_each = toset(var.envs)
-  domain = aws_ses_domain_identity.cognito[each.key].domain
+  domain   = aws_ses_domain_identity.cognito[each.key].domain
 }
 
 resource "aws_ses_domain_mail_from" "cognito" {
-  for_each = toset(var.envs)
+  for_each               = toset(var.envs)
   domain                 = aws_ses_domain_identity.cognito[each.key].domain
   mail_from_domain       = join(".", ["mail", aws_ses_domain_identity.cognito[each.key].domain])
   behavior_on_mx_failure = "RejectMessage"

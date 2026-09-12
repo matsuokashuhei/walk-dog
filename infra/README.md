@@ -20,6 +20,16 @@ cd aws/envs/local
 ln -sf ../../resources/* .
 ```
 
+This env manages Cognito, SES, the custom email sender Lambda, one ECR repository for the API image (`walkdog-api`), and a GitHub Actions OIDC role that can push only to that repository. The OIDC trust is limited to `main` on `github_org`/`github_repo` (defaults `matsuokashuhei`/`walk-dog`). Publish uses short-lived OIDC credentials; this stack does not create long-lived AWS access keys for GitHub.
+
+If the account already has `token.actions.githubusercontent.com` as an IAM OIDC provider, import it before the first apply:
+
+```
+terraform import aws_iam_openid_connect_provider.github_actions arn:aws:iam::<account-id>:oidc-provider/token.actions.githubusercontent.com
+```
+
+After apply, use outputs `ecr_repository_url` and `github_actions_ecr_role_arn` in the publish workflow.
+
 ```
 cd infra
 docker run --rm \

@@ -67,8 +67,8 @@ resource "aws_cognito_user_pool" "user" {
 }
 
 resource "aws_cognito_user_pool_client" "api" {
-  for_each = toset(var.envs)
-  name     = join("-", [var.project, each.key, "app"])
+  for_each     = toset(var.envs)
+  name         = join("-", [var.project, each.key, "app"])
   user_pool_id = aws_cognito_user_pool.user[each.key].id
 
   generate_secret = false

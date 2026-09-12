@@ -20,8 +20,6 @@ cd aws/envs/local
 ln -sf ../../resources/* .
 ```
 
-This env manages Cognito, SES, the custom email sender Lambda, one ECR repository for the API image (`walkdog-api`), and a GitHub Actions OIDC role that can push only to that repository. The OIDC trust is limited to `main` on `github_org`/`github_repo` (defaults `matsuokashuhei`/`walk-dog`). Publish uses short-lived OIDC credentials; this stack does not create long-lived AWS access keys for GitHub.
-
 If the account already has `token.actions.githubusercontent.com` as an IAM OIDC provider, import it before the first apply:
 
 ```

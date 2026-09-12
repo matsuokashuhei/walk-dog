@@ -20,6 +20,14 @@ cd aws/envs/local
 ln -sf ../../resources/* .
 ```
 
+If the account already has `token.actions.githubusercontent.com` as an IAM OIDC provider, import it before the first apply:
+
+```
+terraform import aws_iam_openid_connect_provider.github_actions arn:aws:iam::<account-id>:oidc-provider/token.actions.githubusercontent.com
+```
+
+After apply, use outputs `ecr_repository_url` and `github_actions_ecr_role_arn` in the publish workflow.
+
 ```
 cd infra
 docker run --rm \

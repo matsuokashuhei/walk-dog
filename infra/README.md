@@ -5,6 +5,26 @@ aws sso login
 aws configure export-credentials --format env-no-export > .env.aws
 ```
 
+## `terraform.sh`
+
+Interactive wrapper for Docker Terraform (`hashicorp/terraform:1.15`).
+
+```
+cd infra
+./terraform.sh
+```
+
+Prompts, in order:
+
+1. provider: `aws` / `cloudflare`
+2. env: `local` / `dev` / `prod`
+3. command: `init` / `plan` / `apply`
+4. mode: `run` / `dry-run` (`dry-run` prints the docker command only)
+
+Mounts `./<provider>` at `/workspace` and runs with `-w /workspace/envs/<env>`. Always loads `.env.aws`. Cloudflare also loads `.env.cloudflare`.
+
+Override image with `TERRAFORM_IMAGE=...` if needed.
+
 ## `aws` dir
 ### `envs/local`
 
@@ -28,6 +48,8 @@ terraform import aws_iam_openid_connect_provider.github_actions arn:aws:iam::<ac
 
 After apply, use outputs `ecr_repository_url` and `github_actions_ecr_role_arn` in the publish workflow.
 
+Manual equivalent:
+
 ```
 cd infra
 docker run --rm \
@@ -44,6 +66,8 @@ docker run --rm \
 cd cloudflare/envs/local
 ln -sf ../../resorces/* .
 ```
+
+Manual equivalent:
 
 ```
 cd infra

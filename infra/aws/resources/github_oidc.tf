@@ -1,4 +1,5 @@
 resource "aws_iam_openid_connect_provider" "github_actions" {
+  for_each = toset(var.envs)
   url = "https://token.actions.githubusercontent.com"
 
   client_id_list = [
@@ -7,14 +8,15 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 resource "aws_iam_role" "github_actions_ecr" {
-  name = join("-", [var.project, "github-actions-ecr"])
+  for_each = toset(var.envs)
+  name = join("-", [var.project, each.key, "github-actions-ecr"])
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.github_actions.arn
+        Federated = aws_iam_openid_connect_provider.github_actions[each.key].arn
       }
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
@@ -37,8 +39,9 @@ resource "aws_iam_role" "github_actions_ecr" {
 }
 
 resource "aws_iam_role_policy" "github_actions_ecr" {
-  name = "ecr-push"
-  role = aws_iam_role.github_actions_ecr.id
+  for_each = toset(var.envs)
+  name = join("-", [var.project, each.key, "github-actions-ecr-push"])
+  role = aws_iam_role.github_actions_ecr[each.key].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -63,7 +66,7 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
           "ecr:PutImage",
           "ecr:UploadLayerPart",
         ]
-        Resource = [aws_ecr_repository.api.arn]
+        Resource = [aws_ecr_repository.api[each.key].arn]
       },
     ]
   })

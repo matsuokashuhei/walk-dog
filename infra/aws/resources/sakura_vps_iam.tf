@@ -14,7 +14,8 @@ locals {
 }
 
 resource "aws_iam_user" "sakura_vps" {
-  name = join("-", [var.project, "sakura-vps"])
+  for_each = toset(var.envs)
+  name = join("-", [var.project, each.key, "sakura-vps"])
 
   tags = {
     Project = var.project
@@ -22,8 +23,9 @@ resource "aws_iam_user" "sakura_vps" {
 }
 
 resource "aws_iam_user_policy" "sakura_vps" {
-  name = "runtime-and-ecr-pull"
-  user = aws_iam_user.sakura_vps.name
+  for_each = toset(var.envs)
+  name = join("-", [var.project, each.key, "runtime-and-ecr-pull"])
+  user = aws_iam_user.sakura_vps[each.key].name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -42,7 +44,7 @@ resource "aws_iam_user_policy" "sakura_vps" {
           "ecr:BatchGetImage",
           "ecr:GetDownloadUrlForLayer",
         ]
-        Resource = [aws_ecr_repository.api.arn]
+        Resource = [aws_ecr_repository.api[each.key].arn]
       },
       {
         Sid    = "SqsTrackPoints"
@@ -76,12 +78,13 @@ resource "aws_iam_user_policy" "sakura_vps" {
           "cognito-idp:RespondToAuthChallenge",
           "cognito-idp:GlobalSignOut",
         ]
-        Resource = [for pool in aws_cognito_user_pool.user : pool.arn]
+        Resource = [aws_cognito_user_pool.user[each.key].arn]
       },
     ]
   })
 }
 
 resource "aws_iam_access_key" "sakura_vps" {
-  user = aws_iam_user.sakura_vps.name
+  for_each = toset(var.envs)
+  user = aws_iam_user.sakura_vps[each.key].name
 }

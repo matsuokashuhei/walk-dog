@@ -1,5 +1,6 @@
 resource "aws_ecr_repository" "api" {
-  name                 = join("-", [var.project, "api"])
+  for_each = toset(var.envs)
+  name                 = join("-", [var.project, each.key, "api"])
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -7,6 +8,6 @@ resource "aws_ecr_repository" "api" {
   }
 
   tags = {
-    Project = var.project
+    Project = join("-", [var.project, each.key])
   }
 }

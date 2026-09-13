@@ -1,6 +1,6 @@
 # Sakura VPS API delivery plan
 
-Developers publish a release image from main to ECR, then promote the `latest` tag onto a Sakura VPS so api and worker run the same build. The program enforces migrate before api and worker. Digests stay in the host state file for reboot pin and rollback. PR order is `vps-dockerfile`, `vps-ecr-oidc`, `vps-publish`, `vps-compose-runbook`.
+Developers publish a release image from main to ECR, then promote the `latest` tag onto a Sakura VPS so api and worker run the same build. The program enforces migrate before api and worker. Rollback pins a known-good commit SHA tag. PR order is `vps-dockerfile`, `vps-ecr-oidc`, `vps-publish`, `vps-compose-runbook`.
 
 ## How to read this
 
@@ -35,7 +35,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
   - [ ] `vps-ecr-oidc` after `vps-dockerfile`.
   - [ ] `vps-publish` after `vps-ecr-oidc`.
   - [ ] `vps-compose-runbook` after `vps-publish`.
-- [ ] Hold the file boundaries. `vps-dockerfile` touches only `apps/api/Dockerfile`, `apps/api/.dockerignore`, and Dockerfile-focused tests under `apps/api/test/`. `vps-ecr-oidc` touches only `infra/aws/**`. `vps-publish` touches only `.github/workflows/**` and any tiny manifest helper under `apps/api/` or `.github/`. `vps-compose-runbook` touches only `apps/compose.vps.yml`, `apps/.env.vps.example`, `docs/` how-to under `docs/development/` or `apps/`, and digest state example files.
+- [ ] Hold the file boundaries. `vps-dockerfile` touches only `apps/api/Dockerfile`, `apps/api/.dockerignore`, and Dockerfile-focused tests under `apps/api/test/`. `vps-ecr-oidc` touches only `infra/aws/**`. `vps-publish` touches only `.github/workflows/**` and any tiny manifest helper under `apps/api/` or `.github/`. `vps-compose-runbook` touches only `apps/compose.vps.yml`, `apps/.env.vps.example`, `docs/` how-to under `docs/development/` or `apps/`, and `infra/sakura/deploy.sh`.
 - [ ] Hold the review gate. `vps-compose-runbook` changes an operator-facing promote interaction. It waits for the operator's review in chat with screenshots and a video before merge. The other three PRs are not review-gated.
 
 ### PR mechanics, for every PR
@@ -226,15 +226,14 @@ Each live lane runs on its own cloud VM at the PR head. Drive through `control-c
 - [ ] Create `apps/compose.vps.yml`.
 - [ ] Create `apps/.env.vps.example`.
 - [ ] Create `docs/development/2026-09-12-sakura-vps-promote.md` (how-to).
-- [ ] Create `apps/vps/digest-state.example` (or path named in the how-to) for current and previous digest.
 
 **Build.**
 
-- [ ] Compose defines `postgres`, one-shot `migrate`, `api`, and `worker` using the release image by digest. Example env omits `SQS_ENDPOINT` and `DYNAMODB_ENDPOINT`. How-to covers pull, migrate, api, worker, health, failure holds, and rollback to the previous digest.
+- [ ] Compose defines `postgres`, one-shot `migrate`, `api`, and `worker` using the release image. Example env omits `SQS_ENDPOINT` and `DYNAMODB_ENDPOINT`. How-to covers pull, migrate, api, worker, health, failure holds, and rollback to a known-good commit SHA tag.
 
 **You see.**
 
-- [ ] An operator can follow the how-to against a loaded image (ECR pull when credentials exist, otherwise `docker load` of the release image built in CI) and reach health success, then demonstrate rollback.
+- [ ] An operator can follow the how-to against a loaded image (ECR pull when credentials exist, otherwise `docker load` of the release image built in CI) and reach health success, then demonstrate rollback via commit SHA tag.
 
 **Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -245,12 +244,12 @@ Each live lane runs on its own cloud VM at the PR head. Drive through `control-c
 - [ ] Lane 1. Regression lane against trunk. Trunk has no `compose.vps.yml`. Record that. At head, gate compose services and how-to existence. Save `vps-regression.png`. Pass when compose lists postgres, migrate, api, worker and the how-to file exists.
 - [ ] Lane 2. Compose config validates. Save `vps-compose-config.png`. Pass when `docker compose ... config` exits 0.
 - [ ] Lane 3. Example env lists every Zod-required name from `apps/api/src/infrastructure/config/index.ts` and omits local emulator endpoints. Save `vps-env.png`. Pass when the example has Cognito, Postgres, SQS URL, DynamoDB table, worker health, ENVIRONMENT, RELEASE, and AWS keys, and does not set `SQS_ENDPOINT` or `DYNAMODB_ENDPOINT`.
-- [ ] Lane 4. Promote order in the how-to is pull, migrate, api, worker, health, digest state update. Save `vps-order.png`. Pass when that order appears as numbered steps.
-- [ ] Lane 5. Migrate failure instructions keep the running digest. Save `vps-migrate-fail.png`. Pass when the how-to says not to advance api or worker after migrate failure.
-- [ ] Lane 6. Health failure instructions roll back api then worker to the previous digest. Save `vps-health-fail.png`. Pass when rollback order is documented.
+- [ ] Lane 4. Promote order in the how-to is pull, migrate, api, worker, health. Save `vps-order.png`. Pass when that order appears as numbered steps.
+- [ ] Lane 5. Migrate failure instructions keep the running containers. Save `vps-migrate-fail.png`. Pass when the how-to says not to advance api or worker after migrate failure.
+- [ ] Lane 6. Health failure instructions roll back api then worker to a known-good commit SHA tag. Save `vps-health-fail.png`. Pass when rollback order is documented.
 - [ ] Lane 7. Boot postgres, migrate, api, worker with a release image on the lane VM (build locally if ECR is unavailable) and curl health until success. Save `vps-health-ok.png`. Pass when health returns success JSON.
-- [ ] Lane 8. Simulate migrate failure with a bad command override and confirm api or worker image id is unchanged. Save `vps-hold.png`. Pass when running containers keep the prior digest.
-- [ ] Lane 9. Roll back to the previous digest and recheck health. Save `vps-rollback.png`. Pass when health succeeds on the previous digest.
+- [ ] Lane 8. Simulate migrate failure with a bad command override and confirm api or worker image id is unchanged. Save `vps-hold.png`. Pass when running containers keep the prior image.
+- [ ] Lane 9. Roll back to a known-good commit SHA tag and recheck health. Save `vps-rollback.png`. Pass when health succeeds on that tag.
 - [ ] Lane 10. Confirm how-to forbids GitHub Actions SSH deploy and TLS setup in this delivery. Save `vps-scope.png`. Pass when those exclusions are explicit.
 
 **Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.

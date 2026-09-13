@@ -91,7 +91,9 @@ jobs:
           file: apps/api/Dockerfile
           target: runtime
           push: true
-          tags: ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
+          tags: |
+            ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
+            ${{ env.ECR_REPOSITORY_URL }}:latest
 
       - name: Write release manifest
         env:

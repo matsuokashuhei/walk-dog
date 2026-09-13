@@ -50,7 +50,7 @@ access tokenが必要なrouteは、token未指定、期限切れ、署名、issu
 
 API containerとworker containerは、それぞれ一つの`pg.Pool`を作成してDrizzle clientへ渡す。`DATABASE_POOL_MAX`はPoolの接続上限を表し、既定値は10である。終了処理はPoolをcloseし、処理済みconnectionをPostgreSQLへ返す。
 
-Drizzleは適用済みmigrationのversion、hash、適用時刻をPostgreSQLに記録する。VPS反映前に、開発チームがrelease manifestのimage digestを指定してone-shot migration containerを実行する。`npm run migrate`は専用のPostgreSQL sessionで`walk_dog_schema_migration`用のadvisory lockを取得し、そのsessionでDrizzle migrationを実行する。適用したmigration versionを構造化ログへ出力し、session終了時にlockを解放する。
+Drizzleは適用済みmigrationのversion、hash、適用時刻をPostgreSQLに記録する。VPS反映前に、開発チームがECRの`latest` imageでone-shot migration containerを実行する。`npm run migrate`は専用のPostgreSQL sessionで`walk_dog_schema_migration`用のadvisory lockを取得し、そのsessionでDrizzle migrationを実行する。適用したmigration versionを構造化ログへ出力し、session終了時にlockを解放する。
 
 複数tableを更新する操作は`db.transaction()`で一つの業務状態遷移として確定する。DB rowはAPI DTOへ変換してresponse schemaに一致するJSONを返す。
 
@@ -123,8 +123,8 @@ jscpdはproduction sourceを検査対象とし、検出結果はSARIFとしてGi
 
 Pull Request workflowは`npm ci`と`npm run check`を実行し、ComposeによるE2E依存サービス環境でAPIとworkerのE2Eを実行する。E2E成功後にDocker imageをbuildする。workflowはOpenAPI JSON、仕様ルール対応表、静的解析report、image build結果をartifactとして提供する。
 
-main publish workflowは同じ品質ゲートを完了後、GitHub OIDCでAWS roleを取得してECRへimageを公開する。release manifestはcommit SHA tag、image digest、OpenAPI versionを提供し、Sentry releaseはcommit SHAを使用する。
+main publish workflowは同じ品質ゲートを完了後、GitHub OIDCでAWS roleを取得してECRへimageを公開する。publish は commit SHA tag と mutable な `latest` タグを付ける。release manifestはcommit SHA、image digest、OpenAPI versionを提供し、Sentry releaseはcommit SHAを使用する。
 
-開発チームはrelease manifestのimage digestを指定してVPSへ反映する。migration containerは同じdigestでmigrationを適用し、API ready状態とworker ready状態を確認してreleaseを提供する。前のdigestはrollback対象として保持する。migrationは既存のAPIとworkerが読めるschema状態を提供する。
+開発チームはECRの`latest`をpullしてVPSへ反映する。migration containerは同じimageでmigrationを適用し、API ready状態とworker ready状態を確認してreleaseを提供する。成功後のimage digestはrollback対象として状態ファイルに保持する。migrationは既存のAPIとworkerが読めるschema状態を提供する。
 
-migration containerが失敗状態を返した場合、失敗したmigration version、error code、request ID、image digestを構造化ログとSentry eventへ記録する。VPSのAPIとworkerは現在のimage digestで稼働状態を提供する。開発チームはmigration containerのexit status、構造化ログ、release manifestを確認し、修正migrationを含む新しいimage digestを公開する。新しいdigestのmigration成功後にAPI、続いてworkerを更新し、ready状態を確認する。
+migration containerが失敗状態を返した場合、失敗したmigration version、error code、request ID、image digestを構造化ログとSentry eventへ記録する。VPSのAPIとworkerは現在の稼働版のままにする。開発チームはmigration containerのexit status、構造化ログ、release manifestを確認し、修正migrationを含む新しいimageを公開する。新しい`latest`のmigration成功後にAPI、続いてworkerを更新し、ready状態を確認する。

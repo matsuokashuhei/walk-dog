@@ -7,9 +7,14 @@ ECR の `latest` タグで `api` と `worker` を同じ image で動かす。`GE
 次をそろえてから初回起動に進む。
 
 1. Docker Engine と Compose plugin を入れる。
-2. IAM ユーザー `walkdog-sakura-vps` のアクセスキーをホストの AWS CLI に入れる。GitHub Actions の publish 用 OIDC role は使わない。同じキーを `apps/.env.vps` の `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` にも入れる（ECR pull とアプリ実行で共用する）。キーは Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key` から取る。
-3. リポジトリを VPS 上に置く。まだ無いときは次の初回起動で [`apps/vps/deploy.sh`](../../apps/vps/deploy.sh) が clone する。既にある clone を使うときは、その根を `WALKDOG_ROOT` に合わせる（既定は `/opt/walk-dog`）。
-4. `apps/.env.vps.example` を基に `apps/.env.vps` を作る。root 所有にする。Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。`deploy.sh` は `.env.vps` を作らない。無いと止まる。
+2. IAM ユーザー `walkdog-sakura-vps` のアクセスキーをホストの AWS CLI に入れる。GitHub Actions の publish 用 OIDC role は使わない。キーは Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key` から取る。
+3. リポジトリを `WALKDOG_ROOT`（既定 `/opt/walk-dog`）へ置く。
+
+   ```bash
+   sudo git clone https://github.com/matsuokashuhei/walk-dog.git /opt/walk-dog
+   ```
+
+4. `apps/.env.vps.example` を基に `WALKDOG_ROOT/apps/.env.vps` を作る。`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` に同じ IAM キーを入れる。root 所有にする。Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。`deploy.sh` は `.env.vps` を作らない。無いと止まる。
 5. ポート 3000 を、API を使う送信元だけに開ける。
 
 差し戻し用の状態ファイルは `DIGEST_STATE`（既定 `/var/lib/walkdog/digest-state`）である。無いときは `deploy.sh` が `apps/vps/digest-state.example` から作る。
@@ -35,13 +40,9 @@ export RELEASE_IMAGE="${RELEASE_REPOSITORY}:latest"
 sudo bash /opt/walk-dog/apps/vps/deploy.sh
 ```
 
-まだ clone が無いときは、別の場所に置いたリポジトリから一度だけ起動する。
-
-```bash
-sudo WALKDOG_ROOT=/opt/walk-dog bash /path/to/walk-dog/apps/vps/deploy.sh
-```
-
 成功は exit 0 と、`GET /health` が成功 JSON を返すことである。migrate が非ゼロなら `api` と `worker` は上がらない。修正入りの image を publish し、同じコマンドを再実行する。
+
+`WALKDOG_ROOT` を既定以外にするときは、その根の `apps/vps/deploy.sh` を同じように実行する。
 
 ## 再起動後に上げる
 

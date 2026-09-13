@@ -2,8 +2,6 @@
 # Deploy the Sakura VPS stack: update tracked files, pull the API image, migrate, restart services.
 set -euo pipefail
 
-exported_release_image="${RELEASE_IMAGE-}"
-
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
@@ -12,21 +10,14 @@ set -a
 source apps/.env.vps
 set +a
 
-if [[ -n "$exported_release_image" ]]; then
-  RELEASE_IMAGE="$exported_release_image"
-  export RELEASE_IMAGE
-fi
-
-if [[ ! "${RELEASE_IMAGE:-}" =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]]; then
-  echo "RELEASE_IMAGE must be repository@sha256 followed by exactly 64 lowercase hex characters" >&2
-  exit 2
-fi
+RELEASE_REPOSITORY="${RELEASE_REPOSITORY:-967026628831.dkr.ecr.ap-northeast-1.amazonaws.com/walkdog-dev-api}"
+export RELEASE_IMAGE="${RELEASE_REPOSITORY}:latest"
 
 [[ "${DEPLOY_VALIDATE_ONLY:-}" == 1 ]] && exit 0
 
 git pull --ff-only
 
-AWS_ACCOUNT_ID=$(echo "$RELEASE_IMAGE" | cut -d. -f1)
+AWS_ACCOUNT_ID=$(echo "$RELEASE_REPOSITORY" | cut -d. -f1)
 aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin \
       "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"

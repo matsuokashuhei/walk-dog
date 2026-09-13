@@ -14,9 +14,10 @@
 
 さくら VPS が API の実行ホストである。Docker Compose が次の unit を提供する。
 
+- `caddy`。ホストの 80 / 443 を受け、Let's Encrypt で TLS を終端し、`api:3000` へ reverse proxy する。公開ホスト名は `dev.walkdog.cacheandbuffer.com` である。
 - `postgres`。業務データの正本。volume で永続化する。
 - `migrate`。release image と同じ image の one-shot container。`npm run migrate`（Drizzle）を実行して終了する。
-- `api`。`node --import ./dist/instrument.js dist/server.js`。公開 HTTP。既定ポートは 3000。
+- `api`。`node --import ./dist/instrument.js dist/server.js`。Compose ネットワーク内の HTTP。既定ポートは 3000。ホストへは公開しない。
 - `worker`。同じ image、別 command で `dist/worker.js`。SQS を消費する。自己 health を `WORKER_HEALTH_PORT`（Compose では 3001）で提供する。
 
 Cognito、S3、SQS、DynamoDB は AWS の標準 endpoint を使う。VPS Compose は ElasticMQ、DynamoDB Local、S3 互換サービスを持たない。VPS の環境設定は `SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` を設定しない。
@@ -72,7 +73,7 @@ PR ごとの image publish は行わない。main の publish が release の入
 
 ### ホスト上の成果物
 
-- リポジトリ同梱の VPS 用 Compose（`postgres` / `migrate` / `api` / `worker`）
+- リポジトリ同梱の VPS 用 Compose（`caddy` / `postgres` / `migrate` / `api` / `worker`）と Caddyfile
 - 実行ユーザー所有の環境設定ファイル
 
 ECR pull 用の AWS 認証は、publish 用 OIDC role とは別の identity を使う。
@@ -83,21 +84,20 @@ ECR pull 用の AWS 認証は、publish 用 OIDC role とは別の identity を�
 
 1. `latest` の image を pull する。
 2. 同じ image で `migrate` one-shot を実行する。成功条件は exit 0 と、適用した migration version の構造化ログである。
-3. migrate 成功後に `api` をその image へ更新して起動する。
-4. 続けて `worker` を同じ image へ更新する。
-5. `GET /health` が成功状態になることを確認する。
+3. migrate 成功後に `caddy`、`api`、`worker` を同じ構成で更新して起動する。`api` と `worker` は同じ release image を使う。
+4. `GET https://dev.walkdog.cacheandbuffer.com/health` が成功状態になることを確認する。
 
 migrate は、既存の api と worker が読める schema 状態を提供する。破壊的な schema 変更は本提供経路の外で別設計する。
 
 初回実装では人が SSH（または同等）で手順を実行する。GitHub Actions から VPS を直接更新する CD は持たない。
 
-リポジトリは短い how-to を置く。pull、migrate、api、worker、health、差し戻しを順序どおりに書く。
+リポジトリは短い how-to を置く。pull、migrate、caddy、api、worker、health、差し戻しを順序どおりに書く。
 
 ### 失敗時
 
 migrate が非ゼロで終了した場合、失敗した migration version、error、request ID、image digest を構造化ログと Sentry event へ記録する。稼働中の api と worker は現在の稼働版のままにする。修正を含む新しい image を publish し、新しい `latest` で反映を最初からやり直す。
 
-api または worker 更新後に health が ready にならない場合、新 container を止め、既知の成功 commit SHA tag で api、続けて worker を戻す。すでに適用済みの migration を自動で戻す仕組みは持たない。rollback の主操作は image の差し戻しである。
+api または worker 更新後に health が ready にならない場合、新 container を止め、既知の成功 commit SHA tag で `caddy` / `api` / `worker` を戻す。すでに適用済みの migration を自動で戻す仕組みは持たない。rollback の主操作は image の差し戻しである。
 
 ## ホスト準備（一度だけ）
 
@@ -107,11 +107,12 @@ api または worker 更新後に health が ready にならない場合、新 c
 - ECR pull 用の AWS 認証
 - 実行ユーザー所有の環境設定ファイルの配置と権限
 - Postgres データ用 volume の置き場
-- API ポート（初回は 3000）を必要な送信元だけに開けるファイアウォール設定
+- ホストの 80 / 443 を、API を使う送信元（または必要な範囲）に開けるファイアウォール設定。ホストの 3000 は公開しない
+- 公開ホスト名 `dev.walkdog.cacheandbuffer.com` の A レコードがこの VPS を指していること（DNS only。Cloudflare プロキシは使わない）
 
 ## 本設計の範囲外
 
-- TLS 終端、reverse proxy、カスタムドメインの DNS 切り替え
+- Cloudflare による TLS 終端やオレンジ雲（`proxied = true`）への切り替え
 - GitHub Actions から VPS への自動 promote
 - migration の自動 down / 自動 schema rollback
 - ホスト上の digest 状態ファイル
@@ -122,7 +123,7 @@ api または worker 更新後に health が ready にならない場合、新 c
 ## 成功条件
 
 1. main への push のあと、workflow が ECR に commit SHA と `latest` の tag 付き image を出し、manifest が digest と commit SHA を示す。
-2. `latest` で VPS 上の migrate が成功し、api と worker が同じ image で動き、`GET /health` が成功状態を返す。
+2. `latest` で VPS 上の migrate が成功し、api と worker が同じ image で動き、`GET https://dev.walkdog.cacheandbuffer.com/health` が成功状態を返す。
 3. 意図した失敗（失敗する migrate、または health 非 ready）で、稼働中版が保持されるか、既知の成功 commit SHA tag へ戻せることを how-to どおりに確認できる。
 
 ## 検証

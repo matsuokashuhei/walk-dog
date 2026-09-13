@@ -1,0 +1,7 @@
+{
+	email matsuokashuheiii@gmail.com
+}
+
+dev.walkdog.cacheandbuffer.com {
+	reverse_proxy api:3000
+}

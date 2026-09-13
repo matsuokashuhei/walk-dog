@@ -1,4 +1,17 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../infra/sakura/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     env_file: .env.vps
@@ -9,6 +22,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   migrate:
     image: ${RELEASE_IMAGE}
@@ -22,11 +36,10 @@ services:
   api:
     image: ${RELEASE_IMAGE}
     env_file: .env.vps
-    ports:
-      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
   worker:
     image: ${RELEASE_IMAGE}
@@ -37,6 +50,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:

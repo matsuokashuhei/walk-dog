@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy the Sakura VPS stack: update tracked files, pull the API image, migrate, restart services.
+# Deploy the Sakura VPS stack: update tracked files, pull the API image, migrate, restart caddy/api/worker.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -25,6 +25,6 @@ aws ecr get-login-password --region "$AWS_REGION" \
 compose=(docker compose -f apps/compose.vps.yml)
 "${compose[@]}" pull api worker
 "${compose[@]}" run --rm migrate
-"${compose[@]}" up -d --force-recreate api worker
+"${compose[@]}" up -d --force-recreate caddy api worker
 
 echo "Deploy complete."

@@ -59,3 +59,13 @@ resource "cloudflare_dns_record" "dmarc" {
   content  = "\"v=DMARC1; p=none;\""
   ttl      = 1
 }
+
+resource "cloudflare_dns_record" "vps" {
+  for_each = toset(var.envs)
+  zone_id  = data.cloudflare_zone.cacheandbuffercom.id
+  name     = join(".", [each.key, var.domain])
+  type     = "A"
+  content  = "133.167.103.109"
+  proxied  = false
+  ttl      = 1
+}

@@ -1,106 +1,65 @@
 # さくら VPS でバックエンドを動かす
 
-ECR の `latest` タグで `api` と `worker` を同じ image で動かす。`GET /health` が成功する状態にする。SSH で VPS に入り、リポジトリ根から作業する。Compose ファイルは `apps/compose.vps.yml` である。設計の説明は [さくら VPS API 提供経路 設計](../specs/2026-09-12-sakura-vps-api-delivery-design.md) を見る。
+ECR の image digest（`repository@sha256:…`）で `api` と `worker` を同じ image で動かす。SSH で VPS に入り、リポジトリ根から作業する。Compose ファイルは `apps/compose.vps.yml` である。設計の説明は [さくら VPS API 提供経路 設計](../specs/2026-09-12-sakura-vps-api-delivery-design.md) を見る。`deploy.sh` は sudo なしで実行する。
 
 ## 一度だけのホスト準備
 
 次をそろえてから初回起動に進む。
 
-1. Docker Engine と Compose plugin を入れる。
-2. IAM ユーザー `walkdog-sakura-vps` のアクセスキーをホストの AWS CLI に入れる。GitHub Actions の publish 用 OIDC role は使わない。キーは Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key` から取る。
-3. リポジトリを `WALKDOG_ROOT`（既定 `/opt/walk-dog`）へ置く。
+1. Docker Engine と Compose plugin を入れる。実行ユーザーを `docker` グループに入れ、再ログインする。`docker info` が sudo なしで成功することを確認する。
+2. リポジトリを実行ユーザーが書ける場所へ置く。
 
    ```bash
-   sudo git clone https://github.com/matsuokashuhei/walk-dog.git /opt/walk-dog
+   git clone https://github.com/matsuokashuhei/walk-dog.git ~/walk-dog
    ```
 
-4. `apps/.env.vps.example` を基に `WALKDOG_ROOT/apps/.env.vps` を作る。`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` に同じ IAM キーを入れる。root 所有にする。Compose を実行するアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。`deploy.sh` は `.env.vps` を作らない。無いと止まる。
-5. ポート 3000 を、API を使う送信元だけに開ける。
-
-差し戻し用の状態ファイルは `DIGEST_STATE`（既定 `/var/lib/walkdog/digest-state`）である。無いときは `deploy.sh` が `apps/vps/digest-state.example` から作る。
+3. `apps/.env.vps.example` を基に `~/walk-dog/apps/.env.vps` を作る。IAM ユーザー `walkdog-<env>-sakura-vps` のキー（Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key`）、Cognito / SQS / DynamoDB、および載せたい `RELEASE_IMAGE`（`repository@sha256:…`）を入れる。実行ユーザー所有にし、そのアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
+4. ポート 3000 を、API を使う送信元だけに開ける。
 
 ## 反映に使う image
 
-反映の参照は `latest` タグである。main の `publish` が ECR へ `${ECR_REPOSITORY_URL}:latest` と `${ECR_REPOSITORY_URL}:${{ github.sha }}` を push する。
-
-`.env.vps` の `RELEASE` には、載せたい publish の commit SHA を入れる。Actions の成功した `publish` run の commit か、artifact `release-manifest` の `commitSha` を使う。
-
-`deploy.sh` は次を既定にする。環境変数で上書きできる。
+main の `publish` が ECR へ `${ECR_REPOSITORY_URL}:latest` と `${ECR_REPOSITORY_URL}:${{ github.sha }}` を push する。VPS 反映は digest ピンを使う。
 
 ```bash
-export RELEASE_REPOSITORY='967026628831.dkr.ecr.ap-northeast-1.amazonaws.com/walkdog-api'
-export RELEASE_IMAGE="${RELEASE_REPOSITORY}:latest"
+# 例: publish 後に digest を取る
+REPO='967026628831.dkr.ecr.ap-northeast-1.amazonaws.com/walkdog-dev-api'
+DIGEST=$(aws ecr describe-images --repository-name walkdog-dev-api --image-ids imageTag=latest \
+  --query 'imageDetails[0].imageDigest' --output text --region ap-northeast-1)
+export RELEASE_IMAGE="${REPO}@${DIGEST}"
 ```
 
-## 初回起動
+`.env.vps` の `RELEASE` には同じ publish の commit SHA を入れる。`RELEASE_IMAGE` はシェルで渡すと `.env.vps` の値より優先する。
 
-ホスト準備のあと、次を実行する。
+## 初回起動 / 新しい image の反映
 
 ```bash
-sudo bash /opt/walk-dog/apps/vps/deploy.sh
+export RELEASE_IMAGE='967026628831.dkr.ecr.ap-northeast-1.amazonaws.com/walkdog-dev-api@sha256:…'
+bash ~/walk-dog/infra/sakura/deploy.sh
 ```
 
-成功は exit 0 と、`GET /health` が成功 JSON を返すことである。migrate が非ゼロなら `api` と `worker` は上がらない。修正入りの image を publish し、同じコマンドを再実行する。
+`deploy.sh` は `git pull --ff-only`、ECR login、`api` / `worker` の pull、migrate、`api` / `worker` の recreate をこの順で行う。migrate が非ゼロならそこで止まる。
 
-`WALKDOG_ROOT` を既定以外にするときは、その根の `apps/vps/deploy.sh` を同じように実行する。
-
-## 再起動後に上げる
-
-Compose は状態ファイルを読まない。`RELEASE_IMAGE` がシェルに無いと `api` / `worker` / `migrate` の image を解決できない。ホスト再起動のあと、または promote なしで container を上げ直すとき、先に環境を載せる。
-
-いま動いている版をそのまま上げるなら digest ピンを使う。
+成功確認:
 
 ```bash
-STATE=/var/lib/walkdog/digest-state
-set -a
-# shellcheck source=/dev/null
-. "$STATE"
-set +a
-export RELEASE_IMAGE="${RELEASE_REPOSITORY}@${CURRENT_DIGEST}"
-docker compose -f apps/compose.vps.yml up -d api worker
 curl -fsS http://127.0.0.1:3000/health
 ```
 
-ECR 上の新しい `latest` を取りに行くなら、次節の手順を使う。
+## 再起動後に上げる
+
+Compose は `RELEASE_IMAGE` が無いと image を解決できない。ホスト再起動のあと、`.env.vps` を読ませてから上げる。
+
+```bash
+set -a && . ~/walk-dog/apps/.env.vps && set +a
+docker compose -f ~/walk-dog/apps/compose.vps.yml up -d api worker
+curl -fsS http://127.0.0.1:3000/health
+```
 
 postgres のデータは volume `postgres-data` に残る。migrate は新しい image を載せるときだけ再実行する。
 
-## 新しい latest を反映する
-
-main の `publish` が新しい `latest` を push したあと、次を実行する。
-
-```bash
-sudo bash /opt/walk-dog/apps/vps/deploy.sh
-```
-
-migrate が失敗したら稼働中の `api` と `worker` はそのままにする。修正後の `latest` で同じコマンドを再実行する。
-
 ## health 失敗後の差し戻し
 
-`deploy.sh` が health に失敗したとき、または手動で `api` / `worker` を上げたあと health が成功しないとき、次を行う。`latest` は使わない。状態ファイルの直前成功 digest に戻す。
-
-1. 新しい container を止める。
-2. digest 状態の `PREVIOUS_DIGEST` で `RELEASE_IMAGE` を組み立てる。
-
-   ```bash
-   STATE=/var/lib/walkdog/digest-state
-   set -a
-   # shellcheck source=/dev/null
-   . "$STATE"
-   set +a
-   export RELEASE_IMAGE="${RELEASE_REPOSITORY}@${PREVIOUS_DIGEST}"
-   ```
-
-3. その digest で `api` を起動する。続けて `worker` を起動する。
-
-   ```bash
-   docker compose -f apps/compose.vps.yml up -d api
-   docker compose -f apps/compose.vps.yml up -d worker
-   ```
-
-4. `GET /health` が成功することを確認する。
-
-migration の自動 down は行わない。差し戻しは image の差し戻しだけである。
+既知の成功 digest を `RELEASE_IMAGE` に指定して `deploy.sh` を再実行する。migration の自動 down は行わない。
 
 ## この手順の範囲外
 
@@ -111,7 +70,6 @@ migration の自動 down は行わない。差し戻しは image の差し戻し
 ## 関連
 
 - [さくら VPS API 提供経路 設計](../specs/2026-09-12-sakura-vps-api-delivery-design.md)
-- [`apps/vps/deploy.sh`](../../apps/vps/deploy.sh)
+- [`infra/sakura/deploy.sh`](../../infra/sakura/deploy.sh)
 - [`apps/compose.vps.yml`](../../apps/compose.vps.yml)
 - [`apps/.env.vps.example`](../../apps/.env.vps.example)
-- [`apps/vps/digest-state.example`](../../apps/vps/digest-state.example)

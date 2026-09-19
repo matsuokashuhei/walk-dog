@@ -225,6 +225,15 @@ mod tests {
         ) -> Result<TrackPoint, AcceptTrackPointError> {
             unreachable!()
         }
+        async fn record_event(
+            &self,
+            _: &crate::modules::walks::types::RecordEventInput,
+        ) -> Result<
+            crate::modules::walks::types::RecordedEvent,
+            crate::modules::walks::repository::RecordEventError,
+        > {
+            unreachable!()
+        }
         async fn list_accepted_recorded_at(
             &self,
             _: &str,

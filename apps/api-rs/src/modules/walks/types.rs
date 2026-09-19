@@ -79,6 +79,16 @@ impl WalkEventType {
             Self::Greet => "greet",
         }
     }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "pee" => Some(Self::Pee),
+            "poop" => Some(Self::Poop),
+            "sniff" => Some(Self::Sniff),
+            "greet" => Some(Self::Greet),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -90,6 +100,24 @@ pub struct WalkEvent {
     pub occurred_at: jiff::Timestamp,
     pub latitude: f64,
     pub longitude: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecordEventInput {
+    pub owner_id: String,
+    pub walk_id: String,
+    pub event_id: String,
+    pub participant_dog_id: String,
+    pub event_type: WalkEventType,
+    pub occurred_at: jiff::Timestamp,
+    pub latitude: f64,
+    pub longitude: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecordedEvent {
+    pub event: WalkEvent,
+    pub created: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

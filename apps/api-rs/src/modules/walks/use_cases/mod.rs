@@ -3,6 +3,7 @@ pub mod delete_walk;
 pub mod finish_walk;
 pub mod get_active_walk;
 pub mod get_walk_detail;
+pub mod record_event;
 pub mod start_walk;
 
 pub use accept_track_point::{accept_track_point, AcceptTrackPointDeps, AcceptTrackPointResult};
@@ -12,4 +13,5 @@ pub use finish_walk::{
 };
 pub use get_active_walk::get_active_walk;
 pub use get_walk_detail::{get_walk_detail, GetWalkDetailResult};
+pub use record_event::{record_event, RecordEventCommand, RecordEventDeps, RecordEventResult};
 pub use start_walk::{start_walk, StartWalkResult};

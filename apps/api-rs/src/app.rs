@@ -132,12 +132,13 @@ mod tests {
         ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
     };
     use crate::modules::walks::repository::{
-        AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
-        WalkRepository,
+        AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
+        StartWalkError, WalkRepository,
     };
     use crate::modules::walks::types::{
         AcceptTrackPointInput, CompletedWalk, ConfirmedTrackPoint, FinishWalkInput, RecordingWalk,
-        StartWalkInput, TrackPoint, WalkEvent, WalkParticipant,
+        RecordEventInput, RecordedEvent, StartWalkInput, TrackPoint, WalkEvent, WalkEventType,
+        WalkParticipant,
     };
     use crate::modules::walks::ActiveWalkCommands;
     use crate::shared::http::access_token::Principal;
@@ -366,6 +367,7 @@ mod tests {
         start_result: Mutex<Result<RecordingWalk, StartWalkError>>,
         fail_result: Mutex<Result<(), FailWalkError>>,
         accept_result: Mutex<Result<TrackPoint, AcceptTrackPointError>>,
+        record_event_result: Mutex<Result<RecordedEvent, RecordEventError>>,
         finish_result: Mutex<Result<CompletedWalk, FinishWalkError>>,
         detail_result: Mutex<Result<CompletedWalk, WalkNotFoundError>>,
         accepted_recorded_at: Mutex<Result<Vec<jiff::Timestamp>, ListAcceptedError>>,
@@ -379,6 +381,7 @@ mod tests {
                 start_result: Mutex::new(Err(StartWalkError::NotFound(WalkNotFoundError))),
                 fail_result: Mutex::new(Ok(())),
                 accept_result: Mutex::new(Err(AcceptTrackPointError::NotFound(WalkNotFoundError))),
+                record_event_result: Mutex::new(Err(RecordEventError::NotFound(WalkNotFoundError))),
                 finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
                 detail_result: Mutex::new(Err(WalkNotFoundError)),
                 accepted_recorded_at: Mutex::new(Ok(vec![])),
@@ -392,6 +395,7 @@ mod tests {
                 start_result: Mutex::new(Ok(walk)),
                 fail_result: Mutex::new(Ok(())),
                 accept_result: Mutex::new(Err(AcceptTrackPointError::NotFound(WalkNotFoundError))),
+                record_event_result: Mutex::new(Err(RecordEventError::NotFound(WalkNotFoundError))),
                 finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
                 detail_result: Mutex::new(Err(WalkNotFoundError)),
                 accepted_recorded_at: Mutex::new(Ok(vec![])),
@@ -436,6 +440,18 @@ mod tests {
         }
     }
 
+    fn sample_event() -> WalkEvent {
+        WalkEvent {
+            event_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90".into(),
+            walk_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80".into(),
+            participant_dog_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70".into(),
+            event_type: WalkEventType::Pee,
+            occurred_at: "2026-09-06T03:20:11Z".parse().unwrap(),
+            latitude: 35.681_236,
+            longitude: 139.767_125,
+        }
+    }
+
     #[async_trait::async_trait]
     impl WalkRepository for FakeWalks {
         async fn get_active_by_owner(&self, _: &str) -> Option<RecordingWalk> {
@@ -463,6 +479,12 @@ mod tests {
             _: &AcceptTrackPointInput,
         ) -> Result<TrackPoint, AcceptTrackPointError> {
             self.accept_result.lock().unwrap().clone()
+        }
+        async fn record_event(
+            &self,
+            _: &RecordEventInput,
+        ) -> Result<RecordedEvent, RecordEventError> {
+            self.record_event_result.lock().unwrap().clone()
         }
         async fn list_accepted_recorded_at(
             &self,
@@ -916,6 +938,7 @@ mod tests {
         assert!(json["paths"]["/v1/walks/{walkId}"].is_object());
         assert!(json["paths"]["/v1/walks/{walkId}/finish"].is_object());
         assert!(json["paths"]["/v1/walks/{walkId}/track-points"].is_object());
+        assert!(json["paths"]["/v1/walks/{walkId}/events"].is_object());
     }
 
     #[tokio::test]
@@ -1613,5 +1636,172 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(missing.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn walks_events_success_and_errors() {
+        let event = sample_event();
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() = Ok(RecordedEvent {
+            event: event.clone(),
+            created: true,
+        });
+        let app = create_app(state_with_walks(walks, true));
+        let walk_id = "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80";
+        let body = r#"{"eventId":"0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90","participantDogId":"0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70","type":"pee","occurredAt":"2026-09-06T03:20:11Z","latitude":35.681236,"longitude":139.767125}"#;
+
+        let created = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(created.status(), 201);
+        let created_json = json_body(created).await;
+        assert_eq!(created_json["requestId"], "req-event");
+        assert_eq!(created_json["eventId"], event.event_id);
+        assert_eq!(created_json["type"], "pee");
+        assert_eq!(created_json["latitude"], 35.681236);
+
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() = Ok(RecordedEvent {
+            event: event.clone(),
+            created: false,
+        });
+        let app = create_app(state_with_walks(walks, true));
+        let replay = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-replay")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(replay.status(), 200);
+
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() =
+            Err(RecordEventError::NotFound(WalkNotFoundError));
+        let app = create_app(state_with_walks(walks, true));
+        let missing = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-404")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), 404);
+        let missing_json = json_body(missing).await;
+        assert_eq!(missing_json["code"], "NOT_FOUND");
+        assert_eq!(missing_json["message"], "Walk が見つかりません。");
+
+        let walks = FakeWalks::new();
+        let app = create_app(state_with_walks(walks, true));
+        let bad_id = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks/not-a-uuid/events")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-bad-id")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(bad_id.status(), 404);
+        let bad_id_json = json_body(bad_id).await;
+        assert_eq!(bad_id_json["message"], "Walk が見つかりません。");
+
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() =
+            Err(RecordEventError::NotRecording(WalkNotRecordingError));
+        let app = create_app(state_with_walks(walks, true));
+        let not_recording = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-nr")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(not_recording.status(), 409);
+        let nr_json = json_body(not_recording).await;
+        assert_eq!(nr_json["code"], "WALK_NOT_RECORDING");
+        assert_eq!(nr_json["message"], "この散歩には記録できません。");
+
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() = Err(RecordEventError::IdempotencyConflict(
+            IdempotencyConflictError,
+        ));
+        let app = create_app(state_with_walks(walks, true));
+        let conflict = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-idem")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(conflict.status(), 409);
+        let conflict_json = json_body(conflict).await;
+        assert_eq!(conflict_json["code"], "IDEMPOTENCY_CONFLICT");
+        assert_eq!(
+            conflict_json["message"],
+            "同じ要求を完了できません。最初からやり直してください。"
+        );
+
+        let walks = FakeWalks::new();
+        *walks.record_event_result.lock().unwrap() = Ok(RecordedEvent {
+            event,
+            created: true,
+        });
+        let app = create_app(state_with_walks(walks, true));
+        let invalid = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/events"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-event-400")
+                    .body(Body::from(r#"{"eventId":"0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90","participantDogId":"0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70","type":"bark","occurredAt":"2026-09-06T03:20:11Z","latitude":35.681236,"longitude":139.767125}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(invalid.status(), 400);
+        let invalid_json = json_body(invalid).await;
+        assert_eq!(invalid_json["code"], "INVALID_INPUT");
     }
 }

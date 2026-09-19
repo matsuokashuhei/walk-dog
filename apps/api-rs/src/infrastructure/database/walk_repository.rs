@@ -17,17 +17,18 @@ use crate::modules::walks::errors::{
 };
 use crate::modules::walks::path_distance::pace_seconds_per_meter;
 use crate::modules::walks::repository::{
-    AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
-    WalkRepository,
+    AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
+    StartWalkError, WalkRepository,
 };
 use crate::modules::walks::types::{
-    AcceptTrackPointInput, CompletedWalk, FinishWalkInput, RecordingWalk, StartWalkInput,
-    TrackPoint, WalkEvent, WalkEventType, WalkParticipant,
+    AcceptTrackPointInput, CompletedWalk, FinishWalkInput, RecordEventInput, RecordedEvent,
+    RecordingWalk, StartWalkInput, TrackPoint, WalkEvent, WalkEventType, WalkParticipant,
 };
 
 const RECORDING_UNIQUE: &str = "walks_owner_id_recording_unique";
 const COMMAND_KEY_UNIQUE: &str = "walk_command_keys_owner_id_namespace_key_unique";
 const TRACK_POINT_UNIQUE: &str = "walk_track_points_walk_id_recorded_at_unique";
+const EVENT_PKEY: &str = "walk_events_pkey";
 
 pub struct ToastyWalkRepository {
     db: Arc<Mutex<Db>>,
@@ -94,6 +95,15 @@ fn to_event_type(value: WalkEventTypeRecord) -> WalkEventType {
     }
 }
 
+fn from_event_type(value: WalkEventType) -> WalkEventTypeRecord {
+    match value {
+        WalkEventType::Pee => WalkEventTypeRecord::Pee,
+        WalkEventType::Poop => WalkEventTypeRecord::Poop,
+        WalkEventType::Sniff => WalkEventTypeRecord::Sniff,
+        WalkEventType::Greet => WalkEventTypeRecord::Greet,
+    }
+}
+
 fn to_walk_event(row: WalkEventRecord) -> WalkEvent {
     WalkEvent {
         event_id: row.event_id.to_string(),
@@ -120,6 +130,10 @@ fn is_command_key_unique(error: &toasty::Error) -> bool {
 
 fn is_track_point_unique(error: &toasty::Error) -> bool {
     error_message(error).contains(TRACK_POINT_UNIQUE)
+}
+
+fn is_event_pkey(error: &toasty::Error) -> bool {
+    error_message(error).contains(EVENT_PKEY)
 }
 
 async fn select_participants(db: &mut Db, walk_id: uuid::Uuid) -> Vec<WalkParticipantRecord> {
@@ -472,6 +486,81 @@ async fn replay_accepted_track_point(
     ))
 }
 
+async fn record_event_tx(
+    db: &mut Db,
+    input: &RecordEventInput,
+) -> Result<RecordedEvent, RecordEventError> {
+    let owner_uuid: uuid::Uuid = input.owner_id.parse().expect("owner_id uuid");
+    let walk_uuid: uuid::Uuid = input.walk_id.parse().expect("walk_id uuid");
+    let event_uuid: uuid::Uuid = input.event_id.parse().expect("event_id uuid");
+    let dog_uuid: uuid::Uuid = input
+        .participant_dog_id
+        .parse()
+        .expect("participant_dog_id uuid");
+
+    let walk = select_owned_walk(db, owner_uuid, walk_uuid).await?;
+    if walk.state != WalkState::Recording {
+        return Err(RecordEventError::NotRecording(WalkNotRecordingError));
+    }
+
+    let participants: Vec<WalkParticipantRecord> = WalkParticipantRecord::filter(
+        WalkParticipantRecord::fields()
+            .walk_id()
+            .eq(walk_uuid)
+            .and(WalkParticipantRecord::fields().dog_id().eq(dog_uuid)),
+    )
+    .exec(db)
+    .await
+    .expect("check walk participant for event");
+    if participants.is_empty() {
+        return Err(RecordEventError::NotFound(WalkNotFoundError));
+    }
+
+    match toasty::create!(WalkEventRecord {
+        event_id: event_uuid,
+        walk_id: walk_uuid,
+        participant_dog_id: dog_uuid,
+        event_type: from_event_type(input.event_type),
+        occurred_at: input.occurred_at,
+        latitude: input.latitude,
+        longitude: input.longitude,
+    })
+    .exec(db)
+    .await
+    {
+        Ok(row) => Ok(RecordedEvent {
+            event: to_walk_event(row),
+            created: true,
+        }),
+        Err(error) if is_event_pkey(&error) => replay_recorded_event(db, input).await,
+        Err(error) => panic!("record event insert failed: {error}"),
+    }
+}
+
+async fn replay_recorded_event(
+    db: &mut Db,
+    input: &RecordEventInput,
+) -> Result<RecordedEvent, RecordEventError> {
+    let event_uuid: uuid::Uuid = input.event_id.parse().expect("event_id uuid");
+    let row = WalkEventRecord::get_by_event_id(&mut *db, event_uuid)
+        .await
+        .expect("replay recorded event");
+    if row.participant_dog_id.to_string() == input.participant_dog_id
+        && to_event_type(row.event_type.clone()) == input.event_type
+        && row.occurred_at == input.occurred_at
+        && row.latitude == input.latitude
+        && row.longitude == input.longitude
+    {
+        return Ok(RecordedEvent {
+            event: to_walk_event(row),
+            created: false,
+        });
+    }
+    Err(RecordEventError::IdempotencyConflict(
+        IdempotencyConflictError,
+    ))
+}
+
 #[async_trait::async_trait]
 impl WalkRepository for ToastyWalkRepository {
     async fn get_active_by_owner(&self, owner_id: &str) -> Option<RecordingWalk> {
@@ -578,6 +667,14 @@ impl WalkRepository for ToastyWalkRepository {
     ) -> Result<TrackPoint, AcceptTrackPointError> {
         let mut db = self.db.lock().await;
         accept_track_point_tx(&mut db, input).await
+    }
+
+    async fn record_event(
+        &self,
+        input: &RecordEventInput,
+    ) -> Result<RecordedEvent, RecordEventError> {
+        let mut db = self.db.lock().await;
+        record_event_tx(&mut db, input).await
     }
 
     async fn list_accepted_recorded_at(

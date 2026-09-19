@@ -4,8 +4,8 @@ use crate::modules::walks::errors::{
     ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
 };
 use crate::modules::walks::types::{
-    AcceptTrackPointInput, CompletedWalk, FinishWalkInput, RecordingWalk, StartWalkInput,
-    TrackPoint, WalkEvent,
+    AcceptTrackPointInput, CompletedWalk, FinishWalkInput, RecordEventInput, RecordedEvent,
+    RecordingWalk, StartWalkInput, TrackPoint, WalkEvent,
 };
 
 #[async_trait::async_trait]
@@ -30,6 +30,11 @@ pub trait WalkRepository: Send + Sync {
         &self,
         input: &AcceptTrackPointInput,
     ) -> Result<TrackPoint, AcceptTrackPointError>;
+
+    async fn record_event(
+        &self,
+        input: &RecordEventInput,
+    ) -> Result<RecordedEvent, RecordEventError>;
 
     async fn list_accepted_recorded_at(
         &self,
@@ -70,6 +75,16 @@ pub enum FinishWalkError {
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum AcceptTrackPointError {
+    #[error(transparent)]
+    NotFound(#[from] WalkNotFoundError),
+    #[error(transparent)]
+    NotRecording(#[from] WalkNotRecordingError),
+    #[error(transparent)]
+    IdempotencyConflict(#[from] IdempotencyConflictError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum RecordEventError {
     #[error(transparent)]
     NotFound(#[from] WalkNotFoundError),
     #[error(transparent)]

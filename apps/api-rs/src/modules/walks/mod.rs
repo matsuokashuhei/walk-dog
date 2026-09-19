@@ -18,8 +18,8 @@ pub use provider::{
     ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
 };
 pub use repository::{
-    AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
-    WalkRepository,
+    AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
+    StartWalkError, WalkRepository,
 };
 pub use types::{
     CompletedWalk, ConfirmedTrackPoint, RecordingWalk, StartWalkInput, TrackPoint, WalkDetail,

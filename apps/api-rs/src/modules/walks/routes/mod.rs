@@ -9,12 +9,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
 use crate::modules::walks::responses::{
-    CompletedWalkBody, DetailEventBody, DetailTrackPointBody, RecordingWalkBody, TrackPointBody,
+    CompletedWalkBody, DetailEventBody, DetailTrackPointBody, EventBody, RecordingWalkBody,
+    TrackPointBody,
 };
-    use crate::modules::walks::use_cases::{
-        self, AcceptTrackPointDeps, AcceptTrackPointResult, DeleteWalkResult, FinishWalkDeps,
-        FinishWalkResult, GetWalkDetailResult, StartWalkResult, FINISH_CONFIRMATION_TIMEOUT_MS,
-    };
+use crate::modules::walks::use_cases::{
+    self, AcceptTrackPointDeps, AcceptTrackPointResult, DeleteWalkResult, FinishWalkDeps,
+    FinishWalkResult, GetWalkDetailResult, RecordEventCommand, RecordEventDeps, RecordEventResult,
+    StartWalkResult, FINISH_CONFIRMATION_TIMEOUT_MS,
+};
+use crate::modules::walks::types::WalkEventType;
 use crate::shared::http::authentication::Authenticated;
 use crate::shared::http::error_contract::ErrorBody;
 use crate::shared::http::request_id::RequestId;
@@ -26,6 +29,7 @@ pub fn walk_routes() -> Router<AppState> {
         .route("/", post(start_walk_handler))
         .route("/{walk_id}/finish", post(finish_walk_handler))
         .route("/{walk_id}/track-points", post(accept_track_point_handler))
+        .route("/{walk_id}/events", post(record_event_handler))
         .route(
             "/{walk_id}",
             get(get_walk_detail_handler).delete(delete_walk_handler),
@@ -66,6 +70,14 @@ struct TrackPointResponse {
     track_point: TrackPointBody,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EventResponse {
+    request_id: String,
+    #[serde(flatten)]
+    event: EventBody,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct StartWalkBody {
@@ -80,6 +92,18 @@ struct FinishWalkBody {}
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct AcceptTrackPointBody {
     recorded_at: String,
+    latitude: f64,
+    longitude: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct RecordEventBody {
+    event_id: String,
+    participant_dog_id: String,
+    #[serde(rename = "type")]
+    event_type: String,
+    occurred_at: String,
     latitude: f64,
     longitude: f64,
 }
@@ -181,6 +205,19 @@ fn walk_not_recording_track_point(request_id: String) -> Response {
         Json(ErrorBody {
             code: "WALK_NOT_RECORDING".to_string(),
             message: "この Walk は記録中ではありません。".to_string(),
+            request_id,
+            retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn walk_not_recording_event(request_id: String) -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(ErrorBody {
+            code: "WALK_NOT_RECORDING".to_string(),
+            message: "この散歩には記録できません。".to_string(),
             request_id,
             retryable: false,
         }),
@@ -388,6 +425,74 @@ async fn accept_track_point_handler(
             track_point_idempotency_conflict(request_id.0)
         }
         AcceptTrackPointResult::EnqueueFailed => retryable_internal_error(request_id.0),
+    }
+}
+
+async fn record_event_handler(
+    State(state): State<AppState>,
+    request_id: RequestId,
+    Authenticated(principal): Authenticated,
+    Path(walk_id): Path<String>,
+    body: Result<Json<RecordEventBody>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    if uuid::Uuid::parse_str(&walk_id).is_err() {
+        return walk_not_found_jp(request_id.0);
+    }
+    let Json(body) = match body {
+        Ok(v) => v,
+        Err(_) => return invalid_input(request_id.0),
+    };
+    if uuid::Uuid::parse_str(&body.event_id).is_err()
+        || uuid::Uuid::parse_str(&body.participant_dog_id).is_err()
+    {
+        return invalid_input(request_id.0);
+    }
+    let Some(event_type) = WalkEventType::parse(&body.event_type) else {
+        return invalid_input(request_id.0);
+    };
+    let occurred_at = match body.occurred_at.parse::<jiff::Timestamp>() {
+        Ok(value) => value,
+        Err(_) => return invalid_input(request_id.0),
+    };
+    if !valid_track_point_coords(body.latitude, body.longitude) {
+        return invalid_input(request_id.0);
+    }
+    match use_cases::record_event(
+        RecordEventDeps {
+            owners: state.owner_repository.as_ref(),
+            walks: state.walk_repository.as_ref(),
+        },
+        &principal.cognito_subject,
+        RecordEventCommand {
+            walk_id,
+            event_id: body.event_id,
+            participant_dog_id: body.participant_dog_id,
+            event_type,
+            occurred_at,
+            latitude: body.latitude,
+            longitude: body.longitude,
+        },
+    )
+    .await
+    {
+        RecordEventResult::Recorded(recorded) => {
+            let status = if recorded.created {
+                StatusCode::CREATED
+            } else {
+                StatusCode::OK
+            };
+            (
+                status,
+                Json(EventResponse {
+                    request_id: request_id.0,
+                    event: EventBody::from(&recorded.event),
+                }),
+            )
+                .into_response()
+        }
+        RecordEventResult::NotFound => walk_not_found_jp(request_id.0),
+        RecordEventResult::NotRecording => walk_not_recording_event(request_id.0),
+        RecordEventResult::IdempotencyConflict => idempotency_conflict(request_id.0),
     }
 }
 

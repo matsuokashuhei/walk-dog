@@ -280,6 +280,59 @@
           "500": { "description": "Internal server error" }
         }
       }
+    },
+    "/v1/walks/{walkId}/events": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "eventId",
+                  "participantDogId",
+                  "type",
+                  "occurredAt",
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "eventId": { "type": "string", "format": "uuid" },
+                  "participantDogId": { "type": "string", "format": "uuid" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["pee", "poop", "sniff", "greet"]
+                  },
+                  "occurredAt": { "type": "string", "format": "date-time" },
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Replayed Event" },
+          "201": { "description": "Recorded Event" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
     }
   },
   "components": {

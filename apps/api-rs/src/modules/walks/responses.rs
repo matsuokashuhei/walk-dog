@@ -142,3 +142,30 @@ impl From<&WalkEvent> for DetailEventBody {
         }
     }
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EventBody {
+    pub event_id: String,
+    pub walk_id: String,
+    pub participant_dog_id: String,
+    #[serde(rename = "type")]
+    pub event_type: &'static str,
+    pub occurred_at: String,
+    pub latitude: f64,
+    pub longitude: f64,
+}
+
+impl From<&WalkEvent> for EventBody {
+    fn from(event: &WalkEvent) -> Self {
+        Self {
+            event_id: event.event_id.clone(),
+            walk_id: event.walk_id.clone(),
+            participant_dog_id: event.participant_dog_id.clone(),
+            event_type: event.event_type.as_str(),
+            occurred_at: event.occurred_at.to_string(),
+            latitude: event.latitude,
+            longitude: event.longitude,
+        }
+    }
+}

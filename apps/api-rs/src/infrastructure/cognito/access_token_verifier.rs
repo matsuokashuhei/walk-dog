@@ -35,7 +35,6 @@ struct CachedJwks {
 }
 
 pub struct CognitoAccessTokenVerifier {
-    user_pool_id: String,
     client_id: String,
     issuer: String,
     jwks_url: String,
@@ -50,7 +49,6 @@ impl CognitoAccessTokenVerifier {
             config.region, config.user_pool_id
         );
         Self {
-            user_pool_id: config.user_pool_id.clone(),
             client_id: config.client_id.clone(),
             issuer: issuer.clone(),
             jwks_url: format!("{issuer}/.well-known/jwks.json"),

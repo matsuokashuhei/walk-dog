@@ -135,6 +135,53 @@
           "500": { "description": "Internal server error" }
         }
       }
+    },
+    "/v1/walks/active": {
+      "get": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Active Walk" },
+          "204": { "description": "No active walk" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Created Walk" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks/{walkId}": {
+      "delete": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Walk discarded" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
     }
   },
   "components": {

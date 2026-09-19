@@ -9,6 +9,9 @@ use tokio_postgres::NoTls;
 use crate::infrastructure::config::PostgresConfig;
 use crate::infrastructure::database::dog_model::{DogRecord, GoalRevisionRecord};
 use crate::infrastructure::database::owner_model::OwnerRecord;
+use crate::infrastructure::database::walk_model::{
+    WalkCommandKeyRecord, WalkParticipantRecord, WalkRecord,
+};
 use crate::modules::health::use_cases::check_health::BoxFut;
 use crate::modules::health::HealthPings;
 
@@ -23,15 +26,16 @@ pub struct SchemaProbe {
     pub id: i64,
 }
 
-pub mod active_walk_commands;
 pub mod dog_model;
 pub mod dog_repository;
 pub mod owner_model;
 pub mod owner_repository;
+pub mod walk_model;
+pub mod walk_repository;
 
-pub use active_walk_commands::SqlActiveWalkCommands;
 pub use dog_repository::ToastyDogRepository;
 pub use owner_repository::ToastyOwnerRepository;
+pub use walk_repository::ToastyWalkRepository;
 
 pub async fn connect_toasty(config: &PostgresConfig) -> Result<Arc<Mutex<Db>>, String> {
     let url = config.connection_url();
@@ -40,7 +44,10 @@ pub async fn connect_toasty(config: &PostgresConfig) -> Result<Arc<Mutex<Db>>, S
             SchemaProbe,
             OwnerRecord,
             DogRecord,
-            GoalRevisionRecord
+            GoalRevisionRecord,
+            WalkRecord,
+            WalkParticipantRecord,
+            WalkCommandKeyRecord
         ))
         .max_pool_size(config.pool_max as usize)
         .connect(&url)

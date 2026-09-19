@@ -18,6 +18,8 @@ use crate::modules::health::routes::health_handler;
 use crate::modules::health::HealthPings;
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::owners::routes::owner_routes;
+use crate::modules::walks::repository::WalkRepository;
+use crate::modules::walks::routes::walk_routes;
 use crate::modules::walks::ActiveWalkCommands;
 use crate::shared::http::access_token::AccessTokenVerifier;
 use crate::shared::http::authentication::authentication_middleware;
@@ -30,6 +32,7 @@ pub struct AppState {
     pub auth_provider: Arc<dyn AuthProvider>,
     pub owner_repository: Arc<dyn OwnerRepository>,
     pub dog_repository: Arc<dyn DogRepository>,
+    pub walk_repository: Arc<dyn WalkRepository>,
     pub access_token_verifier: Arc<dyn AccessTokenVerifier>,
     pub active_walk_commands: Arc<dyn ActiveWalkCommands>,
 }
@@ -59,12 +62,18 @@ pub fn create_app(state: AppState) -> Router {
         authentication_middleware,
     ));
 
+    let walks = walk_routes().route_layer(middleware::from_fn_with_state(
+        state.clone(),
+        authentication_middleware,
+    ));
+
     Router::new()
         .route("/health", get(health_handler))
         .route("/openapi.json", get(openapi_handler))
         .nest("/v1/auth", auth)
         .nest("/v1/owner", owner)
         .nest("/v1/dogs", dogs)
+        .nest("/v1/walks", walks)
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -109,6 +118,12 @@ mod tests {
     };
     use crate::modules::health::use_cases::check_health::BoxFut;
     use crate::modules::owners::types::Owner;
+    use crate::modules::walks::errors::{
+        ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
+    };
+    use crate::modules::walks::repository::{FailWalkError, StartWalkError, WalkRepository};
+    use crate::modules::walks::types::{RecordingWalk, StartWalkInput, WalkParticipant};
+    use crate::modules::walks::ActiveWalkCommands;
     use crate::shared::http::access_token::Principal;
     use axum::body::Body;
     use http_body_util::BodyExt;
@@ -330,7 +345,57 @@ mod tests {
         }
     }
 
-    struct FakeWalks;
+    struct FakeWalks {
+        active: Mutex<Option<RecordingWalk>>,
+        start_result: Mutex<Result<RecordingWalk, StartWalkError>>,
+        fail_result: Mutex<Result<(), FailWalkError>>,
+    }
+
+    impl FakeWalks {
+        fn new() -> Self {
+            Self {
+                active: Mutex::new(None),
+                start_result: Mutex::new(Err(StartWalkError::NotFound(WalkNotFoundError))),
+                fail_result: Mutex::new(Ok(())),
+            }
+        }
+
+        fn with_active(walk: RecordingWalk) -> Self {
+            Self {
+                active: Mutex::new(Some(walk.clone())),
+                start_result: Mutex::new(Ok(walk)),
+                fail_result: Mutex::new(Ok(())),
+            }
+        }
+    }
+
+    fn sample_walk() -> RecordingWalk {
+        RecordingWalk {
+            walk_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80".into(),
+            owner_id: "11111111-1111-1111-1111-111111111111".into(),
+            started_at: jiff::Timestamp::from_second(1_723_636_811).unwrap(),
+            participants: vec![WalkParticipant {
+                walk_participant_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e81".into(),
+                dog_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70".into(),
+                name: "Mugi".into(),
+            }],
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl WalkRepository for FakeWalks {
+        async fn get_active_by_owner(&self, _: &str) -> Option<RecordingWalk> {
+            self.active.lock().unwrap().clone()
+        }
+        async fn start(&self, _: &StartWalkInput) -> Result<RecordingWalk, StartWalkError> {
+            self.start_result.lock().unwrap().clone()
+        }
+        async fn fail(&self, _: &str, _: &str) -> Result<(), FailWalkError> {
+            self.fail_result.lock().unwrap().clone()
+        }
+        async fn fail_if_present(&self, _: &str) {}
+    }
+
     #[async_trait::async_trait]
     impl ActiveWalkCommands for FakeWalks {
         async fn fail_if_present(&self, _: &str) {}
@@ -341,27 +406,41 @@ mod tests {
         auth: FakeAuth,
         verifier_ok: bool,
     ) -> AppState {
+        let walks = Arc::new(FakeWalks::new());
         AppState {
             pings,
             auth_provider: Arc::new(auth),
             owner_repository: Arc::new(FakeOwners::new()),
             dog_repository: Arc::new(FakeDogs::new()),
+            walk_repository: walks.clone(),
             access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
-            active_walk_commands: Arc::new(FakeWalks),
+            active_walk_commands: walks,
         }
     }
 
-    fn state_with_dogs(
-        dogs: FakeDogs,
-        verifier_ok: bool,
-    ) -> AppState {
+    fn state_with_dogs(dogs: FakeDogs, verifier_ok: bool) -> AppState {
+        let walks = Arc::new(FakeWalks::new());
         AppState {
             pings: Arc::new(OkPings),
             auth_provider: Arc::new(FakeAuth::default()),
             owner_repository: Arc::new(FakeOwners::new()),
             dog_repository: Arc::new(dogs),
+            walk_repository: walks.clone(),
             access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
-            active_walk_commands: Arc::new(FakeWalks),
+            active_walk_commands: walks,
+        }
+    }
+
+    fn state_with_walks(walks: FakeWalks, verifier_ok: bool) -> AppState {
+        let walks = Arc::new(walks);
+        AppState {
+            pings: Arc::new(OkPings),
+            auth_provider: Arc::new(FakeAuth::default()),
+            owner_repository: Arc::new(FakeOwners::new()),
+            dog_repository: Arc::new(FakeDogs::new()),
+            walk_repository: walks.clone(),
+            access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
+            active_walk_commands: walks,
         }
     }
 
@@ -620,7 +699,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn openapi_lists_auth_owner_and_dogs_paths() {
+    async fn openapi_lists_auth_owner_dogs_and_walks_paths() {
         let app = create_app(state_with(Arc::new(OkPings), FakeAuth::default(), true));
         let response = app
             .oneshot(
@@ -639,6 +718,9 @@ mod tests {
         assert!(json["paths"]["/v1/owner"].is_object());
         assert!(json["paths"]["/v1/dogs"].is_object());
         assert!(json["paths"]["/v1/dogs/{dogId}"].is_object());
+        assert!(json["paths"]["/v1/walks/active"].is_object());
+        assert!(json["paths"]["/v1/walks"].is_object());
+        assert!(json["paths"]["/v1/walks/{walkId}"].is_object());
     }
 
     #[tokio::test]
@@ -817,6 +899,260 @@ mod tests {
                     .method("GET")
                     .uri("/v1/dogs")
                     .header("x-request-id", "req-dogs-401")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 401);
+        let json = json_body(response).await;
+        assert_eq!(json["code"], "UNAUTHENTICATED");
+    }
+
+    #[tokio::test]
+    async fn walks_active_start_delete_and_errors() {
+        let walks = FakeWalks::with_active(sample_walk());
+        let app = create_app(state_with_walks(walks, true));
+
+        let active = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/walks/active")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-active")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(active.status(), 200);
+        let active_json = json_body(active).await;
+        assert_eq!(active_json["requestId"], "req-active");
+        assert_eq!(active_json["walkId"], "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80");
+        assert_eq!(active_json["state"], "recording");
+        assert!(active_json["completedAt"].is_null());
+        assert_eq!(active_json["participants"][0]["name"], "Mugi");
+
+        let create = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-1")
+                    .header("x-request-id", "req-start")
+                    .body(Body::from(
+                        r#"{"participantDogIds":["0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70"]}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(create.status(), 201);
+        let create_json = json_body(create).await;
+        assert_eq!(create_json["requestId"], "req-start");
+        assert_eq!(create_json["state"], "recording");
+
+        let delete = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/v1/walks/0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-del")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(delete.status(), 204);
+
+        let bad_id = app
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/v1/walks/not-a-uuid")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-bad-walk")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(bad_id.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn walks_active_returns_204_when_none() {
+        let app = create_app(state_with_walks(FakeWalks::new(), true));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/walks/active")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-none")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn walks_start_conflict_and_validation() {
+        let walks = FakeWalks::new();
+        *walks.start_result.lock().unwrap() =
+            Err(StartWalkError::ActiveWalkExists(ActiveWalkExistsError));
+        let app = create_app(state_with_walks(walks, true));
+
+        let conflict = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-1")
+                    .header("x-request-id", "req-active-exists")
+                    .body(Body::from(
+                        r#"{"participantDogIds":["0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70"]}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(conflict.status(), 409);
+        let conflict_json = json_body(conflict).await;
+        assert_eq!(conflict_json["code"], "ACTIVE_WALK_EXISTS");
+        assert_eq!(conflict_json["message"], "すでに記録中の散歩があります。");
+
+        let missing_key = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-no-key")
+                    .body(Body::from(
+                        r#"{"participantDogIds":["0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70"]}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing_key.status(), 400);
+
+        let empty_ids = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-2")
+                    .header("x-request-id", "req-empty")
+                    .body(Body::from(r#"{"participantDogIds":[]}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(empty_ids.status(), 400);
+    }
+
+    #[tokio::test]
+    async fn walks_start_idempotency_conflict_and_not_found() {
+        let walks = FakeWalks::new();
+        *walks.start_result.lock().unwrap() =
+            Err(StartWalkError::IdempotencyConflict(IdempotencyConflictError));
+        let app = create_app(state_with_walks(walks, true));
+        let conflict = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-1")
+                    .header("x-request-id", "req-idem")
+                    .body(Body::from(
+                        r#"{"participantDogIds":["0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70"]}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(conflict.status(), 409);
+        let json = json_body(conflict).await;
+        assert_eq!(json["code"], "IDEMPOTENCY_CONFLICT");
+
+        let walks = FakeWalks::new();
+        *walks.start_result.lock().unwrap() =
+            Err(StartWalkError::NotFound(WalkNotFoundError));
+        let app = create_app(state_with_walks(walks, true));
+        let missing = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/walks")
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-1")
+                    .header("x-request-id", "req-nf")
+                    .body(Body::from(
+                        r#"{"participantDogIds":["0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e70"]}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), 404);
+        let missing_json = json_body(missing).await;
+        assert_eq!(missing_json["code"], "NOT_FOUND");
+    }
+
+    #[tokio::test]
+    async fn walks_delete_not_recording_returns_409() {
+        let walks = FakeWalks::new();
+        *walks.fail_result.lock().unwrap() =
+            Err(FailWalkError::NotRecording(WalkNotRecordingError));
+        let app = create_app(state_with_walks(walks, true));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/v1/walks/0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-nr")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 409);
+        let json = json_body(response).await;
+        assert_eq!(json["code"], "WALK_NOT_RECORDING");
+        assert_eq!(json["message"], "この散歩は破棄できません。");
+    }
+
+    #[tokio::test]
+    async fn walks_unauthenticated_returns_401() {
+        let app = create_app(state_with(Arc::new(OkPings), FakeAuth::default(), true));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/walks/active")
+                    .header("x-request-id", "req-walks-401")
                     .body(Body::empty())
                     .unwrap(),
             )

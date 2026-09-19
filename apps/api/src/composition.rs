@@ -10,7 +10,6 @@ use crate::infrastructure::dynamodb::{
 };
 use crate::infrastructure::observability::init_tracing;
 use crate::infrastructure::sqs::{create_sqs_client, SqsTrackPointQueue};
-use crate::modules::walks::provider::{SystemFinishWalkClock, TokioFinishWalkSleep};
 use std::sync::Arc;
 
 pub struct Application {
@@ -49,8 +48,6 @@ pub async fn create_application(config: AppConfig) -> Result<Application, String
             track_point_queue: Arc::new(track_point_queue),
             confirmed_track_points: Arc::new(confirmed_track_points),
             confirm_track_point: Arc::new(confirm_track_point),
-            finish_clock: Arc::new(SystemFinishWalkClock),
-            finish_sleep: Arc::new(TokioFinishWalkSleep),
         },
         listen_addr: config.listen_addr,
     })

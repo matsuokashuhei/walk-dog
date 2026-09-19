@@ -15,7 +15,7 @@ use crate::modules::walks::responses::{
 use crate::modules::walks::use_cases::{
     self, AcceptTrackPointDeps, AcceptTrackPointResult, DeleteWalkResult, FinishWalkDeps,
     FinishWalkResult, GetWalkDetailResult, RecordEventCommand, RecordEventDeps, RecordEventResult,
-    StartWalkResult, FINISH_CONFIRMATION_TIMEOUT_MS,
+    StartWalkResult,
 };
 use crate::modules::walks::types::WalkEventType;
 use crate::shared::http::authentication::Authenticated;
@@ -519,9 +519,6 @@ async fn finish_walk_handler(
             walks: state.walk_repository.as_ref(),
             confirmed: state.confirmed_track_points.as_ref(),
             confirm: state.confirm_track_point.as_ref(),
-            clock: state.finish_clock.as_ref(),
-            sleep: state.finish_sleep.as_ref(),
-            timeout_ms: FINISH_CONFIRMATION_TIMEOUT_MS,
         },
         &principal.cognito_subject,
         &walk_id,

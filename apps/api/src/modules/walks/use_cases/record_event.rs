@@ -61,7 +61,7 @@ mod tests {
         IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
     };
     use crate::modules::walks::repository::{
-        AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
+        AcceptTrackPointError, FailWalkError, FinishWalkError, StartWalkError,
     };
     use crate::modules::walks::types::{
         AcceptTrackPointInput, CompletedWalk, FinishWalkInput, RecordingWalk, StartWalkInput,
@@ -141,13 +141,6 @@ mod tests {
         ) -> Result<RecordedEvent, RecordEventError> {
             self.calls.lock().unwrap().push(input.clone());
             self.result.lock().unwrap().clone()
-        }
-        async fn list_accepted_recorded_at(
-            &self,
-            _: &str,
-            _: &str,
-        ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
-            unreachable!()
         }
         async fn list_accepted_track_points(
             &self,

@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 
 use crate::infrastructure::database::dog_model::DogRecord;
 use crate::infrastructure::database::numeric_coordinate::{
-    f64_to_numeric_coord, numeric_coord_to_f64,
+    f64_to_numeric_coord, numeric_coord_to_f64, same_numeric_coord,
 };
 use crate::infrastructure::database::walk_model::{
     WalkCommandKeyRecord, WalkCommandNamespace, WalkEventRecord, WalkEventTypeRecord,
@@ -479,8 +479,8 @@ async fn replay_accepted_track_point(
         .into_iter()
         .next()
         .expect("unique track point exists after conflict");
-    if (numeric_coord_to_f64(row.latitude) - input.latitude).abs() < f64::EPSILON
-        && (numeric_coord_to_f64(row.longitude) - input.longitude).abs() < f64::EPSILON
+    if same_numeric_coord(row.latitude, input.latitude)
+        && same_numeric_coord(row.longitude, input.longitude)
     {
         return Ok(to_track_point(row));
     }
@@ -551,8 +551,8 @@ async fn replay_recorded_event(
     if row.participant_dog_id.to_string() == input.participant_dog_id
         && to_event_type(row.event_type.clone()) == input.event_type
         && row.occurred_at == input.occurred_at
-        && numeric_coord_to_f64(row.latitude) == input.latitude
-        && numeric_coord_to_f64(row.longitude) == input.longitude
+        && same_numeric_coord(row.latitude, input.latitude)
+        && same_numeric_coord(row.longitude, input.longitude)
     {
         return Ok(RecordedEvent {
             event: to_walk_event(row),
@@ -678,19 +678,6 @@ impl WalkRepository for ToastyWalkRepository {
     ) -> Result<RecordedEvent, RecordEventError> {
         let mut db = self.db.lock().await;
         record_event_tx(&mut db, input).await
-    }
-
-    async fn list_accepted_recorded_at(
-        &self,
-        owner_id: &str,
-        walk_id: &str,
-    ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
-        Ok(self
-            .list_accepted_track_points(owner_id, walk_id)
-            .await?
-            .into_iter()
-            .map(|point| point.recorded_at)
-            .collect())
     }
 
     async fn list_accepted_track_points(

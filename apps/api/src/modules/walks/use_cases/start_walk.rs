@@ -136,13 +136,6 @@ mod tests {
         > {
             unreachable!()
         }
-        async fn list_accepted_recorded_at(
-            &self,
-            _: &str,
-            _: &str,
-        ) -> Result<Vec<jiff::Timestamp>, crate::modules::walks::repository::ListAcceptedError> {
-            unreachable!()
-        }
         async fn list_accepted_track_points(
             &self,
             _: &str,

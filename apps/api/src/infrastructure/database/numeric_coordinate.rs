@@ -17,6 +17,11 @@ pub fn numeric_coord_to_f64(value: Decimal) -> f64 {
         .expect("numeric coordinate must convert to f64")
 }
 
+/// True when `stored` equals the scale-6 encoding of `input`.
+pub fn same_numeric_coord(stored: Decimal, input: f64) -> bool {
+    stored == f64_to_numeric_coord(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -42,5 +47,13 @@ mod tests {
         let encoded = f64_to_numeric_coord(35.681_236_1);
         assert_eq!(encoded.scale(), COORD_SCALE);
         assert_eq!(encoded.to_string(), "35.681236");
+    }
+
+    #[test]
+    fn equality_matches_after_scale_six_rounding() {
+        let input = 35.681_236_1;
+        let stored = f64_to_numeric_coord(input);
+        assert!(same_numeric_coord(stored, input));
+        assert!(!same_numeric_coord(stored, 35.681_237));
     }
 }

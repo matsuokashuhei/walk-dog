@@ -43,7 +43,7 @@ mod tests {
     use super::*;
     use crate::modules::owners::types::Owner;
     use crate::modules::walks::repository::{
-        AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
+        AcceptTrackPointError, FailWalkError, FinishWalkError, StartWalkError,
     };
     use crate::modules::walks::types::{
         AcceptTrackPointInput, CompletedWalk, ConfirmedTrackPoint, FinishWalkInput, RecordingWalk,
@@ -129,13 +129,6 @@ mod tests {
             crate::modules::walks::types::RecordedEvent,
             crate::modules::walks::repository::RecordEventError,
         > {
-            unreachable!()
-        }
-        async fn list_accepted_recorded_at(
-            &self,
-            _: &str,
-            _: &str,
-        ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
             unreachable!()
         }
         async fn list_accepted_track_points(

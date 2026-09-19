@@ -18,9 +18,7 @@ use crate::modules::health::routes::health_handler;
 use crate::modules::health::HealthPings;
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::owners::routes::owner_routes;
-use crate::modules::walks::provider::{
-    ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
-};
+use crate::modules::walks::provider::{ConfirmTrackPoint, ConfirmedTrackPoints, TrackPointQueue};
 use crate::modules::walks::repository::WalkRepository;
 use crate::modules::walks::routes::walk_routes;
 use crate::modules::walks::ActiveWalkCommands;
@@ -41,8 +39,6 @@ pub struct AppState {
     pub track_point_queue: Arc<dyn TrackPointQueue>,
     pub confirmed_track_points: Arc<dyn ConfirmedTrackPoints>,
     pub confirm_track_point: Arc<dyn ConfirmTrackPoint>,
-    pub finish_clock: Arc<dyn FinishWalkClock>,
-    pub finish_sleep: Arc<dyn FinishWalkSleep>,
 }
 
 pub fn create_app(state: AppState) -> Router {
@@ -129,9 +125,7 @@ mod tests {
     use crate::modules::walks::errors::{
         ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
     };
-    use crate::modules::walks::provider::{
-        ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
-    };
+    use crate::modules::walks::provider::{ConfirmTrackPoint, ConfirmedTrackPoints, TrackPointQueue};
     use crate::modules::walks::repository::{
         AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
         StartWalkError, WalkRepository,
@@ -371,7 +365,7 @@ mod tests {
         record_event_result: Mutex<Result<RecordedEvent, RecordEventError>>,
         finish_result: Mutex<Result<CompletedWalk, FinishWalkError>>,
         detail_result: Mutex<Result<CompletedWalk, WalkNotFoundError>>,
-        accepted_recorded_at: Mutex<Result<Vec<jiff::Timestamp>, ListAcceptedError>>,
+        accepted: Mutex<Result<Vec<TrackPoint>, ListAcceptedError>>,
         events: Mutex<Vec<WalkEvent>>,
     }
 
@@ -385,7 +379,7 @@ mod tests {
                 record_event_result: Mutex::new(Err(RecordEventError::NotFound(WalkNotFoundError))),
                 finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
                 detail_result: Mutex::new(Err(WalkNotFoundError)),
-                accepted_recorded_at: Mutex::new(Ok(vec![])),
+                accepted: Mutex::new(Ok(vec![])),
                 events: Mutex::new(vec![]),
             }
         }
@@ -399,7 +393,7 @@ mod tests {
                 record_event_result: Mutex::new(Err(RecordEventError::NotFound(WalkNotFoundError))),
                 finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
                 detail_result: Mutex::new(Err(WalkNotFoundError)),
-                accepted_recorded_at: Mutex::new(Ok(vec![])),
+                accepted: Mutex::new(Ok(vec![])),
                 events: Mutex::new(vec![]),
             }
         }
@@ -487,30 +481,12 @@ mod tests {
         ) -> Result<RecordedEvent, RecordEventError> {
             self.record_event_result.lock().unwrap().clone()
         }
-        async fn list_accepted_recorded_at(
-            &self,
-            _: &str,
-            _: &str,
-        ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
-            self.accepted_recorded_at.lock().unwrap().clone()
-        }
         async fn list_accepted_track_points(
             &self,
-            owner_id: &str,
-            walk_id: &str,
+            _: &str,
+            _: &str,
         ) -> Result<Vec<TrackPoint>, ListAcceptedError> {
-            Ok(self
-                .list_accepted_recorded_at(owner_id, walk_id)
-                .await?
-                .into_iter()
-                .map(|recorded_at| TrackPoint {
-                    track_point_id: "tp-repair".into(),
-                    walk_id: walk_id.to_string(),
-                    recorded_at,
-                    latitude: 0.0,
-                    longitude: 0.0,
-                })
-                .collect())
+            self.accepted.lock().unwrap().clone()
         }
 
         async fn list_events(&self, _: &str) -> Vec<WalkEvent> {
@@ -573,50 +549,12 @@ mod tests {
         }
     }
 
-    struct TestClock {
-        now: std::sync::atomic::AtomicU64,
-    }
-
-    impl FinishWalkClock for TestClock {
-        fn now_ms(&self) -> u64 {
-            self.now.load(std::sync::atomic::Ordering::SeqCst)
-        }
-    }
-
-    struct TestSleep {
-        clock: Arc<TestClock>,
-    }
-
-    impl FinishWalkSleep for TestSleep {
-        fn sleep(
-            &self,
-            delay_ms: u64,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
-            Box::pin(async move {
-                self.clock
-                    .now
-                    .fetch_add(delay_ms, std::sync::atomic::Ordering::SeqCst);
-            })
-        }
-    }
-
-    fn finish_timing() -> (Arc<TestClock>, Arc<TestSleep>) {
-        let clock = Arc::new(TestClock {
-            now: std::sync::atomic::AtomicU64::new(0),
-        });
-        let sleep = Arc::new(TestSleep {
-            clock: clock.clone(),
-        });
-        (clock, sleep)
-    }
-
     fn state_with(
         pings: Arc<dyn HealthPings>,
         auth: FakeAuth,
         verifier_ok: bool,
     ) -> AppState {
         let walks = Arc::new(FakeWalks::new());
-        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings,
             auth_provider: Arc::new(auth),
@@ -634,14 +572,11 @@ mod tests {
             confirm_track_point: Arc::new(FakeConfirm {
                 fail: Mutex::new(false),
             }),
-            finish_clock,
-            finish_sleep,
         }
     }
 
     fn state_with_dogs(dogs: FakeDogs, verifier_ok: bool) -> AppState {
         let walks = Arc::new(FakeWalks::new());
-        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings: Arc::new(OkPings),
             auth_provider: Arc::new(FakeAuth::default()),
@@ -659,8 +594,6 @@ mod tests {
             confirm_track_point: Arc::new(FakeConfirm {
                 fail: Mutex::new(false),
             }),
-            finish_clock,
-            finish_sleep,
         }
     }
 
@@ -673,6 +606,9 @@ mod tests {
             FakeConfirmed {
                 points: Mutex::new(vec![]),
             },
+            FakeConfirm {
+                fail: Mutex::new(false),
+            },
             verifier_ok,
         )
     }
@@ -681,10 +617,10 @@ mod tests {
         walks: FakeWalks,
         queue: FakeQueue,
         confirmed: FakeConfirmed,
+        confirm: FakeConfirm,
         verifier_ok: bool,
     ) -> AppState {
         let walks = Arc::new(walks);
-        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings: Arc::new(OkPings),
             auth_provider: Arc::new(FakeAuth::default()),
@@ -695,11 +631,7 @@ mod tests {
             active_walk_commands: walks,
             track_point_queue: Arc::new(queue),
             confirmed_track_points: Arc::new(confirmed),
-            confirm_track_point: Arc::new(FakeConfirm {
-                fail: Mutex::new(false),
-            }),
-            finish_clock,
-            finish_sleep,
+            confirm_track_point: Arc::new(confirm),
         }
     }
 
@@ -1529,6 +1461,9 @@ mod tests {
             FakeConfirmed {
                 points: Mutex::new(vec![]),
             },
+            FakeConfirm {
+                fail: Mutex::new(false),
+            },
             true,
         ));
         let enqueue_fail = app
@@ -1578,10 +1513,27 @@ mod tests {
         assert_eq!(ok_json["requestId"], "req-finish");
 
         let walks = FakeWalks::new();
-        *walks.accepted_recorded_at.lock().unwrap() =
-            Ok(vec!["2026-08-17T12:00:00Z".parse().unwrap()]);
+        *walks.accepted.lock().unwrap() = Ok(vec![TrackPoint {
+            track_point_id: "tp-1".into(),
+            walk_id: walk_id.to_string(),
+            recorded_at: "2026-08-17T12:00:00Z".parse().unwrap(),
+            latitude: 35.681_236,
+            longitude: 139.767_125,
+        }]);
         *walks.finish_result.lock().unwrap() = Ok(sample_completed());
-        let app = create_app(state_with_walks(walks, true));
+        let app = create_app(state_with_walks_and_queue(
+            walks,
+            FakeQueue {
+                fail: Mutex::new(false),
+            },
+            FakeConfirmed {
+                points: Mutex::new(vec![]),
+            },
+            FakeConfirm {
+                fail: Mutex::new(true),
+            },
+            true,
+        ));
         let unavailable = app
             .oneshot(
                 Request::builder()
@@ -1641,6 +1593,9 @@ mod tests {
                     latitude: 35.681_236,
                     longitude: 139.767_125,
                 }]),
+            },
+            FakeConfirm {
+                fail: Mutex::new(false),
             },
             true,
         ));

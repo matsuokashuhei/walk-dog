@@ -3,6 +3,7 @@
 use serde::Serialize;
 
 use crate::modules::dogs::types::{Birthday, CurrentGoal, Dog, Gender, GoalPeriodLiteral};
+use crate::shared::time_format::to_iso8601_millis;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,8 +21,8 @@ impl From<&CurrentGoal> for CurrentGoalBody {
             goal_revision_id: goal.goal_revision_id.clone(),
             period: goal.period,
             minutes: goal.minutes,
-            effective_from: goal.effective_from.to_string(),
-            effective_to: goal.effective_to.map(|t| t.to_string()),
+            effective_from: to_iso8601_millis(goal.effective_from),
+            effective_to: goal.effective_to.map(to_iso8601_millis),
         }
     }
 }
@@ -49,8 +50,8 @@ impl From<&Dog> for DogBody {
             gender: dog.gender,
             birthday: dog.birthday.clone(),
             avatar_url: dog.avatar_url.clone(),
-            created_at: dog.created_at.to_string(),
-            updated_at: dog.updated_at.to_string(),
+            created_at: to_iso8601_millis(dog.created_at),
+            updated_at: to_iso8601_millis(dog.updated_at),
             current_goal: CurrentGoalBody::from(&dog.current_goal),
         }
     }

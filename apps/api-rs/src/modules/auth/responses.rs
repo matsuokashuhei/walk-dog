@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use crate::modules::auth::types::{Authentication, CodeDelivery};
 use crate::modules::owners::types::Owner;
+use crate::shared::time_format::to_iso8601_millis;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,8 +38,8 @@ impl From<&Owner> for OwnerBody {
             owner_id: owner.owner_id.clone(),
             display_name: owner.display_name.clone(),
             avatar_url: owner.avatar_url.clone(),
-            created_at: owner.created_at.to_string(),
-            updated_at: owner.updated_at.to_string(),
+            created_at: to_iso8601_millis(owner.created_at),
+            updated_at: to_iso8601_millis(owner.updated_at),
         }
     }
 }

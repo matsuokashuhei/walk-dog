@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::modules::walks::types::TrackPoint;
+use crate::shared::time_format::to_iso8601_millis;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,7 +19,7 @@ pub fn to_track_point_message(track_point: &TrackPoint) -> String {
     let body = TrackPointMessageBody {
         track_point_id: track_point.track_point_id.clone(),
         walk_id: track_point.walk_id.clone(),
-        recorded_at: track_point.recorded_at.to_string(),
+        recorded_at: to_iso8601_millis(track_point.recorded_at),
         latitude: track_point.latitude,
         longitude: track_point.longitude,
     };
@@ -76,7 +77,7 @@ mod tests {
         let point = sample();
         let message = to_track_point_message(&point);
         assert!(message.contains("\"trackPointId\""));
-        assert!(message.contains("\"recordedAt\""));
+        assert!(message.contains("\"recordedAt\":\"2026-08-17T12:00:00.000Z\""));
         let parsed = parse_track_point_message(&message).unwrap();
         assert_eq!(parsed.track_point_id, point.track_point_id);
         assert_eq!(parsed.walk_id, point.walk_id);

@@ -15,9 +15,12 @@ jobs:
   check:
     uses: ./.github/workflows/api-check.yml
 
+  api-rs-check:
+    uses: ./.github/workflows/api-rs-check.yml
+
   publish:
     name: publish-ecr
-    needs: check
+    needs: [check, api-rs-check]
     runs-on: ubuntu-latest
     permissions:
       contents: read

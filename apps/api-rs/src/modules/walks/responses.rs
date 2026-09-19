@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::modules::walks::types::{
     CompletedWalk, ConfirmedTrackPoint, RecordingWalk, TrackPoint, WalkEvent, WalkParticipant,
 };
+use crate::shared::time_format::to_iso8601_millis;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,7 +42,7 @@ impl From<&RecordingWalk> for RecordingWalkBody {
             walk_id: walk.walk_id.clone(),
             owner_id: walk.owner_id.clone(),
             state: "recording",
-            started_at: walk.started_at.to_string(),
+            started_at: to_iso8601_millis(walk.started_at),
             completed_at: None,
             participants: walk.participants.iter().map(WalkParticipantBody::from).collect(),
         }
@@ -68,8 +69,8 @@ impl From<&CompletedWalk> for CompletedWalkBody {
             walk_id: walk.walk_id.clone(),
             owner_id: walk.owner_id.clone(),
             state: "completed",
-            started_at: walk.started_at.to_string(),
-            completed_at: walk.completed_at.to_string(),
+            started_at: to_iso8601_millis(walk.started_at),
+            completed_at: to_iso8601_millis(walk.completed_at),
             duration_seconds: walk.duration_seconds,
             distance_meters: walk.distance_meters,
             pace_seconds_per_meter: walk.pace_seconds_per_meter,
@@ -93,7 +94,7 @@ impl From<&TrackPoint> for TrackPointBody {
         Self {
             track_point_id: point.track_point_id.clone(),
             walk_id: point.walk_id.clone(),
-            recorded_at: point.recorded_at.to_string(),
+            recorded_at: to_iso8601_millis(point.recorded_at),
             latitude: point.latitude,
             longitude: point.longitude,
         }
@@ -111,7 +112,7 @@ pub struct DetailTrackPointBody {
 impl From<&ConfirmedTrackPoint> for DetailTrackPointBody {
     fn from(point: &ConfirmedTrackPoint) -> Self {
         Self {
-            recorded_at: point.recorded_at.to_string(),
+            recorded_at: to_iso8601_millis(point.recorded_at),
             latitude: point.latitude,
             longitude: point.longitude,
         }
@@ -136,7 +137,7 @@ impl From<&WalkEvent> for DetailEventBody {
             event_id: event.event_id.clone(),
             participant_dog_id: event.participant_dog_id.clone(),
             event_type: event.event_type.as_str(),
-            occurred_at: event.occurred_at.to_string(),
+            occurred_at: to_iso8601_millis(event.occurred_at),
             latitude: event.latitude,
             longitude: event.longitude,
         }
@@ -163,7 +164,7 @@ impl From<&WalkEvent> for EventBody {
             walk_id: event.walk_id.clone(),
             participant_dog_id: event.participant_dog_id.clone(),
             event_type: event.event_type.as_str(),
-            occurred_at: event.occurred_at.to_string(),
+            occurred_at: to_iso8601_millis(event.occurred_at),
             latitude: event.latitude,
             longitude: event.longitude,
         }

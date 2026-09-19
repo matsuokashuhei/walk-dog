@@ -4,9 +4,9 @@
 
 **Goal:** iOSの開発チーム向けビルドで、OwnerがDogを選び、バックグラウンドで散歩を記録し、完了した散歩を確認できる状態を提供する。
 
-**Architecture:** ExpoモバイルアプリがOpenAPIから生成した型付きクライアントで、さくらVPS上のAPIを利用する。APIランタイムは Axum + Toasty（Rust）へ移行中であり、移行完了までは TypeScript / Hono（`apps/api`）が現行の提供面を担う。APIはCognitoで認証し、業務データをPostgreSQL、TrackPointをSQS Standard経由でDynamoDB、AvatarをS3で扱う。
+**Architecture:** ExpoモバイルアプリがOpenAPIから生成した型付きクライアントで、さくらVPS上のAPIを利用する。Compose と ECR が公開する api / worker ランタイムは Rust（`apps/api-rs`、Axum + Toasty）である。Node（`apps/api`）は Drizzle migrate と soak 後のアーカイブ用途に残す。APIはCognitoで認証し、業務データをPostgreSQL、TrackPointをSQS Standard経由でDynamoDB、AvatarをS3で扱う。
 
-**Tech Stack:** Expo SDK 57、TypeScript、Node.js（移行元 API）、Rust / Axum / Toasty（移行先 API）、PostgreSQL、AWS Cognito、S3、SQS Standard、DynamoDB、Apple MapKit、Sentry、Docker、AWS ECR。
+**Tech Stack:** Expo SDK 57、TypeScript、Node.js（migrate / archive-after-soak）、Rust / Axum / Toasty（api / worker）、PostgreSQL、AWS Cognito、S3、SQS Standard、DynamoDB、Apple MapKit、Sentry、Docker、AWS ECR。
 
 ## 承認済みの判断
 
@@ -18,14 +18,14 @@
 - OwnerとDogのAvatarはモバイルからAPIへ送信し、APIがS3へ保存する。
 - SentryとVPSコンテナの構造化ログで、モバイル、API、ワーカーの状態遷移を観測する。
 - 利用規約とプライバシーポリシーは既存の公開文書を利用する。
-- R0のAPI基盤は当初 Hono で実装した。公開 HTTP 契約を保ったまま Axum + Toasty（PostgreSQL）へ移行する（`apps/api-rs`）。カットオーバーまで Node API がクライアント向け提供面を維持する。
+- Compose と ECR の api / worker は Rust（`apps/api-rs`）へカットオーバー済みである。Node（`apps/api`）は Drizzle migrate イメージと soak 後のアーカイブ用途に限定する。
 - 開発焦点はR1（散歩記録の縦切り）とする。未完了のR0能力はR1各縦切りステップの直前に実装する。
 
 ## 進捗状況
 
 - R1を進行中とする。未完了のR0能力は、下表の対応に従い必要な縦切りステップの直前に実装する。
-- R0で導入済み: Hono API基盤、ローカルComposeのPostgreSQL、Drizzle client、API観測性（Pino / Sentry / requestId）、API静的品質ゲート（ローカル `npm run check` と GitHub Actions の reusable `api-check`）。品質ゲートの残作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
-- Rust 移行: `apps/api-rs` に Axum + Toasty の骨格（`GET /health` 契約、Toasty PostgreSQL 接続、worker health stub）を追加。モジュール移植は auth → owners → dogs → walks → worker の順。計画: [2026-09-19-rust-api-axum-toasty-plan.md](./2026-09-19-rust-api-axum-toasty-plan.md)
+- R0で導入済み: ローカルComposeのPostgreSQL、API観測性、API静的品質ゲート（Node `api-check` と Rust `api-rs-check`）。品質ゲートの残作業: [2026-08-02-r0-api-quality-gate-follow-ups.md](./2026-08-02-r0-api-quality-gate-follow-ups.md)
+- Rust カットオーバー: Compose と ECR の api / worker は `apps/api-rs`（Axum + Toasty）を公開する。Node は Drizzle migrate と archive-after-soak のみ。計画: [2026-09-19-rust-api-axum-toasty-plan.md](./2026-09-19-rust-api-axum-toasty-plan.md)
 
 ## R1 縦切りと未完了 R0 前提
 

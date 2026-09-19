@@ -11,7 +11,7 @@ pub fn invalid_input(request_id: String) -> Response {
         StatusCode::BAD_REQUEST,
         Json(ErrorBody {
             code: "INVALID_INPUT".to_string(),
-            message: "入力内容を確認してください.".to_string(),
+            message: "入力内容を確認してください。".to_string(),
             request_id,
             retryable: false,
         }),

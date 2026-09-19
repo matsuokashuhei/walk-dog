@@ -6,6 +6,7 @@ use aws_sdk_dynamodb::Client as DynamoDbClient;
 use crate::infrastructure::config::DynamoDbConfig;
 use crate::modules::walks::provider::{ConfirmTrackPoint, ConfirmedTrackPoints};
 use crate::modules::walks::types::{ConfirmedTrackPoint, TrackPoint};
+use crate::shared::time_format::to_iso8601_millis;
 
 pub async fn create_dynamodb_client(config: &DynamoDbConfig) -> DynamoDbClient {
     let mut loader = aws_config::defaults(aws_config::BehaviorVersion::latest())
@@ -41,7 +42,7 @@ impl ConfirmTrackPoint for DynamoConfirmTrackPoint {
             .item("walkId", AttributeValue::S(track_point.walk_id.clone()))
             .item(
                 "recordedAt",
-                AttributeValue::S(track_point.recorded_at.to_string()),
+                AttributeValue::S(to_iso8601_millis(track_point.recorded_at)),
             )
             .item(
                 "trackPointId",

@@ -909,7 +909,7 @@ mod tests {
         assert_eq!(response.status(), 400);
         let json = json_body(response).await;
         assert_eq!(json["code"], "INVALID_INPUT");
-        assert_eq!(json["message"], "入力内容を確認してください.");
+        assert_eq!(json["message"], "入力内容を確認してください。");
         assert_eq!(json["retryable"], false);
     }
 

@@ -1,0 +1,33 @@
+# Reusable apps/api-rs gates: cargo test and clippy.
+name: api-rs-check
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: api-rs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api-rs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+
+      - name: cargo test
+        run: cargo test
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings

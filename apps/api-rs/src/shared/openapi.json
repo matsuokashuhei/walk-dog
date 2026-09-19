@@ -93,6 +93,48 @@
           "500": { "description": "Internal server error" }
         }
       }
+    },
+    "/v1/dogs": {
+      "get": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Owner dogs" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "post": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Created Dog" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "409": { "description": "Duplicate dog name" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/dogs/{dogId}": {
+      "get": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "dogId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Dog profile" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
     }
   },
   "components": {

@@ -4569,6 +4569,8 @@ dependencies = [
  "indexmap",
  "inventory",
  "jiff",
+ "serde_core",
+ "serde_json",
  "toasty-core",
  "toasty-driver-mysql",
  "toasty-driver-postgresql",

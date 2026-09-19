@@ -4,15 +4,15 @@ Rust replacement for `apps/api`, migrated incrementally while preserving the Ope
 
 ## Status
 
-Phase 1 — Auth + Owners:
+Walks surface (active / start / delete / finish / track-points / events / detail) and worker confirmation path are ported. Compose and ECR publish run this package for `api` and `worker`.
 
 - Cognito `AuthProvider` + JWT access-token verifier
-- Owner Toasty model/repository (`owners` table) + `GET/PATCH /v1/owner`
-- Auth routes under `/v1/auth` with Bearer middleware on sign-out and all owner routes
+- Owner / dogs / walks Toasty repositories
+- Auth, owner, dogs, walks routes under `/v1` with Bearer middleware
 - Hand-maintained `GET /openapi.json` (title `walk / dog API`, version `0.1.0`)
 - Use-case + route contract tests with fake providers
 
-Phase 0 scaffold retained: `GET /health`, worker health stub, Toasty Postgres connect.
+`apps/api` (TypeScript) remains in-repo for Drizzle migrations and as the OpenAPI source used by the publish manifest until Rust OpenAPI is authoritative.
 
 ## Develop
 
@@ -24,6 +24,15 @@ cargo run --bin worker
 ```
 
 Toolchain: `rust-toolchain.toml` pins Rust ≥ 1.95 (Toasty MSRV).
+
+## Docker / Compose
+
+- `Dockerfile` builds release `api` and `worker` binaries (default CMD `api`; override command to `worker`).
+- Local `apps/compose.yml`: `api` and `worker` build from `./api-rs`. Run migrations with the optional profile or the TS package:
+  - `docker compose --profile migrate run --rm migrate`
+  - or `(cd apps/api && npm run migrate)` against compose Postgres
+- VPS `apps/compose.vps.yml`: `api` / `worker` use `${RELEASE_IMAGE}` (Rust). `migrate` uses `${MIGRATE_IMAGE}` (Node/Drizzle, ECR tag `:migrate`).
+- Publish workflow pushes Rust as `:latest` / `:${sha}` and Node runtime as `:migrate` / `:migrate-${sha}`.
 
 ## Env
 

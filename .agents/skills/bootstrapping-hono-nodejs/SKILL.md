@@ -1,6 +1,6 @@
 ---
 name: bootstrapping-hono-nodejs
-description: Hono Node.js API パッケージの初期化または再構成。create-hono、Node アダプター、serve エントリーポイント、アプリケーションファクトリーの分離、パッケージスクリプト、所有リソースのシャットダウンを含む。apps/api の初期化や Node.js ランタイム起動または graceful shutdown の変更時に使用する。ルートハンドラー、ミドルウェア構成、バリデーション、OpenAPI スキーマ、テストのみには使用しない。
+description: Hono Node.js API パッケージの初期化または再構成。create-hono、Node アダプター、serve エントリーポイント、アプリケーションファクトリーの分離、パッケージスクリプト、所有リソースのシャットダウンを含む。apps/api-ts の初期化や Node.js ランタイム起動または graceful shutdown の変更時に使用する。ルートハンドラー、ミドルウェア構成、バリデーション、OpenAPI スキーマ、テストのみには使用しない。
 ---
 
 # Hono Node.js のブートストラップ
@@ -15,7 +15,7 @@ description: Hono Node.js API パッケージの初期化または再構成。cr
 
 ## プロジェクトのデフォルト
 
-- API パッケージは `apps/api` に配置する。
+- API パッケージは `apps/api-ts` に配置する。
 - `src/app.ts` はアプリケーションファクトリーとして維持する。`src/index.ts` は `@hono/node-server` でファクトリーの結果を提供する Node.js エントリーポイントとして維持する。
 - テストは Node.js リスナーを起動せずにファクトリーをインポートする（`$hono:testing-hono-apis`）。
 - パッケージスクリプト：
@@ -31,7 +31,7 @@ description: Hono Node.js API パッケージの初期化または再構成。cr
 
 公式ドキュメントのレビュー後、以下の順序で最初の Node.js API を初期化する：
 
-1. `cd apps/api` を実行する。
+1. `cd apps/api-ts` を実行する。
 2. `npm create hono@latest .` を実行する。
 3. Node.js テンプレートと npm での依存関係インストールを選択する。
 4. 上記のパッケージスクリプトを定義する。

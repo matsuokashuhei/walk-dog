@@ -685,6 +685,19 @@ impl WalkRepository for ToastyWalkRepository {
         owner_id: &str,
         walk_id: &str,
     ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
+        Ok(self
+            .list_accepted_track_points(owner_id, walk_id)
+            .await?
+            .into_iter()
+            .map(|point| point.recorded_at)
+            .collect())
+    }
+
+    async fn list_accepted_track_points(
+        &self,
+        owner_id: &str,
+        walk_id: &str,
+    ) -> Result<Vec<TrackPoint>, ListAcceptedError> {
         let owner_uuid: uuid::Uuid = owner_id.parse().expect("owner_id uuid");
         let walk_uuid: uuid::Uuid = walk_id.parse().expect("walk_id uuid");
         let mut db = self.db.lock().await;
@@ -698,7 +711,7 @@ impl WalkRepository for ToastyWalkRepository {
                 .await
                 .expect("list accepted track points");
         rows.sort_by_key(|row| row.recorded_at);
-        Ok(rows.into_iter().map(|row| row.recorded_at).collect())
+        Ok(rows.into_iter().map(to_track_point).collect())
     }
 
     async fn list_events(&self, walk_id: &str) -> Vec<WalkEvent> {

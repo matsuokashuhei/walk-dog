@@ -493,6 +493,25 @@ mod tests {
         ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
             self.accepted_recorded_at.lock().unwrap().clone()
         }
+        async fn list_accepted_track_points(
+            &self,
+            owner_id: &str,
+            walk_id: &str,
+        ) -> Result<Vec<TrackPoint>, ListAcceptedError> {
+            Ok(self
+                .list_accepted_recorded_at(owner_id, walk_id)
+                .await?
+                .into_iter()
+                .map(|recorded_at| TrackPoint {
+                    track_point_id: "tp-repair".into(),
+                    walk_id: walk_id.to_string(),
+                    recorded_at,
+                    latitude: 0.0,
+                    longitude: 0.0,
+                })
+                .collect())
+        }
+
         async fn list_events(&self, _: &str) -> Vec<WalkEvent> {
             self.events.lock().unwrap().clone()
         }

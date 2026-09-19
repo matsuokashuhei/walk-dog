@@ -42,6 +42,12 @@ pub trait WalkRepository: Send + Sync {
         walk_id: &str,
     ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError>;
 
+    async fn list_accepted_track_points(
+        &self,
+        owner_id: &str,
+        walk_id: &str,
+    ) -> Result<Vec<TrackPoint>, ListAcceptedError>;
+
     async fn list_events(&self, walk_id: &str) -> Vec<WalkEvent>;
 }
 

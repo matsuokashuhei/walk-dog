@@ -102,6 +102,14 @@ mod tests {
         ) -> Result<Vec<jiff::Timestamp>, crate::modules::walks::repository::ListAcceptedError> {
             unreachable!()
         }
+        async fn list_accepted_track_points(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<Vec<crate::modules::walks::types::TrackPoint>, crate::modules::walks::repository::ListAcceptedError> {
+            unreachable!()
+        }
+
         async fn list_events(&self, _: &str) -> Vec<crate::modules::walks::types::WalkEvent> {
             unreachable!()
         }

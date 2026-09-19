@@ -1,9 +1,1 @@
-node_modules
-dist
-.env
-.env.*
-npm-debug.log*
-coverage
-*.md
-.git
-.gitignore
+target

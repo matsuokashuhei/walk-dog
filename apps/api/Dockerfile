@@ -1,29 +1,20 @@
-FROM node:24-alpine AS deps
+# Multi-stage build for apps/api (Rust api + worker binaries).
+# Migrations stay on the Node/Drizzle image from apps/api-ts.
+
+FROM rust:1.98-bookworm AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
-FROM deps AS build
-COPY tsconfig.json drizzle.config.ts ./
-COPY drizzle ./drizzle
+COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN npm run build
+RUN cargo build --release --bin api --bin worker
 
-FROM deps AS development
-COPY tsconfig.json drizzle.config.ts ./
-COPY drizzle ./drizzle
-COPY src ./src
-COPY test ./test
+FROM debian:bookworm-slim AS runtime
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates libssl3 \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/api /usr/local/bin/api
+COPY --from=builder /app/target/release/worker /usr/local/bin/worker
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+CMD ["api"]
 
-FROM node:24-alpine AS runtime
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY drizzle ./drizzle
-COPY drizzle.config.ts ./
-ENV NODE_ENV=production
-EXPOSE 3000
-CMD ["npm", "start"]
+# Same release binaries for local compose; override command to `worker` for the worker service.
+FROM runtime AS development

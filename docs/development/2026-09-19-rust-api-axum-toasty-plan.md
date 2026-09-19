@@ -4,7 +4,7 @@
 
 **Goal:** Replace the Node.js / Hono API in `apps/api` with a Rust service that preserves the OpenAPI `/v1` contract so Expo clients keep working.
 
-**Architecture:** Introduce `apps/api-rs` beside the existing TypeScript API. Port modules in release order (health → auth → owners → dogs → walks → worker). Cut over Compose / Docker / ECR when contract tests pass for the migrated surface. Leave mobile and infra Terraform out of scope unless cutover requires image name changes.
+**Architecture:** Primary package is Rust `apps/api`; TypeScript Hono lives in `apps/api-ts`. Port modules in release order (health → auth → owners → dogs → walks → worker). Cut over Compose / Docker / ECR when contract tests pass for the migrated surface. Leave mobile and infra Terraform out of scope unless cutover requires image name changes.
 
 **Tech Stack:** Rust (stable ≥ 1.95), Axum, Toasty 0.10 (`postgresql`), tokio, serde, utoipa (OpenAPI), aws-sdk / jsonwebtoken for Cognito, aws-sdk for SQS and DynamoDB, tracing + optional Sentry.
 
@@ -33,10 +33,10 @@
 ### Phase 0 — Spec sync and scaffold
 
 - [x] Record plan-level judgment: API runtime becomes Axum + Toasty on PostgreSQL (sync `staged-development.md`).
-- [x] Create `apps/api-rs` Cargo package (binaries: `api`, `worker`).
+- [x] Create `apps/api` Cargo package (binaries: `api`, `worker`).
 - [x] Wire Axum app shell: request ID, structured logging, shared error JSON, `/health` use case with injected postgres + worker pings.
 - [x] Add Toasty `Db` connection from the same Postgres env vars the Node API uses.
-- [x] `cargo test` green; keep TypeScript `apps/api` in-repo.
+- [x] `cargo test` green; keep TypeScript `apps/api-ts` in-repo.
 
 ### Phase 1 — Auth + Owner (R1 vertical slice 1)
 
@@ -60,7 +60,7 @@
 
 - [x] Worker binary parity with `src/worker.ts` (confirm path).
 - [x] Dockerfile + compose switch; ECR workflow points at Rust image for api/worker (migrate stays Node/Drizzle via `:migrate` / `MIGRATE_IMAGE`).
-- [ ] Remove or archive Node `apps/api` after soak; update mobile only if base URL / OpenAPI generation path changes.
+- [ ] Remove or archive Node `apps/api-ts` after soak; update mobile only if base URL / OpenAPI generation path changes.
 
 ## WHY
 
@@ -74,7 +74,7 @@ The product contracts and R1 vertical slices are stable. Replacing the runtime u
 | Hono + `@hono/zod-openapi` | Axum + hand-maintained `/openapi.json` |
 | Drizzle + `pg` Pool | Toasty `Db` (`postgresql` feature); Drizzle retained for migrations |
 | Zod schemas | serde types + route validation |
-| `modules/{auth,owners,dogs,walks,health}` | same module names under `apps/api-rs/src/modules/` |
+| `modules/{auth,owners,dogs,walks,health}` | same module names under `apps/api/src/modules/` |
 | Cognito / SQS / DynamoDB adapters | `aws-sdk-*` / JWT verify crates implementing the same provider traits |
 | Pino + Sentry | `tracing` (+ optional Sentry later) |
 

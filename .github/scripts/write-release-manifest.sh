@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# openapiVersion is apps/api OpenAPI info.version (app version), not the
+# openapiVersion is apps/api-ts OpenAPI info.version (app version), not the
 # OpenAPI document number (for example 3.1.0).
 #
 # Usage:

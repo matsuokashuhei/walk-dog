@@ -1,14 +1,15 @@
-# Calls reusable api-check and api-rs-check on pull requests that touch API packages or workflows.
+# Calls reusable api-check (Rust) and api-ts-check (Node) on pull requests
+# that touch API packages or workflows.
 name: pull-request
 
 on:
   pull_request:
     paths:
       - "apps/api/**"
-      - "apps/api-rs/**"
+      - "apps/api-ts/**"
       - ".github/workflows/pull-request.yml"
       - ".github/workflows/api-check.yml"
-      - ".github/workflows/api-rs-check.yml"
+      - ".github/workflows/api-ts-check.yml"
       - ".github/workflows/publish.yml"
       - ".github/scripts/**"
 
@@ -19,5 +20,5 @@ jobs:
   check:
     uses: ./.github/workflows/api-check.yml
 
-  api-rs-check:
-    uses: ./.github/workflows/api-rs-check.yml
+  api-ts-check:
+    uses: ./.github/workflows/api-ts-check.yml

@@ -1,12 +1,12 @@
 # R0 API quality gate follow-ups
 
-ローカル静的品質ゲート（`apps/api` の `npm run check` = lint → jscpd → knip → typecheck）導入後に残る作業。着手条件と成果物を肯定形で定義する。
+ローカル静的品質ゲート（`apps/api-ts` の `npm run check` = lint → jscpd → knip → typecheck）導入後に残る作業。着手条件と成果物を肯定形で定義する。
 
 ## Completed
 
 ### Local static gate session
 
-- `apps/api` で `npm run lint` / `jscpd` / `knip` / `typecheck` / `check` を実行できる。
+- `apps/api-ts` で `npm run lint` / `jscpd` / `knip` / `typecheck` / `check` を実行できる。
 - TypeScript 7 でビルドし、typescript-eslint 向けに `@typescript/typescript6` を `typescript` として side-by-side 利用する。
 
 ### 1. PR / main の GitHub Actions
@@ -31,7 +31,7 @@
 ### 4. knip entry の拡張
 
 - **着手条件:** worker、migration command、E2E runner の entry file が追加される。
-- **成果物:** `apps/api/knip.json` の `entry` がそれらの path を含み、到達しない export / file / dependency / import を検出する。
+- **成果物:** `apps/api-ts/knip.json` の `entry` がそれらの path を含み、到達しない export / file / dependency / import を検出する。
 - **参照:** 同上「コード品質」
 
 ### 5. `apps/mobile` の静的品質ゲート

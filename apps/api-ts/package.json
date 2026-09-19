@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "api-ts",
   "type": "module",
   "scripts": {
     "dev": "tsx watch --import ./src/instrument.ts src/server.ts",

@@ -1,3 +1,7 @@
+# Local stack: api + worker run Rust (apps/api).
+# Drizzle migrations use the TypeScript package (apps/api-ts), e.g.:
+#   docker compose --profile migrate run --rm migrate
+# or from the host: (cd apps/api-ts && npm run migrate) against compose postgres.
 services:
   postgres:
     image: postgres:16-alpine
@@ -25,11 +29,24 @@ services:
     ports:
       - "8000:8000"
 
+  # Optional local migrate using the Node/Drizzle runtime image (apps/api-ts).
+  migrate:
+    build:
+      context: ./api-ts
+      target: runtime
+    command: ["npm", "run", "migrate"]
+    env_file: .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["migrate"]
+    restart: "no"
+
   worker:
     build:
       context: ./api
       target: development
-    command: npm run worker
+    command: ["worker"]
     env_file: .env.local
     depends_on:
       - elasticmq
@@ -41,7 +58,7 @@ services:
     build:
       context: ./api
       target: development
-    command: npm run dev
+    command: ["api"]
     env_file: .env.local
     ports:
       - "3000:3000"
@@ -51,6 +68,8 @@ services:
       elasticmq:
         condition: service_started
       dynamodb:
+        condition: service_started
+      worker:
         condition: service_started
 
 volumes:

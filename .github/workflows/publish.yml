@@ -15,9 +15,12 @@ jobs:
   check:
     uses: ./.github/workflows/api-check.yml
 
+  api-ts-check:
+    uses: ./.github/workflows/api-ts-check.yml
+
   publish:
     name: publish-ecr
-    needs: check
+    needs: [check, api-ts-check]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,14 +52,16 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/api/package-lock.json
+          cache-dependency-path: apps/api-ts/package-lock.json
 
-      - name: Install API dependencies
-        working-directory: apps/api
+      - name: Install API TypeScript dependencies
+        working-directory: apps/api-ts
         run: npm ci
 
+      # OpenAPI version for the release manifest still comes from the TS app
+      # until the Rust /openapi.json document is the publish source of truth.
       - name: Read OpenAPI info.version via GET /openapi.json
-        working-directory: apps/api
+        working-directory: apps/api-ts
         run: |
           node --import tsx <<'EOF'
           import { writeFileSync } from 'node:fs'
@@ -83,7 +88,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
-      - name: Build and push release image
+      - name: Build and push Rust api/worker image
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -94,6 +99,18 @@ jobs:
           tags: |
             ${{ env.ECR_REPOSITORY_URL }}:${{ github.sha }}
             ${{ env.ECR_REPOSITORY_URL }}:latest
+
+      - name: Build and push Node migrate image (api-ts)
+        id: build-migrate
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: apps/api-ts
+          file: apps/api-ts/Dockerfile
+          target: runtime
+          push: true
+          tags: |
+            ${{ env.ECR_REPOSITORY_URL }}:migrate-${{ github.sha }}
+            ${{ env.ECR_REPOSITORY_URL }}:migrate
 
       - name: Write release manifest
         env:
@@ -106,7 +123,7 @@ jobs:
           bash .github/scripts/write-release-manifest.sh \
             --commit-sha "${{ github.sha }}" \
             --image-digest "$IMAGE_DIGEST" \
-            --openapi-json apps/api/openapi-document.json \
+            --openapi-json apps/api-ts/openapi-document.json \
             --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --out release-manifest.json
           cat release-manifest.json

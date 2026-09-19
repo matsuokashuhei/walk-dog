@@ -1,0 +1,347 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "walk / dog API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "responses": {
+          "200": { "description": "Healthy" },
+          "503": { "description": "Dependency unavailable" }
+        }
+      }
+    },
+    "/v1/auth/sign-up": {
+      "post": {
+        "tags": ["auth"],
+        "responses": {
+          "200": { "description": "Sign-up initiated" },
+          "400": { "description": "Invalid input" },
+          "409": { "description": "Already confirmed" },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/auth/sign-up/verify": {
+      "post": {
+        "tags": ["auth"],
+        "responses": {
+          "200": { "description": "Verification successful" },
+          "400": { "description": "Invalid code or input" },
+          "409": { "description": "Already confirmed" },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/auth/sign-in": {
+      "post": {
+        "tags": ["auth"],
+        "responses": {
+          "200": { "description": "Sign-in challenge started" },
+          "400": { "description": "Invalid input" },
+          "409": { "description": "Authentication failed" },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/auth/sign-in/verify": {
+      "post": {
+        "tags": ["auth"],
+        "responses": {
+          "200": { "description": "Verification successful" },
+          "400": { "description": "Invalid code or input" },
+          "409": { "description": "Authentication failed" },
+          "429": { "description": "Rate limited" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/auth/sign-out": {
+      "post": {
+        "tags": ["auth"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "204": { "description": "Signed out" },
+          "401": { "description": "Unauthenticated" },
+          "429": { "description": "Rate limited" }
+        }
+      }
+    },
+    "/v1/owner": {
+      "get": {
+        "tags": ["owners"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Current Owner" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "patch": {
+        "tags": ["owners"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Updated Owner" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/dogs": {
+      "get": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Owner dogs" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "post": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Created Dog" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "409": { "description": "Duplicate dog name" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/dogs/{dogId}": {
+      "get": {
+        "tags": ["dogs"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "dogId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Dog profile" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks/active": {
+      "get": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Active Walk" },
+          "204": { "description": "No active walk" },
+          "401": { "description": "Unauthenticated" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Created Walk" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks/{walkId}": {
+      "get": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Completed Walk Detail" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "delete": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Walk discarded" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks/{walkId}/finish": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1, "maxLength": 256 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Completed Walk" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" },
+          "503": { "description": "Service unavailable" }
+        }
+      }
+    },
+    "/v1/walks/{walkId}/track-points": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["recordedAt", "latitude", "longitude"],
+                "properties": {
+                  "recordedAt": { "type": "string", "format": "date-time" },
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Accepted TrackPoint" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/v1/walks/{walkId}/events": {
+      "post": {
+        "tags": ["walks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "walkId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "eventId",
+                  "participantDogId",
+                  "type",
+                  "occurredAt",
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "eventId": { "type": "string", "format": "uuid" },
+                  "participantDogId": { "type": "string", "format": "uuid" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["pee", "poop", "sniff", "greet"]
+                  },
+                  "occurredAt": { "type": "string", "format": "date-time" },
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Replayed Event" },
+          "201": { "description": "Recorded Event" },
+          "400": { "description": "Invalid input" },
+          "401": { "description": "Unauthenticated" },
+          "404": { "description": "Not found" },
+          "409": { "description": "Conflict" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

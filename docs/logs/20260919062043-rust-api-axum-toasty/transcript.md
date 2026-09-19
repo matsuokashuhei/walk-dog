@@ -20,5 +20,8 @@ Migrate `apps/api` (Hono / TypeScript) to Rust with Axum + Toasty, preserving Op
 
 ## Completion (Phase 0)
 
+- HEAD: `7af96dba07e51e7643d03460747c780f38fae07a`
+- Commits: `7af96db` Add Axum + Toasty API scaffold beside Node backend
 - `cargo test` in `apps/api-rs`: 7 passed
+- `cargo clippy --all-targets -- -D warnings`: clean
 - Staged development plan updated for Axum + Toasty migration judgment

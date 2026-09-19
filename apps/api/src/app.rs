@@ -19,7 +19,7 @@ use crate::modules::health::HealthPings;
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::owners::routes::owner_routes;
 use crate::modules::walks::provider::{
-    ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
+    ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
 };
 use crate::modules::walks::repository::WalkRepository;
 use crate::modules::walks::routes::walk_routes;
@@ -40,6 +40,7 @@ pub struct AppState {
     pub active_walk_commands: Arc<dyn ActiveWalkCommands>,
     pub track_point_queue: Arc<dyn TrackPointQueue>,
     pub confirmed_track_points: Arc<dyn ConfirmedTrackPoints>,
+    pub confirm_track_point: Arc<dyn ConfirmTrackPoint>,
     pub finish_clock: Arc<dyn FinishWalkClock>,
     pub finish_sleep: Arc<dyn FinishWalkSleep>,
 }
@@ -129,7 +130,7 @@ mod tests {
         ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
     };
     use crate::modules::walks::provider::{
-        ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
+        ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
     };
     use crate::modules::walks::repository::{
         AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
@@ -537,6 +538,21 @@ mod tests {
         }
     }
 
+    struct FakeConfirm {
+        fail: Mutex<bool>,
+    }
+
+    #[async_trait::async_trait]
+    impl ConfirmTrackPoint for FakeConfirm {
+        async fn confirm(&self, _: &TrackPoint) -> Result<(), ()> {
+            if *self.fail.lock().unwrap() {
+                Err(())
+            } else {
+                Ok(())
+            }
+        }
+    }
+
     struct FakeConfirmed {
         points: Mutex<Vec<ConfirmedTrackPoint>>,
     }
@@ -615,6 +631,9 @@ mod tests {
             confirmed_track_points: Arc::new(FakeConfirmed {
                 points: Mutex::new(vec![]),
             }),
+            confirm_track_point: Arc::new(FakeConfirm {
+                fail: Mutex::new(false),
+            }),
             finish_clock,
             finish_sleep,
         }
@@ -636,6 +655,9 @@ mod tests {
             }),
             confirmed_track_points: Arc::new(FakeConfirmed {
                 points: Mutex::new(vec![]),
+            }),
+            confirm_track_point: Arc::new(FakeConfirm {
+                fail: Mutex::new(false),
             }),
             finish_clock,
             finish_sleep,
@@ -673,6 +695,9 @@ mod tests {
             active_walk_commands: walks,
             track_point_queue: Arc::new(queue),
             confirmed_track_points: Arc::new(confirmed),
+            confirm_track_point: Arc::new(FakeConfirm {
+                fail: Mutex::new(false),
+            }),
             finish_clock,
             finish_sleep,
         }

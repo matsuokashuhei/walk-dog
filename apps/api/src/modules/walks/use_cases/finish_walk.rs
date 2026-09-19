@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::walks::path_distance::path_distance_meters;
 use crate::modules::walks::provider::{
-    ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
+    ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep,
 };
 use crate::modules::walks::repository::{FinishWalkError, ListAcceptedError, WalkRepository};
 use crate::modules::walks::types::{CompletedWalk, FinishWalkInput, TrackPoint};
@@ -17,7 +17,7 @@ pub struct FinishWalkDeps<'a> {
     pub owners: &'a dyn OwnerRepository,
     pub walks: &'a dyn WalkRepository,
     pub confirmed: &'a dyn ConfirmedTrackPoints,
-    pub queue: &'a dyn TrackPointQueue,
+    pub confirm: &'a dyn ConfirmTrackPoint,
     pub clock: &'a dyn FinishWalkClock,
     pub sleep: &'a dyn FinishWalkSleep,
     pub timeout_ms: u64,
@@ -51,7 +51,7 @@ pub async fn finish_walk(
     };
 
     if !accepted.is_empty() {
-        if reenqueue_unconfirmed(deps.confirmed, deps.queue, walk_id, &accepted)
+        if confirm_missing(deps.confirmed, deps.confirm, walk_id, &accepted)
             .await
             .is_err()
         {
@@ -114,9 +114,11 @@ enum WaitStatus {
     ServiceUnavailable,
 }
 
-async fn reenqueue_unconfirmed(
+/// Writes any accepted Postgres points that are missing from Dynamo directly,
+/// so Finish does not wait on the SQS worker for orphaned confirmations.
+async fn confirm_missing(
     confirmed: &dyn ConfirmedTrackPoints,
-    queue: &dyn TrackPointQueue,
+    confirm: &dyn ConfirmTrackPoint,
     walk_id: &str,
     accepted: &[TrackPoint],
 ) -> Result<(), ()> {
@@ -126,7 +128,7 @@ async fn reenqueue_unconfirmed(
         if have.contains(&point.recorded_at) {
             continue;
         }
-        queue.enqueue(point).await?;
+        confirm.confirm(point).await?;
     }
     Ok(())
 }
@@ -310,18 +312,18 @@ mod tests {
         }
     }
 
-    struct FakeQueue {
-        enqueued: Mutex<Vec<TrackPoint>>,
+    struct FakeConfirm {
+        confirmed: Mutex<Vec<TrackPoint>>,
         fail: Mutex<bool>,
     }
 
     #[async_trait::async_trait]
-    impl TrackPointQueue for FakeQueue {
-        async fn enqueue(&self, track_point: &TrackPoint) -> Result<(), ()> {
+    impl ConfirmTrackPoint for FakeConfirm {
+        async fn confirm(&self, track_point: &TrackPoint) -> Result<(), ()> {
             if *self.fail.lock().unwrap() {
                 return Err(());
             }
-            self.enqueued.lock().unwrap().push(track_point.clone());
+            self.confirmed.lock().unwrap().push(track_point.clone());
             Ok(())
         }
     }
@@ -354,7 +356,7 @@ mod tests {
     fn sut(
         accepted: Result<Vec<TrackPoint>, ListAcceptedError>,
         finish: Result<CompletedWalk, FinishWalkError>,
-    ) -> (FakeWalks, FakeConfirmed, FakeQueue, FakeClock, FakeSleep) {
+    ) -> (FakeWalks, FakeConfirmed, FakeConfirm, FakeClock, FakeSleep) {
         (
             FakeWalks {
                 accepted: Mutex::new(accepted),
@@ -365,8 +367,8 @@ mod tests {
                 recorded_at: Mutex::new(Ok(vec![])),
                 points: Mutex::new(Ok(vec![])),
             },
-            FakeQueue {
-                enqueued: Mutex::new(vec![]),
+            FakeConfirm {
+                confirmed: Mutex::new(vec![]),
                 fail: Mutex::new(false),
             },
             FakeClock {
@@ -381,7 +383,7 @@ mod tests {
     fn deps<'a>(
         walks: &'a FakeWalks,
         confirmed: &'a FakeConfirmed,
-        queue: &'a FakeQueue,
+        confirm: &'a FakeConfirm,
         clock: &'a FakeClock,
         sleep: &'a FakeSleep,
         timeout_ms: u64,
@@ -390,7 +392,7 @@ mod tests {
             owners: &FakeOwners,
             walks,
             confirmed,
-            queue,
+            confirm,
             clock,
             sleep,
             timeout_ms,
@@ -399,9 +401,9 @@ mod tests {
 
     #[tokio::test]
     async fn finishes_immediately_without_accepted_points() {
-        let (walks, confirmed, queue, clock, sleep) = sut(Ok(vec![]), Ok(sample_completed()));
+        let (walks, confirmed, confirm, clock, sleep) = sut(Ok(vec![]), Ok(sample_completed()));
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",
@@ -412,17 +414,17 @@ mod tests {
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].distance_meters, 0);
         assert_eq!(calls[0].body_hash, empty_body_hash());
-        assert!(queue.enqueued.lock().unwrap().is_empty());
+        assert!(confirm.confirmed.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
     async fn treats_not_recording_accepted_list_as_empty_then_finishes() {
-        let (walks, confirmed, queue, clock, sleep) = sut(
+        let (walks, confirmed, confirm, clock, sleep) = sut(
             Err(ListAcceptedError::NotRecording(WalkNotRecordingError)),
             Ok(sample_completed()),
         );
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",
@@ -433,12 +435,12 @@ mod tests {
 
     #[tokio::test]
     async fn maps_not_found_from_accepted_list() {
-        let (walks, confirmed, queue, clock, sleep) = sut(
+        let (walks, confirmed, confirm, clock, sleep) = sut(
             Err(ListAcceptedError::NotFound(WalkNotFoundError)),
             Ok(sample_completed()),
         );
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",
@@ -448,9 +450,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn waits_then_times_out_when_confirmation_missing() {
+    async fn waits_then_times_out_when_confirmation_missing_after_confirm_fail_path() {
+        // Confirm writes succeed into FakeConfirm but ConfirmedTrackPoints stays empty → timeout.
         let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
-        let (walks, confirmed, queue, _clock, _sleep) =
+        let (walks, confirmed, confirm, _clock, _sleep) =
             sut(Ok(vec![sample_point(recorded_at)]), Ok(sample_completed()));
         let clock = FakeClock {
             now: AtomicU64::new(0),
@@ -474,7 +477,7 @@ mod tests {
                 owners: &FakeOwners,
                 walks: &walks,
                 confirmed: &confirmed,
-                queue: &queue,
+                confirm: &confirm,
                 clock: &clock,
                 sleep: &sleep,
                 timeout_ms: 400,
@@ -486,15 +489,15 @@ mod tests {
         .await;
         assert!(matches!(result, FinishWalkResult::ServiceUnavailable));
         assert!(walks.finish_calls.lock().unwrap().is_empty());
-        assert_eq!(queue.enqueued.lock().unwrap().len(), 1);
+        assert_eq!(confirm.confirmed.lock().unwrap().len(), 1);
     }
 
     #[tokio::test]
-    async fn finishes_after_confirmation() {
+    async fn finishes_after_confirmation_without_repair() {
         let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
         let point = sample_point(recorded_at);
-        let (walks, confirmed, queue, clock, sleep) =
-            sut(Ok(vec![point.clone()]), Ok(sample_completed()));
+        let (walks, confirmed, confirm, clock, sleep) =
+            sut(Ok(vec![point]), Ok(sample_completed()));
         *confirmed.recorded_at.lock().unwrap() = Ok(vec![recorded_at]);
         *confirmed.points.lock().unwrap() = Ok(vec![ConfirmedTrackPoint {
             recorded_at,
@@ -502,7 +505,7 @@ mod tests {
             longitude: 139.0,
         }]);
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",
@@ -510,22 +513,23 @@ mod tests {
         .await;
         assert!(matches!(result, FinishWalkResult::Finished(_)));
         assert_eq!(walks.finish_calls.lock().unwrap()[0].distance_meters, 0);
-        assert!(queue.enqueued.lock().unwrap().is_empty());
+        assert!(confirm.confirmed.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
-    async fn reenqueues_unconfirmed_accepted_points_then_finishes() {
+    async fn confirms_missing_accepted_points_directly_then_finishes() {
         let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00.123Z".parse().unwrap();
         let point = sample_point(recorded_at);
-        let (walks, _confirmed, queue, clock, sleep) =
+        let (walks, _confirmed, confirm, clock, sleep) =
             sut(Ok(vec![point.clone()]), Ok(sample_completed()));
 
-        struct ConfirmAfterEnqueue<'a> {
-            queue: &'a FakeQueue,
+        /// Confirmed store that reflects FakeConfirm writes (simulates Dynamo after put).
+        struct ConfirmingStore<'a> {
+            confirm: &'a FakeConfirm,
             recorded_at: jiff::Timestamp,
         }
         #[async_trait::async_trait]
-        impl ConfirmedTrackPoints for ConfirmAfterEnqueue<'_> {
+        impl ConfirmedTrackPoints for ConfirmingStore<'_> {
             async fn list_points(&self, _: &str) -> Result<Vec<ConfirmedTrackPoint>, ()> {
                 Ok(vec![ConfirmedTrackPoint {
                     recorded_at: self.recorded_at,
@@ -534,14 +538,14 @@ mod tests {
                 }])
             }
             async fn list_recorded_at(&self, _: &str) -> Result<Vec<jiff::Timestamp>, ()> {
-                if self.queue.enqueued.lock().unwrap().is_empty() {
+                if self.confirm.confirmed.lock().unwrap().is_empty() {
                     return Ok(vec![]);
                 }
                 Ok(vec![self.recorded_at])
             }
         }
-        let confirming = ConfirmAfterEnqueue {
-            queue: &queue,
+        let store = ConfirmingStore {
+            confirm: &confirm,
             recorded_at,
         };
 
@@ -549,8 +553,8 @@ mod tests {
             FinishWalkDeps {
                 owners: &FakeOwners,
                 walks: &walks,
-                confirmed: &confirming,
-                queue: &queue,
+                confirmed: &store,
+                confirm: &confirm,
                 clock: &clock,
                 sleep: &sleep,
                 timeout_ms: 30_000,
@@ -561,17 +565,86 @@ mod tests {
         )
         .await;
         assert!(matches!(result, FinishWalkResult::Finished(_)));
-        assert_eq!(queue.enqueued.lock().unwrap().as_slice(), &[point]);
+        assert_eq!(confirm.confirmed.lock().unwrap().as_slice(), &[point]);
     }
 
     #[tokio::test]
-    async fn maps_enqueue_failure_during_repair_to_service_unavailable() {
-        let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
-        let (walks, confirmed, queue, clock, sleep) =
-            sut(Ok(vec![sample_point(recorded_at)]), Ok(sample_completed()));
-        *queue.fail.lock().unwrap() = true;
+    async fn confirms_many_missing_points_without_timeout() {
+        let points: Vec<TrackPoint> = (0..250)
+            .map(|i| {
+                let recorded_at =
+                    jiff::Timestamp::from_millisecond(1_723_636_800_000 + i * 10_000).unwrap();
+                TrackPoint {
+                    track_point_id: format!("tp-{i}"),
+                    walk_id: "walk-1".into(),
+                    recorded_at,
+                    latitude: 35.0 + (i as f64) * 0.0001,
+                    longitude: 139.0 + (i as f64) * 0.0001,
+                }
+            })
+            .collect();
+        let (walks, _confirmed, confirm, clock, sleep) =
+            sut(Ok(points.clone()), Ok(sample_completed()));
+
+        struct BulkStore<'a> {
+            confirm: &'a FakeConfirm,
+        }
+        #[async_trait::async_trait]
+        impl ConfirmedTrackPoints for BulkStore<'_> {
+            async fn list_points(&self, _: &str) -> Result<Vec<ConfirmedTrackPoint>, ()> {
+                Ok(self
+                    .confirm
+                    .confirmed
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .map(|point| ConfirmedTrackPoint {
+                        recorded_at: point.recorded_at,
+                        latitude: point.latitude,
+                        longitude: point.longitude,
+                    })
+                    .collect())
+            }
+            async fn list_recorded_at(&self, _: &str) -> Result<Vec<jiff::Timestamp>, ()> {
+                Ok(self
+                    .confirm
+                    .confirmed
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .map(|point| point.recorded_at)
+                    .collect())
+            }
+        }
+        let store = BulkStore { confirm: &confirm };
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            FinishWalkDeps {
+                owners: &FakeOwners,
+                walks: &walks,
+                confirmed: &store,
+                confirm: &confirm,
+                clock: &clock,
+                sleep: &sleep,
+                timeout_ms: 400, // would fail if repair waited on SQS
+            },
+            "sub",
+            "walk-1",
+            "idem-1",
+        )
+        .await;
+        assert!(matches!(result, FinishWalkResult::Finished(_)));
+        assert_eq!(confirm.confirmed.lock().unwrap().len(), 250);
+        assert!(walks.finish_calls.lock().unwrap()[0].distance_meters > 0);
+    }
+
+    #[tokio::test]
+    async fn maps_confirm_failure_during_repair_to_service_unavailable() {
+        let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
+        let (walks, confirmed, confirm, clock, sleep) =
+            sut(Ok(vec![sample_point(recorded_at)]), Ok(sample_completed()));
+        *confirm.fail.lock().unwrap() = true;
+        let result = finish_walk(
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",
@@ -583,12 +656,12 @@ mod tests {
 
     #[tokio::test]
     async fn maps_finish_errors() {
-        let (walks, confirmed, queue, clock, sleep) = sut(
+        let (walks, confirmed, confirm, clock, sleep) = sut(
             Ok(vec![]),
             Err(FinishWalkError::IdempotencyConflict(IdempotencyConflictError)),
         );
         let result = finish_walk(
-            deps(&walks, &confirmed, &queue, &clock, &sleep, 30_000),
+            deps(&walks, &confirmed, &confirm, &clock, &sleep, 30_000),
             "sub",
             "walk-1",
             "idem-1",

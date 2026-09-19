@@ -518,7 +518,7 @@ async fn finish_walk_handler(
             owners: state.owner_repository.as_ref(),
             walks: state.walk_repository.as_ref(),
             confirmed: state.confirmed_track_points.as_ref(),
-            queue: state.track_point_queue.as_ref(),
+            confirm: state.confirm_track_point.as_ref(),
             clock: state.finish_clock.as_ref(),
             sleep: state.finish_sleep.as_ref(),
             timeout_ms: FINISH_CONFIRMATION_TIMEOUT_MS,

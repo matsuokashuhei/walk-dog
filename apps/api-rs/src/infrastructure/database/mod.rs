@@ -7,6 +7,7 @@ use tokio::sync::Mutex;
 use tokio_postgres::NoTls;
 
 use crate::infrastructure::config::PostgresConfig;
+use crate::infrastructure::database::owner_model::OwnerRecord;
 use crate::modules::health::use_cases::check_health::BoxFut;
 use crate::modules::health::HealthPings;
 
@@ -21,10 +22,17 @@ pub struct SchemaProbe {
     pub id: i64,
 }
 
+pub mod active_walk_commands;
+pub mod owner_model;
+pub mod owner_repository;
+
+pub use active_walk_commands::SqlActiveWalkCommands;
+pub use owner_repository::ToastyOwnerRepository;
+
 pub async fn connect_toasty(config: &PostgresConfig) -> Result<Arc<Mutex<Db>>, String> {
     let url = config.connection_url();
     let db = Db::builder()
-        .models(toasty::models!(SchemaProbe))
+        .models(toasty::models!(SchemaProbe, OwnerRecord))
         .max_pool_size(config.pool_max as usize)
         .connect(&url)
         .await
@@ -36,7 +44,7 @@ pub struct DependencyPings {
     database_url: String,
     worker_health_url: String,
     http: reqwest::Client,
-    /// Held so composition always wires Toasty; repositories will use this next.
+    /// Held so composition always wires Toasty; repositories use this next.
     _db: Arc<Mutex<Db>>,
 }
 

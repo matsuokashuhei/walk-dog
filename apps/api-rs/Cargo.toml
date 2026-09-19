@@ -13,20 +13,26 @@ name = "worker"
 path = "src/bin/worker.rs"
 
 [dependencies]
+async-trait = "0.1"
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-sdk-cognitoidentityprovider = "1"
 axum = { version = "0.8", features = ["macros"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "net"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["trace", "set-header"] }
+base64 = "0.22"
+http = "1"
+jiff = { version = "0.2", features = ["serde"] }
+jsonwebtoken = "9"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-uuid = { version = "1", features = ["v4"] }
+thiserror = "2"
+toasty = { version = "0.10", features = ["postgresql", "jiff"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "net"] }
+tokio-postgres = "0.7"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "set-header"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-thiserror = "2"
-toasty = { version = "0.10", features = ["postgresql"] }
-tokio-postgres = "0.7"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-http = "1"
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

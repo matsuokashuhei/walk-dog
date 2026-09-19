@@ -45,8 +45,26 @@ impl PostgresConfig {
 }
 
 #[derive(Debug, Clone)]
+pub struct CognitoConfig {
+    pub region: String,
+    pub user_pool_id: String,
+    pub client_id: String,
+}
+
+impl CognitoConfig {
+    pub fn from_env() -> Result<Self, String> {
+        Ok(Self {
+            region: required("AWS_REGION")?,
+            user_pool_id: required("COGNITO_USER_POOL_ID")?,
+            client_id: required("COGNITO_CLIENT_ID")?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct AppConfig {
     pub postgres: PostgresConfig,
+    pub cognito: CognitoConfig,
     pub worker_health_url: String,
     pub listen_addr: String,
     pub environment: String,
@@ -57,6 +75,7 @@ impl AppConfig {
     pub fn from_env() -> Result<Self, String> {
         Ok(Self {
             postgres: PostgresConfig::from_env()?,
+            cognito: CognitoConfig::from_env()?,
             worker_health_url: required("WORKER_HEALTH_URL")?,
             listen_addr: env::var("LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:3000".to_string()),
             environment: required("ENVIRONMENT")?,

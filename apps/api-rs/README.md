@@ -4,12 +4,15 @@ Rust replacement for `apps/api`, migrated incrementally while preserving the Ope
 
 ## Status
 
-Phase 0 scaffold:
+Phase 1 — Auth + Owners:
 
-- `api` binary — Axum app with `GET /health` (same success / 503 error shape as the Node API)
-- `worker` binary — health stub on `WORKER_HEALTH_PORT` (SQS confirm logic not ported yet)
-- Toasty connected to PostgreSQL at startup (`postgresql` feature)
-- Composition injects required health pings (Postgres `SELECT 1` + worker HTTP)
+- Cognito `AuthProvider` + JWT access-token verifier
+- Owner Toasty model/repository (`owners` table) + `GET/PATCH /v1/owner`
+- Auth routes under `/v1/auth` with Bearer middleware on sign-out and all owner routes
+- Hand-maintained `GET /openapi.json` (title `walk / dog API`, version `0.1.0`)
+- Use-case + route contract tests with fake providers
+
+Phase 0 scaffold retained: `GET /health`, worker health stub, Toasty Postgres connect.
 
 ## Develop
 
@@ -32,6 +35,9 @@ Same Postgres and worker health variables as `apps/api`, plus:
 | `ENVIRONMENT`, `RELEASE` | required (observability) |
 | `WORKER_HEALTH_URL` | API health dependency |
 | `WORKER_HEALTH_PORT` | worker health listen port (default 3001) |
+| `AWS_REGION` | Cognito region |
+| `COGNITO_USER_POOL_ID` | Cognito user pool |
+| `COGNITO_CLIENT_ID` | Cognito app client |
 
 ## Plan
 

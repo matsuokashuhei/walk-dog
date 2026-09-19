@@ -28,6 +28,7 @@ pub struct SchemaProbe {
 
 pub mod dog_model;
 pub mod dog_repository;
+pub mod numeric_coordinate;
 pub mod owner_model;
 pub mod owner_repository;
 pub mod walk_model;

@@ -7,6 +7,9 @@ use toasty::Db;
 use tokio::sync::Mutex;
 
 use crate::infrastructure::database::dog_model::DogRecord;
+use crate::infrastructure::database::numeric_coordinate::{
+    f64_to_numeric_coord, numeric_coord_to_f64,
+};
 use crate::infrastructure::database::walk_model::{
     WalkCommandKeyRecord, WalkCommandNamespace, WalkEventRecord, WalkEventTypeRecord,
     WalkParticipantRecord, WalkRecord, WalkState, WalkTrackPointRecord,
@@ -81,8 +84,8 @@ fn to_track_point(row: WalkTrackPointRecord) -> TrackPoint {
         track_point_id: row.track_point_id.to_string(),
         walk_id: row.walk_id.to_string(),
         recorded_at: row.recorded_at,
-        latitude: row.latitude,
-        longitude: row.longitude,
+        latitude: numeric_coord_to_f64(row.latitude),
+        longitude: numeric_coord_to_f64(row.longitude),
     }
 }
 
@@ -111,8 +114,8 @@ fn to_walk_event(row: WalkEventRecord) -> WalkEvent {
         participant_dog_id: row.participant_dog_id.to_string(),
         event_type: to_event_type(row.event_type),
         occurred_at: row.occurred_at,
-        latitude: row.latitude,
-        longitude: row.longitude,
+        latitude: numeric_coord_to_f64(row.latitude),
+        longitude: numeric_coord_to_f64(row.longitude),
     }
 }
 
@@ -440,8 +443,8 @@ async fn accept_track_point_tx(
     match toasty::create!(WalkTrackPointRecord {
         walk_id: walk_uuid,
         recorded_at: input.recorded_at,
-        latitude: input.latitude,
-        longitude: input.longitude,
+        latitude: f64_to_numeric_coord(input.latitude),
+        longitude: f64_to_numeric_coord(input.longitude),
     })
     .exec(db)
     .await
@@ -476,8 +479,8 @@ async fn replay_accepted_track_point(
         .into_iter()
         .next()
         .expect("unique track point exists after conflict");
-    if (row.latitude - input.latitude).abs() < f64::EPSILON
-        && (row.longitude - input.longitude).abs() < f64::EPSILON
+    if (numeric_coord_to_f64(row.latitude) - input.latitude).abs() < f64::EPSILON
+        && (numeric_coord_to_f64(row.longitude) - input.longitude).abs() < f64::EPSILON
     {
         return Ok(to_track_point(row));
     }
@@ -522,8 +525,8 @@ async fn record_event_tx(
         participant_dog_id: dog_uuid,
         event_type: from_event_type(input.event_type),
         occurred_at: input.occurred_at,
-        latitude: input.latitude,
-        longitude: input.longitude,
+        latitude: f64_to_numeric_coord(input.latitude),
+        longitude: f64_to_numeric_coord(input.longitude),
     })
     .exec(db)
     .await
@@ -548,8 +551,8 @@ async fn replay_recorded_event(
     if row.participant_dog_id.to_string() == input.participant_dog_id
         && to_event_type(row.event_type.clone()) == input.event_type
         && row.occurred_at == input.occurred_at
-        && row.latitude == input.latitude
-        && row.longitude == input.longitude
+        && numeric_coord_to_f64(row.latitude) == input.latitude
+        && numeric_coord_to_f64(row.longitude) == input.longitude
     {
         return Ok(RecordedEvent {
             event: to_walk_event(row),

@@ -116,6 +116,7 @@ dependencies = [
  "jiff",
  "jsonwebtoken",
  "reqwest",
+ "rust_decimal",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -164,6 +165,12 @@ name = "array-init"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d62b7694a562cdf5a74227903507c56ab2cc8bdd1f781ed5cb4cf9c9f810bfc"
+
+[[package]]
+name = "arrayvec"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "assoc"
@@ -3636,6 +3643,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_decimal"
+version = "1.43.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7653272e75dcac41dc199fbea6f5797633994fafd339943c06c9af16bf29cd3a"
+dependencies = [
+ "arrayvec",
+ "borsh",
+ "bytes",
+ "num-traits",
+ "postgres-types",
+ "rand 0.8.8",
+ "rand 0.9.5",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4636,6 +4661,7 @@ dependencies = [
  "indexmap",
  "inventory",
  "jiff",
+ "rust_decimal",
  "serde_core",
  "serde_json",
  "toasty-core",
@@ -4665,6 +4691,7 @@ dependencies = [
  "indexmap",
  "jiff",
  "percent-encoding",
+ "rust_decimal",
  "serde",
  "tokio-stream",
  "toml",
@@ -4680,6 +4707,7 @@ checksum = "6a7a281dccebd99defe5e84ab56e8871cf22296ac3bcca8d333e427697c8b7ea"
 dependencies = [
  "async-trait",
  "jiff",
+ "rust_decimal",
  "sqlx-core",
  "sqlx-mysql",
  "time",
@@ -4703,6 +4731,7 @@ dependencies = [
  "lru 0.18.4",
  "postgres-protocol",
  "postgres-types",
+ "rust_decimal",
  "rustls 0.23.45",
  "rustls-pemfile",
  "rustls-platform-verifier",
@@ -4769,6 +4798,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b44b08035efcf8e087c6377ae18942066b1f8e976cd3821571e45463ecf3d6f"
 dependencies = [
  "jiff",
+ "rust_decimal",
  "serde",
  "serde_json",
  "toasty-core",
@@ -5509,6 +5539,7 @@ dependencies = [
  "cfg-if",
  "once_cell",
  "rustversion",
+ "serde",
  "wasm-bindgen-macro",
  "wasm-bindgen-shared",
 ]

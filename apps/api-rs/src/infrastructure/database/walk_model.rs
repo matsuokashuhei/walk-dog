@@ -1,4 +1,4 @@
-//! Toasty models for Drizzle `walks`, `walk_participants`, and `walk_command_keys`.
+//! Toasty models for Drizzle walks tables (participants, command keys, track points, events).
 
 #[derive(Debug, Clone, PartialEq, Eq, toasty::Embed)]
 #[column(type = enum("walk_state"))]
@@ -13,6 +13,15 @@ pub enum WalkState {
 pub enum WalkCommandNamespace {
     Start,
     Finish,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, toasty::Embed)]
+#[column(type = enum("walk_event_type"))]
+pub enum WalkEventTypeRecord {
+    Pee,
+    Poop,
+    Sniff,
+    Greet,
 }
 
 #[derive(Debug, toasty::Model)]
@@ -83,6 +92,55 @@ pub struct WalkCommandKeyRecord {
     pub body_hash: String,
 
     pub walk_id: uuid::Uuid,
+
+    #[auto]
+    pub created_at: jiff::Timestamp,
+}
+
+#[derive(Debug, toasty::Model)]
+#[table = "walk_track_points"]
+#[unique(
+    name = "walk_track_points_walk_id_recorded_at_unique",
+    walk_id,
+    recorded_at
+)]
+pub struct WalkTrackPointRecord {
+    #[key]
+    #[auto]
+    pub track_point_id: uuid::Uuid,
+
+    #[index]
+    pub walk_id: uuid::Uuid,
+
+    pub recorded_at: jiff::Timestamp,
+
+    pub latitude: f64,
+
+    pub longitude: f64,
+
+    #[auto]
+    pub created_at: jiff::Timestamp,
+}
+
+#[derive(Debug, toasty::Model)]
+#[table = "walk_events"]
+pub struct WalkEventRecord {
+    #[key]
+    pub event_id: uuid::Uuid,
+
+    #[index]
+    pub walk_id: uuid::Uuid,
+
+    pub participant_dog_id: uuid::Uuid,
+
+    #[column("type")]
+    pub event_type: WalkEventTypeRecord,
+
+    pub occurred_at: jiff::Timestamp,
+
+    pub latitude: f64,
+
+    pub longitude: f64,
 
     #[auto]
     pub created_at: jiff::Timestamp,

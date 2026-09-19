@@ -62,9 +62,53 @@ impl CognitoConfig {
 }
 
 #[derive(Debug, Clone)]
+pub struct SqsConfig {
+    pub region: String,
+    pub queue_url: String,
+    pub endpoint: Option<String>,
+}
+
+impl SqsConfig {
+    pub fn from_env() -> Result<Self, String> {
+        let endpoint = env::var("SQS_ENDPOINT")
+            .ok()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        Ok(Self {
+            region: required("AWS_REGION")?,
+            queue_url: required("SQS_QUEUE_URL")?,
+            endpoint,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DynamoDbConfig {
+    pub region: String,
+    pub table_name: String,
+    pub endpoint: Option<String>,
+}
+
+impl DynamoDbConfig {
+    pub fn from_env() -> Result<Self, String> {
+        let endpoint = env::var("DYNAMODB_ENDPOINT")
+            .ok()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        Ok(Self {
+            region: required("AWS_REGION")?,
+            table_name: required("DYNAMODB_TABLE")?,
+            endpoint,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct AppConfig {
     pub postgres: PostgresConfig,
     pub cognito: CognitoConfig,
+    pub sqs: SqsConfig,
+    pub dynamodb: DynamoDbConfig,
     pub worker_health_url: String,
     pub listen_addr: String,
     pub environment: String,
@@ -76,6 +120,8 @@ impl AppConfig {
         Ok(Self {
             postgres: PostgresConfig::from_env()?,
             cognito: CognitoConfig::from_env()?,
+            sqs: SqsConfig::from_env()?,
+            dynamodb: DynamoDbConfig::from_env()?,
             worker_health_url: required("WORKER_HEALTH_URL")?,
             listen_addr: env::var("LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:3000".to_string()),
             environment: required("ENVIRONMENT")?,

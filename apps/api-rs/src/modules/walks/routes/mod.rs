@@ -3,13 +3,18 @@
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{delete, get, post};
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::app::AppState;
-use crate::modules::walks::responses::RecordingWalkBody;
-use crate::modules::walks::use_cases::{self, DeleteWalkResult, StartWalkResult};
+use crate::modules::walks::responses::{
+    CompletedWalkBody, DetailEventBody, DetailTrackPointBody, RecordingWalkBody, TrackPointBody,
+};
+    use crate::modules::walks::use_cases::{
+        self, AcceptTrackPointDeps, AcceptTrackPointResult, DeleteWalkResult, FinishWalkDeps,
+        FinishWalkResult, GetWalkDetailResult, StartWalkResult, FINISH_CONFIRMATION_TIMEOUT_MS,
+    };
 use crate::shared::http::authentication::Authenticated;
 use crate::shared::http::error_contract::ErrorBody;
 use crate::shared::http::request_id::RequestId;
@@ -19,7 +24,12 @@ pub fn walk_routes() -> Router<AppState> {
     Router::new()
         .route("/active", get(get_active_walk_handler))
         .route("/", post(start_walk_handler))
-        .route("/{walk_id}", delete(delete_walk_handler))
+        .route("/{walk_id}/finish", post(finish_walk_handler))
+        .route("/{walk_id}/track-points", post(accept_track_point_handler))
+        .route(
+            "/{walk_id}",
+            get(get_walk_detail_handler).delete(delete_walk_handler),
+        )
 }
 
 #[derive(Debug, Serialize)]
@@ -30,10 +40,48 @@ struct RecordingWalkResponse {
     walk: RecordingWalkBody,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CompletedWalkResponse {
+    request_id: String,
+    #[serde(flatten)]
+    walk: CompletedWalkBody,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WalkDetailResponse {
+    request_id: String,
+    #[serde(flatten)]
+    walk: CompletedWalkBody,
+    track_points: Vec<DetailTrackPointBody>,
+    events: Vec<DetailEventBody>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TrackPointResponse {
+    request_id: String,
+    #[serde(flatten)]
+    track_point: TrackPointBody,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct StartWalkBody {
     participant_dog_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FinishWalkBody {}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct AcceptTrackPointBody {
+    recorded_at: String,
+    latitude: f64,
+    longitude: f64,
 }
 
 fn not_found(request_id: String) -> Response {
@@ -42,6 +90,19 @@ fn not_found(request_id: String) -> Response {
         Json(ErrorBody {
             code: "NOT_FOUND".to_string(),
             message: "The requested resource was not found.".to_string(),
+            request_id,
+            retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn walk_not_found_jp(request_id: String) -> Response {
+    (
+        StatusCode::NOT_FOUND,
+        Json(ErrorBody {
+            code: "NOT_FOUND".to_string(),
+            message: "Walk が見つかりません。".to_string(),
             request_id,
             retryable: false,
         }),
@@ -75,7 +136,20 @@ fn idempotency_conflict(request_id: String) -> Response {
         .into_response()
 }
 
-fn walk_not_recording(request_id: String) -> Response {
+fn track_point_idempotency_conflict(request_id: String) -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(ErrorBody {
+            code: "IDEMPOTENCY_CONFLICT".to_string(),
+            message: "同じ取得時刻の TrackPoint が別の内容で送られています。".to_string(),
+            request_id,
+            retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn walk_not_recording_delete(request_id: String) -> Response {
     (
         StatusCode::CONFLICT,
         Json(ErrorBody {
@@ -83,6 +157,58 @@ fn walk_not_recording(request_id: String) -> Response {
             message: "この散歩は破棄できません。".to_string(),
             request_id,
             retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn walk_not_recording_finish(request_id: String) -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(ErrorBody {
+            code: "WALK_NOT_RECORDING".to_string(),
+            message: "この散歩は終了できません。".to_string(),
+            request_id,
+            retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn walk_not_recording_track_point(request_id: String) -> Response {
+    (
+        StatusCode::CONFLICT,
+        Json(ErrorBody {
+            code: "WALK_NOT_RECORDING".to_string(),
+            message: "この Walk は記録中ではありません。".to_string(),
+            request_id,
+            retryable: false,
+        }),
+    )
+        .into_response()
+}
+
+fn service_unavailable_finish(request_id: String) -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Json(ErrorBody {
+            code: "SERVICE_UNAVAILABLE".to_string(),
+            message: "終了処理を完了できませんでした。もう一度お試しください。".to_string(),
+            request_id,
+            retryable: true,
+        }),
+    )
+        .into_response()
+}
+
+fn retryable_internal_error(request_id: String) -> Response {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ErrorBody {
+            code: "INTERNAL_ERROR".to_string(),
+            message: "一時的に送信できません。".to_string(),
+            request_id,
+            retryable: true,
         }),
     )
         .into_response()
@@ -110,6 +236,20 @@ fn valid_participant_dog_ids(ids: &[String]) -> bool {
         }
     }
     true
+}
+
+fn has_microdegree_scale(value: f64) -> bool {
+    let scaled = value * 1_000_000.0;
+    (scaled - scaled.round()).abs() < 1e-6
+}
+
+fn valid_track_point_coords(latitude: f64, longitude: f64) -> bool {
+    (-90.0..=90.0).contains(&latitude)
+        && (-180.0..=180.0).contains(&longitude)
+        && (-99.999_999..=99.999_999).contains(&latitude)
+        && (-999.999_999..=999.999_999).contains(&longitude)
+        && has_microdegree_scale(latitude)
+        && has_microdegree_scale(longitude)
 }
 
 async fn get_active_walk_handler(
@@ -195,6 +335,141 @@ async fn delete_walk_handler(
     {
         DeleteWalkResult::Deleted => StatusCode::NO_CONTENT.into_response(),
         DeleteWalkResult::NotFound => not_found(request_id.0),
-        DeleteWalkResult::NotRecording => walk_not_recording(request_id.0),
+        DeleteWalkResult::NotRecording => walk_not_recording_delete(request_id.0),
+    }
+}
+
+async fn accept_track_point_handler(
+    State(state): State<AppState>,
+    request_id: RequestId,
+    Authenticated(principal): Authenticated,
+    Path(walk_id): Path<String>,
+    body: Result<Json<AcceptTrackPointBody>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    if uuid::Uuid::parse_str(&walk_id).is_err() {
+        return walk_not_found_jp(request_id.0);
+    }
+    let Json(body) = match body {
+        Ok(v) => v,
+        Err(_) => return invalid_input(request_id.0),
+    };
+    let recorded_at = match body.recorded_at.parse::<jiff::Timestamp>() {
+        Ok(value) => value,
+        Err(_) => return invalid_input(request_id.0),
+    };
+    if !valid_track_point_coords(body.latitude, body.longitude) {
+        return invalid_input(request_id.0);
+    }
+    match use_cases::accept_track_point(
+        AcceptTrackPointDeps {
+            owners: state.owner_repository.as_ref(),
+            walks: state.walk_repository.as_ref(),
+            queue: state.track_point_queue.as_ref(),
+        },
+        &principal.cognito_subject,
+        &walk_id,
+        recorded_at,
+        body.latitude,
+        body.longitude,
+    )
+    .await
+    {
+        AcceptTrackPointResult::Accepted(track_point) => (
+            StatusCode::CREATED,
+            Json(TrackPointResponse {
+                request_id: request_id.0,
+                track_point: TrackPointBody::from(&track_point),
+            }),
+        )
+            .into_response(),
+        AcceptTrackPointResult::NotFound => walk_not_found_jp(request_id.0),
+        AcceptTrackPointResult::NotRecording => walk_not_recording_track_point(request_id.0),
+        AcceptTrackPointResult::IdempotencyConflict => {
+            track_point_idempotency_conflict(request_id.0)
+        }
+        AcceptTrackPointResult::EnqueueFailed => retryable_internal_error(request_id.0),
+    }
+}
+
+async fn finish_walk_handler(
+    State(state): State<AppState>,
+    request_id: RequestId,
+    Authenticated(principal): Authenticated,
+    Path(walk_id): Path<String>,
+    headers: HeaderMap,
+    body: Result<Json<FinishWalkBody>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    if uuid::Uuid::parse_str(&walk_id).is_err() {
+        return not_found(request_id.0);
+    }
+    if body.is_err() {
+        return invalid_input(request_id.0);
+    }
+    let Some(idempotency_key) = parse_idempotency_key(&headers) else {
+        return invalid_input(request_id.0);
+    };
+    match use_cases::finish_walk(
+        FinishWalkDeps {
+            owners: state.owner_repository.as_ref(),
+            walks: state.walk_repository.as_ref(),
+            confirmed: state.confirmed_track_points.as_ref(),
+            clock: state.finish_clock.as_ref(),
+            sleep: state.finish_sleep.as_ref(),
+            timeout_ms: FINISH_CONFIRMATION_TIMEOUT_MS,
+        },
+        &principal.cognito_subject,
+        &walk_id,
+        idempotency_key,
+    )
+    .await
+    {
+        FinishWalkResult::Finished(walk) => (
+            StatusCode::OK,
+            Json(CompletedWalkResponse {
+                request_id: request_id.0,
+                walk: CompletedWalkBody::from(&walk),
+            }),
+        )
+            .into_response(),
+        FinishWalkResult::NotFound => not_found(request_id.0),
+        FinishWalkResult::NotRecording => walk_not_recording_finish(request_id.0),
+        FinishWalkResult::IdempotencyConflict => idempotency_conflict(request_id.0),
+        FinishWalkResult::ServiceUnavailable => service_unavailable_finish(request_id.0),
+    }
+}
+
+async fn get_walk_detail_handler(
+    State(state): State<AppState>,
+    request_id: RequestId,
+    Authenticated(principal): Authenticated,
+    Path(walk_id): Path<String>,
+) -> Response {
+    if uuid::Uuid::parse_str(&walk_id).is_err() {
+        return not_found(request_id.0);
+    }
+    match use_cases::get_walk_detail(
+        state.owner_repository.as_ref(),
+        state.walk_repository.as_ref(),
+        state.confirmed_track_points.as_ref(),
+        &principal.cognito_subject,
+        &walk_id,
+    )
+    .await
+    {
+        GetWalkDetailResult::Found(detail) => (
+            StatusCode::OK,
+            Json(WalkDetailResponse {
+                request_id: request_id.0,
+                walk: CompletedWalkBody::from(&detail.walk),
+                track_points: detail
+                    .track_points
+                    .iter()
+                    .map(DetailTrackPointBody::from)
+                    .collect(),
+                events: detail.events.iter().map(DetailEventBody::from).collect(),
+            }),
+        )
+            .into_response(),
+        GetWalkDetailResult::NotFound => not_found(request_id.0),
     }
 }

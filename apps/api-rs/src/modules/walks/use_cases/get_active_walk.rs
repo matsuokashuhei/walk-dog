@@ -66,6 +66,37 @@ mod tests {
             self.calls.lock().unwrap().push(owner_id.to_string());
             self.active.lock().unwrap().clone()
         }
+
+        async fn get_completed_by_owner(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<crate::modules::walks::types::CompletedWalk, crate::modules::walks::errors::WalkNotFoundError> {
+            unreachable!()
+        }
+        async fn finish(
+            &self,
+            _: &crate::modules::walks::types::FinishWalkInput,
+        ) -> Result<crate::modules::walks::types::CompletedWalk, crate::modules::walks::repository::FinishWalkError> {
+            unreachable!()
+        }
+        async fn accept_track_point(
+            &self,
+            _: &crate::modules::walks::types::AcceptTrackPointInput,
+        ) -> Result<crate::modules::walks::types::TrackPoint, crate::modules::walks::repository::AcceptTrackPointError> {
+            unreachable!()
+        }
+        async fn list_accepted_recorded_at(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<Vec<jiff::Timestamp>, crate::modules::walks::repository::ListAcceptedError> {
+            unreachable!()
+        }
+        async fn list_events(&self, _: &str) -> Vec<crate::modules::walks::types::WalkEvent> {
+            unreachable!()
+        }
+
         async fn start(&self, _: &StartWalkInput) -> Result<RecordingWalk, StartWalkError> {
             unreachable!()
         }

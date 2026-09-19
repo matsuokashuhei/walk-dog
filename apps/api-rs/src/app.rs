@@ -18,6 +18,9 @@ use crate::modules::health::routes::health_handler;
 use crate::modules::health::HealthPings;
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::owners::routes::owner_routes;
+use crate::modules::walks::provider::{
+    ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
+};
 use crate::modules::walks::repository::WalkRepository;
 use crate::modules::walks::routes::walk_routes;
 use crate::modules::walks::ActiveWalkCommands;
@@ -35,6 +38,10 @@ pub struct AppState {
     pub walk_repository: Arc<dyn WalkRepository>,
     pub access_token_verifier: Arc<dyn AccessTokenVerifier>,
     pub active_walk_commands: Arc<dyn ActiveWalkCommands>,
+    pub track_point_queue: Arc<dyn TrackPointQueue>,
+    pub confirmed_track_points: Arc<dyn ConfirmedTrackPoints>,
+    pub finish_clock: Arc<dyn FinishWalkClock>,
+    pub finish_sleep: Arc<dyn FinishWalkSleep>,
 }
 
 pub fn create_app(state: AppState) -> Router {
@@ -121,8 +128,17 @@ mod tests {
     use crate::modules::walks::errors::{
         ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
     };
-    use crate::modules::walks::repository::{FailWalkError, StartWalkError, WalkRepository};
-    use crate::modules::walks::types::{RecordingWalk, StartWalkInput, WalkParticipant};
+    use crate::modules::walks::provider::{
+        ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
+    };
+    use crate::modules::walks::repository::{
+        AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, StartWalkError,
+        WalkRepository,
+    };
+    use crate::modules::walks::types::{
+        AcceptTrackPointInput, CompletedWalk, ConfirmedTrackPoint, FinishWalkInput, RecordingWalk,
+        StartWalkInput, TrackPoint, WalkEvent, WalkParticipant,
+    };
     use crate::modules::walks::ActiveWalkCommands;
     use crate::shared::http::access_token::Principal;
     use axum::body::Body;
@@ -349,6 +365,11 @@ mod tests {
         active: Mutex<Option<RecordingWalk>>,
         start_result: Mutex<Result<RecordingWalk, StartWalkError>>,
         fail_result: Mutex<Result<(), FailWalkError>>,
+        accept_result: Mutex<Result<TrackPoint, AcceptTrackPointError>>,
+        finish_result: Mutex<Result<CompletedWalk, FinishWalkError>>,
+        detail_result: Mutex<Result<CompletedWalk, WalkNotFoundError>>,
+        accepted_recorded_at: Mutex<Result<Vec<jiff::Timestamp>, ListAcceptedError>>,
+        events: Mutex<Vec<WalkEvent>>,
     }
 
     impl FakeWalks {
@@ -357,6 +378,11 @@ mod tests {
                 active: Mutex::new(None),
                 start_result: Mutex::new(Err(StartWalkError::NotFound(WalkNotFoundError))),
                 fail_result: Mutex::new(Ok(())),
+                accept_result: Mutex::new(Err(AcceptTrackPointError::NotFound(WalkNotFoundError))),
+                finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
+                detail_result: Mutex::new(Err(WalkNotFoundError)),
+                accepted_recorded_at: Mutex::new(Ok(vec![])),
+                events: Mutex::new(vec![]),
             }
         }
 
@@ -365,6 +391,11 @@ mod tests {
                 active: Mutex::new(Some(walk.clone())),
                 start_result: Mutex::new(Ok(walk)),
                 fail_result: Mutex::new(Ok(())),
+                accept_result: Mutex::new(Err(AcceptTrackPointError::NotFound(WalkNotFoundError))),
+                finish_result: Mutex::new(Err(FinishWalkError::NotFound(WalkNotFoundError))),
+                detail_result: Mutex::new(Err(WalkNotFoundError)),
+                accepted_recorded_at: Mutex::new(Ok(vec![])),
+                events: Mutex::new(vec![]),
             }
         }
     }
@@ -382,23 +413,144 @@ mod tests {
         }
     }
 
+    fn sample_completed() -> CompletedWalk {
+        CompletedWalk {
+            walk_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80".into(),
+            owner_id: "11111111-1111-1111-1111-111111111111".into(),
+            started_at: jiff::Timestamp::from_second(1_723_636_811).unwrap(),
+            completed_at: jiff::Timestamp::from_second(1_723_637_411).unwrap(),
+            duration_seconds: 600,
+            distance_meters: 0,
+            pace_seconds_per_meter: None,
+            participants: sample_walk().participants,
+        }
+    }
+
+    fn sample_track_point() -> TrackPoint {
+        TrackPoint {
+            track_point_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90".into(),
+            walk_id: "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80".into(),
+            recorded_at: "2026-08-17T12:00:00Z".parse().unwrap(),
+            latitude: 35.681_236,
+            longitude: 139.767_125,
+        }
+    }
+
     #[async_trait::async_trait]
     impl WalkRepository for FakeWalks {
         async fn get_active_by_owner(&self, _: &str) -> Option<RecordingWalk> {
             self.active.lock().unwrap().clone()
         }
+        async fn get_completed_by_owner(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<CompletedWalk, WalkNotFoundError> {
+            self.detail_result.lock().unwrap().clone()
+        }
         async fn start(&self, _: &StartWalkInput) -> Result<RecordingWalk, StartWalkError> {
             self.start_result.lock().unwrap().clone()
+        }
+        async fn finish(&self, _: &FinishWalkInput) -> Result<CompletedWalk, FinishWalkError> {
+            self.finish_result.lock().unwrap().clone()
         }
         async fn fail(&self, _: &str, _: &str) -> Result<(), FailWalkError> {
             self.fail_result.lock().unwrap().clone()
         }
         async fn fail_if_present(&self, _: &str) {}
+        async fn accept_track_point(
+            &self,
+            _: &AcceptTrackPointInput,
+        ) -> Result<TrackPoint, AcceptTrackPointError> {
+            self.accept_result.lock().unwrap().clone()
+        }
+        async fn list_accepted_recorded_at(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
+            self.accepted_recorded_at.lock().unwrap().clone()
+        }
+        async fn list_events(&self, _: &str) -> Vec<WalkEvent> {
+            self.events.lock().unwrap().clone()
+        }
     }
 
     #[async_trait::async_trait]
     impl ActiveWalkCommands for FakeWalks {
         async fn fail_if_present(&self, _: &str) {}
+    }
+
+    struct FakeQueue {
+        fail: Mutex<bool>,
+    }
+
+    #[async_trait::async_trait]
+    impl TrackPointQueue for FakeQueue {
+        async fn enqueue(&self, _: &TrackPoint) -> Result<(), ()> {
+            if *self.fail.lock().unwrap() {
+                Err(())
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    struct FakeConfirmed {
+        points: Mutex<Vec<ConfirmedTrackPoint>>,
+    }
+
+    #[async_trait::async_trait]
+    impl ConfirmedTrackPoints for FakeConfirmed {
+        async fn list_points(&self, _: &str) -> Result<Vec<ConfirmedTrackPoint>, ()> {
+            Ok(self.points.lock().unwrap().clone())
+        }
+        async fn list_recorded_at(&self, _: &str) -> Result<Vec<jiff::Timestamp>, ()> {
+            Ok(self
+                .points
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|point| point.recorded_at)
+                .collect())
+        }
+    }
+
+    struct TestClock {
+        now: std::sync::atomic::AtomicU64,
+    }
+
+    impl FinishWalkClock for TestClock {
+        fn now_ms(&self) -> u64 {
+            self.now.load(std::sync::atomic::Ordering::SeqCst)
+        }
+    }
+
+    struct TestSleep {
+        clock: Arc<TestClock>,
+    }
+
+    impl FinishWalkSleep for TestSleep {
+        fn sleep(
+            &self,
+            delay_ms: u64,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
+            Box::pin(async move {
+                self.clock
+                    .now
+                    .fetch_add(delay_ms, std::sync::atomic::Ordering::SeqCst);
+            })
+        }
+    }
+
+    fn finish_timing() -> (Arc<TestClock>, Arc<TestSleep>) {
+        let clock = Arc::new(TestClock {
+            now: std::sync::atomic::AtomicU64::new(0),
+        });
+        let sleep = Arc::new(TestSleep {
+            clock: clock.clone(),
+        });
+        (clock, sleep)
     }
 
     fn state_with(
@@ -407,6 +559,7 @@ mod tests {
         verifier_ok: bool,
     ) -> AppState {
         let walks = Arc::new(FakeWalks::new());
+        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings,
             auth_provider: Arc::new(auth),
@@ -415,11 +568,20 @@ mod tests {
             walk_repository: walks.clone(),
             access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
             active_walk_commands: walks,
+            track_point_queue: Arc::new(FakeQueue {
+                fail: Mutex::new(false),
+            }),
+            confirmed_track_points: Arc::new(FakeConfirmed {
+                points: Mutex::new(vec![]),
+            }),
+            finish_clock,
+            finish_sleep,
         }
     }
 
     fn state_with_dogs(dogs: FakeDogs, verifier_ok: bool) -> AppState {
         let walks = Arc::new(FakeWalks::new());
+        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings: Arc::new(OkPings),
             auth_provider: Arc::new(FakeAuth::default()),
@@ -428,11 +590,38 @@ mod tests {
             walk_repository: walks.clone(),
             access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
             active_walk_commands: walks,
+            track_point_queue: Arc::new(FakeQueue {
+                fail: Mutex::new(false),
+            }),
+            confirmed_track_points: Arc::new(FakeConfirmed {
+                points: Mutex::new(vec![]),
+            }),
+            finish_clock,
+            finish_sleep,
         }
     }
 
     fn state_with_walks(walks: FakeWalks, verifier_ok: bool) -> AppState {
+        state_with_walks_and_queue(
+            walks,
+            FakeQueue {
+                fail: Mutex::new(false),
+            },
+            FakeConfirmed {
+                points: Mutex::new(vec![]),
+            },
+            verifier_ok,
+        )
+    }
+
+    fn state_with_walks_and_queue(
+        walks: FakeWalks,
+        queue: FakeQueue,
+        confirmed: FakeConfirmed,
+        verifier_ok: bool,
+    ) -> AppState {
         let walks = Arc::new(walks);
+        let (finish_clock, finish_sleep) = finish_timing();
         AppState {
             pings: Arc::new(OkPings),
             auth_provider: Arc::new(FakeAuth::default()),
@@ -441,6 +630,10 @@ mod tests {
             walk_repository: walks.clone(),
             access_token_verifier: Arc::new(FakeVerifier { ok: verifier_ok }),
             active_walk_commands: walks,
+            track_point_queue: Arc::new(queue),
+            confirmed_track_points: Arc::new(confirmed),
+            finish_clock,
+            finish_sleep,
         }
     }
 
@@ -721,6 +914,8 @@ mod tests {
         assert!(json["paths"]["/v1/walks/active"].is_object());
         assert!(json["paths"]["/v1/walks"].is_object());
         assert!(json["paths"]["/v1/walks/{walkId}"].is_object());
+        assert!(json["paths"]["/v1/walks/{walkId}/finish"].is_object());
+        assert!(json["paths"]["/v1/walks/{walkId}/track-points"].is_object());
     }
 
     #[tokio::test]
@@ -1161,5 +1356,262 @@ mod tests {
         assert_eq!(response.status(), 401);
         let json = json_body(response).await;
         assert_eq!(json["code"], "UNAUTHENTICATED");
+    }
+
+    #[tokio::test]
+    async fn walks_track_points_success_and_errors() {
+        let walks = FakeWalks::new();
+        *walks.accept_result.lock().unwrap() = Ok(sample_track_point());
+        let app = create_app(state_with_walks(walks, true));
+        let walk_id = "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80";
+        let body = r#"{"recordedAt":"2026-08-17T12:00:00Z","latitude":35.681236,"longitude":139.767125}"#;
+
+        let ok = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/track-points"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-tp")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(ok.status(), 201);
+        let ok_json = json_body(ok).await;
+        assert_eq!(ok_json["requestId"], "req-tp");
+        assert_eq!(ok_json["trackPointId"], "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e90");
+        assert_eq!(ok_json["latitude"], 35.681236);
+
+        let walks = FakeWalks::new();
+        *walks.accept_result.lock().unwrap() =
+            Err(AcceptTrackPointError::NotFound(WalkNotFoundError));
+        let app = create_app(state_with_walks(walks, true));
+        let missing = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/track-points"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-tp-404")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), 404);
+        let missing_json = json_body(missing).await;
+        assert_eq!(missing_json["code"], "NOT_FOUND");
+        assert_eq!(missing_json["message"], "Walk が見つかりません。");
+
+        let walks = FakeWalks::new();
+        *walks.accept_result.lock().unwrap() =
+            Err(AcceptTrackPointError::NotRecording(WalkNotRecordingError));
+        let app = create_app(state_with_walks(walks, true));
+        let not_recording = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/track-points"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-tp-nr")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(not_recording.status(), 409);
+        let nr_json = json_body(not_recording).await;
+        assert_eq!(nr_json["code"], "WALK_NOT_RECORDING");
+        assert_eq!(nr_json["message"], "この Walk は記録中ではありません。");
+
+        let walks = FakeWalks::new();
+        *walks.accept_result.lock().unwrap() = Err(AcceptTrackPointError::IdempotencyConflict(
+            IdempotencyConflictError,
+        ));
+        let app = create_app(state_with_walks(walks, true));
+        let conflict = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/track-points"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-tp-idem")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(conflict.status(), 409);
+        let conflict_json = json_body(conflict).await;
+        assert_eq!(conflict_json["code"], "IDEMPOTENCY_CONFLICT");
+
+        let walks = FakeWalks::new();
+        *walks.accept_result.lock().unwrap() = Ok(sample_track_point());
+        let app = create_app(state_with_walks_and_queue(
+            walks,
+            FakeQueue {
+                fail: Mutex::new(true),
+            },
+            FakeConfirmed {
+                points: Mutex::new(vec![]),
+            },
+            true,
+        ));
+        let enqueue_fail = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/track-points"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("x-request-id", "req-tp-500")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(enqueue_fail.status(), 500);
+        let fail_json = json_body(enqueue_fail).await;
+        assert_eq!(fail_json["code"], "INTERNAL_ERROR");
+        assert_eq!(fail_json["retryable"], true);
+    }
+
+    #[tokio::test]
+    async fn walks_finish_success_and_service_unavailable() {
+        let walks = FakeWalks::new();
+        *walks.finish_result.lock().unwrap() = Ok(sample_completed());
+        let app = create_app(state_with_walks(walks, true));
+        let walk_id = "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80";
+
+        let ok = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/finish"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-finish")
+                    .header("x-request-id", "req-finish")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(ok.status(), 200);
+        let ok_json = json_body(ok).await;
+        assert_eq!(ok_json["state"], "completed");
+        assert_eq!(ok_json["requestId"], "req-finish");
+
+        let walks = FakeWalks::new();
+        *walks.accepted_recorded_at.lock().unwrap() =
+            Ok(vec!["2026-08-17T12:00:00Z".parse().unwrap()]);
+        *walks.finish_result.lock().unwrap() = Ok(sample_completed());
+        let app = create_app(state_with_walks(walks, true));
+        let unavailable = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/finish"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-finish-2")
+                    .header("x-request-id", "req-503")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(unavailable.status(), 503);
+        let unavailable_json = json_body(unavailable).await;
+        assert_eq!(unavailable_json["code"], "SERVICE_UNAVAILABLE");
+        assert_eq!(unavailable_json["retryable"], true);
+
+        let walks = FakeWalks::new();
+        *walks.finish_result.lock().unwrap() =
+            Err(FinishWalkError::NotRecording(WalkNotRecordingError));
+        let app = create_app(state_with_walks(walks, true));
+        let not_recording = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/v1/walks/{walk_id}/finish"))
+                    .header("authorization", "Bearer good-token")
+                    .header("content-type", "application/json")
+                    .header("idempotency-key", "idem-finish-3")
+                    .header("x-request-id", "req-finish-nr")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(not_recording.status(), 409);
+        let nr_json = json_body(not_recording).await;
+        assert_eq!(nr_json["code"], "WALK_NOT_RECORDING");
+        assert_eq!(nr_json["message"], "この散歩は終了できません。");
+    }
+
+    #[tokio::test]
+    async fn walks_detail_success_and_not_found() {
+        let walks = FakeWalks::new();
+        *walks.detail_result.lock().unwrap() = Ok(sample_completed());
+        let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
+        let app = create_app(state_with_walks_and_queue(
+            walks,
+            FakeQueue {
+                fail: Mutex::new(false),
+            },
+            FakeConfirmed {
+                points: Mutex::new(vec![ConfirmedTrackPoint {
+                    recorded_at,
+                    latitude: 35.681_236,
+                    longitude: 139.767_125,
+                }]),
+            },
+            true,
+        ));
+        let walk_id = "0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e80";
+        let ok = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri(format!("/v1/walks/{walk_id}"))
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-detail")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(ok.status(), 200);
+        let ok_json = json_body(ok).await;
+        assert_eq!(ok_json["state"], "completed");
+        assert_eq!(ok_json["trackPoints"][0]["latitude"], 35.681236);
+        assert!(ok_json["events"].is_array());
+
+        let walks = FakeWalks::new();
+        *walks.detail_result.lock().unwrap() = Err(WalkNotFoundError);
+        let app = create_app(state_with_walks(walks, true));
+        let missing = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/walks/0193f0c2-8d4a-7b21-9c55-1a2b3c4d5e99")
+                    .header("authorization", "Bearer good-token")
+                    .header("x-request-id", "req-detail-404")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), 404);
     }
 }

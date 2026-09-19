@@ -10,7 +10,7 @@ use crate::infrastructure::config::PostgresConfig;
 use crate::infrastructure::database::dog_model::{DogRecord, GoalRevisionRecord};
 use crate::infrastructure::database::owner_model::OwnerRecord;
 use crate::infrastructure::database::walk_model::{
-    WalkCommandKeyRecord, WalkParticipantRecord, WalkRecord,
+    WalkCommandKeyRecord, WalkEventRecord, WalkParticipantRecord, WalkRecord, WalkTrackPointRecord,
 };
 use crate::modules::health::use_cases::check_health::BoxFut;
 use crate::modules::health::HealthPings;
@@ -47,7 +47,9 @@ pub async fn connect_toasty(config: &PostgresConfig) -> Result<Arc<Mutex<Db>>, S
             GoalRevisionRecord,
             WalkRecord,
             WalkParticipantRecord,
-            WalkCommandKeyRecord
+            WalkCommandKeyRecord,
+            WalkTrackPointRecord,
+            WalkEventRecord
         ))
         .max_pool_size(config.pool_max as usize)
         .connect(&url)

@@ -5,7 +5,10 @@ use crate::infrastructure::database::{
     connect_toasty, DependencyPings, ToastyDogRepository, ToastyOwnerRepository,
     ToastyWalkRepository,
 };
+use crate::infrastructure::dynamodb::{create_dynamodb_client, DynamoConfirmedTrackPoints};
 use crate::infrastructure::observability::init_tracing;
+use crate::infrastructure::sqs::{create_sqs_client, SqsTrackPointQueue};
+use crate::modules::walks::provider::{SystemFinishWalkClock, TokioFinishWalkSleep};
 use std::sync::Arc;
 
 pub struct Application {
@@ -26,6 +29,11 @@ pub async fn create_application(config: AppConfig) -> Result<Application, String
     let walk_repository = Arc::new(ToastyWalkRepository::new(db));
     let access_token_verifier = CognitoAccessTokenVerifier::from_config(&config.cognito);
 
+    let sqs_client = create_sqs_client(&config.sqs).await;
+    let track_point_queue = SqsTrackPointQueue::new(sqs_client, &config.sqs);
+    let dynamo_client = create_dynamodb_client(&config.dynamodb).await;
+    let confirmed_track_points = DynamoConfirmedTrackPoints::new(dynamo_client, &config.dynamodb);
+
     Ok(Application {
         state: AppState {
             pings: Arc::new(pings),
@@ -35,6 +43,10 @@ pub async fn create_application(config: AppConfig) -> Result<Application, String
             walk_repository: walk_repository.clone(),
             access_token_verifier: Arc::new(access_token_verifier),
             active_walk_commands: walk_repository,
+            track_point_queue: Arc::new(track_point_queue),
+            confirmed_track_points: Arc::new(confirmed_track_points),
+            finish_clock: Arc::new(SystemFinishWalkClock),
+            finish_sleep: Arc::new(TokioFinishWalkSleep),
         },
         listen_addr: config.listen_addr,
     })

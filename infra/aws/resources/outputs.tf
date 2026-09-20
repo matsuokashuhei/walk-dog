@@ -5,6 +5,16 @@ output "ecr_repository_url" {
   }
 }
 
+output "sakura_vps_sqs_queue_url" {
+  description = "SQS queue URL for api/worker track-point enqueue/confirm. Put in apps/.env.vps as SQS_QUEUE_URL."
+  value       = aws_sqs_queue.track_points.url
+}
+
+output "sakura_vps_sqs_queue_name" {
+  description = "SQS queue name for api/worker track points (URL path suffix)."
+  value       = aws_sqs_queue.track_points.name
+}
+
 output "github_actions_ecr_role_arn" {
   description = "IAM role ARN for the main publish workflow to push to ECR via OIDC, keyed by env."
   value = {

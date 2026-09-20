@@ -13,7 +13,7 @@ ECR の `latest` タグで `api` と `worker` を同じ image で動かす。公
    git clone https://github.com/matsuokashuhei/walk-dog.git ~/walk-dog
    ```
 
-3. `apps/.env.vps.example` を基に `~/walk-dog/apps/.env.vps` を作る。IAM ユーザー `walkdog-<env>-sakura-vps` のキー（Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key`）、Cognito / SQS / DynamoDB を入れる。実行ユーザー所有にし、そのアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
+3. `apps/.env.vps.example` を基に `~/walk-dog/apps/.env.vps` を作る。IAM ユーザー `walkdog-<env>-sakura-vps` のキー（Terraform output `sakura_vps_aws_access_key_id` / `sakura_vps_aws_secret_access_key`）、Cognito / SQS（`sakura_vps_sqs_queue_url`）/ DynamoDB を入れる。実行ユーザー所有にし、そのアカウントだけが読める権限にする。`SQS_ENDPOINT` と `DYNAMODB_ENDPOINT` は設定しない。
 4. ホストの 80 / 443 を、API を使う送信元（または必要な範囲）に開ける。ホストの 3000 は公開しない。
 5. `dev.walkdog.cacheandbuffer.com` の A レコードがこの VPS を指していること（DNS only。Cloudflare プロキシは使わない）。
 6. ホスト RAM がおよそ 512Mi で swap が無い構成を前提にする。`deploy.sh` は pull / extract の前に `caddy` / `api` / `worker` を止め、image を順次 pull する。

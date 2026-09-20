@@ -1,10 +1,4 @@
 locals {
-  sakura_vps_sqs_queue_arn = format(
-    "arn:aws:sqs:%s:%s:%s",
-    data.aws_region.current.name,
-    data.aws_caller_identity.current.account_id,
-    var.sakura_vps_sqs_queue_name,
-  )
   sakura_vps_dynamodb_table_arn = format(
     "arn:aws:dynamodb:%s:%s:table/%s",
     data.aws_region.current.name,
@@ -54,7 +48,7 @@ resource "aws_iam_user_policy" "sakura_vps" {
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
         ]
-        Resource = [local.sakura_vps_sqs_queue_arn]
+        Resource = [aws_sqs_queue.track_points.arn]
       },
       {
         Sid    = "DynamoDbTrackPoints"

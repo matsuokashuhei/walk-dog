@@ -58,7 +58,8 @@
       ],
       "expo-maps",
       "expo-file-system",
-      "expo-task-manager"
+      "expo-task-manager",
+      "./plugins/with-ios-scene-lifecycle"
     ],
     "experiments": {
       "typedRoutes": true,

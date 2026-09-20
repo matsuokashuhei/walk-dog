@@ -6,6 +6,7 @@
 #   AWS_PROFILE (default: walk-dog)
 #   AWS_REGION (default: ap-northeast-1)
 #   COGNITO_OTP_LOG_GROUP (default: /aws/lambda/walkdog-local-custom-email-sender)
+#     VPS / dev.walkdog…: /aws/lambda/walkdog-dev-custom-email-sender
 #   COGNITO_OTP_WAIT_MS (default: 60000)
 set -euo pipefail
 

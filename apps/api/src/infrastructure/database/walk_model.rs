@@ -114,9 +114,13 @@ pub struct WalkTrackPointRecord {
 
     pub recorded_at: jiff::Timestamp,
 
-    pub latitude: f64,
+    /// Matches Drizzle `numeric(8, 6)` — requires toasty `rust_decimal` to decode.
+    #[column(type = numeric(8, 6))]
+    pub latitude: rust_decimal::Decimal,
 
-    pub longitude: f64,
+    /// Matches Drizzle `numeric(9, 6)` — requires toasty `rust_decimal` to decode.
+    #[column(type = numeric(9, 6))]
+    pub longitude: rust_decimal::Decimal,
 
     #[auto]
     pub created_at: jiff::Timestamp,
@@ -138,9 +142,11 @@ pub struct WalkEventRecord {
 
     pub occurred_at: jiff::Timestamp,
 
-    pub latitude: f64,
+    #[column(type = numeric(8, 6))]
+    pub latitude: rust_decimal::Decimal,
 
-    pub longitude: f64,
+    #[column(type = numeric(9, 6))]
+    pub longitude: rust_decimal::Decimal,
 
     #[auto]
     pub created_at: jiff::Timestamp,

@@ -1,23 +1,21 @@
-//! Finish a recording walk after confirmed track points are available.
+//! Finish a recording walk after accepted points are confirmed in Dynamo.
 
 use sha2::{Digest, Sha256};
 
 use crate::modules::owners::repository::OwnerRepository;
 use crate::modules::walks::path_distance::path_distance_meters;
-use crate::modules::walks::provider::{ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep};
+use crate::modules::walks::provider::{ConfirmTrackPoint, ConfirmedTrackPoints};
 use crate::modules::walks::repository::{FinishWalkError, ListAcceptedError, WalkRepository};
-use crate::modules::walks::types::{CompletedWalk, FinishWalkInput};
+use crate::modules::walks::types::{CompletedWalk, FinishWalkInput, TrackPoint};
 
-pub const FINISH_CONFIRMATION_TIMEOUT_MS: u64 = 30_000;
-pub const FINISH_CONFIRMATION_POLL_MS: u64 = 200;
+/// Max concurrent Dynamo PutItem calls while repairing missing confirmations.
+const CONFIRM_CONCURRENCY: usize = 32;
 
 pub struct FinishWalkDeps<'a> {
     pub owners: &'a dyn OwnerRepository,
     pub walks: &'a dyn WalkRepository,
     pub confirmed: &'a dyn ConfirmedTrackPoints,
-    pub clock: &'a dyn FinishWalkClock,
-    pub sleep: &'a dyn FinishWalkSleep,
-    pub timeout_ms: u64,
+    pub confirm: &'a dyn ConfirmTrackPoint,
 }
 
 pub enum FinishWalkResult {
@@ -39,41 +37,24 @@ pub async fn finish_walk(
 
     let accepted = match deps
         .walks
-        .list_accepted_recorded_at(&owner.owner_id, walk_id)
+        .list_accepted_track_points(&owner.owner_id, walk_id)
         .await
     {
-        Ok(times) => times,
+        Ok(points) => points,
         Err(ListAcceptedError::NotFound(_)) => return FinishWalkResult::NotFound,
         Err(ListAcceptedError::NotRecording(_)) => Vec::new(),
     };
 
-    if !accepted.is_empty() {
-        match wait_for_confirmation(
-            deps.confirmed,
-            deps.clock,
-            deps.sleep,
-            deps.timeout_ms,
-            walk_id,
-            &accepted,
-        )
-        .await
-        {
-            WaitStatus::Confirmed => {}
-            WaitStatus::ServiceUnavailable => return FinishWalkResult::ServiceUnavailable,
-        }
+    if !accepted.is_empty()
+        && confirm_missing(deps.confirmed, deps.confirm, walk_id, &accepted)
+            .await
+            .is_err()
+    {
+        return FinishWalkResult::ServiceUnavailable;
     }
 
-    let points = if accepted.is_empty() {
-        Vec::new()
-    } else {
-        match deps.confirmed.list_points(walk_id).await {
-            Ok(points) => points,
-            Err(()) => return FinishWalkResult::ServiceUnavailable,
-        }
-    };
-
     let distance_meters = path_distance_meters(
-        &points
+        &accepted
             .iter()
             .map(|point| (point.latitude, point.longitude))
             .collect::<Vec<_>>(),
@@ -97,37 +78,25 @@ pub async fn finish_walk(
     }
 }
 
-enum WaitStatus {
-    Confirmed,
-    ServiceUnavailable,
-}
-
-async fn wait_for_confirmation(
+/// Writes any accepted Postgres points that are missing from Dynamo directly,
+/// so Finish does not wait on the SQS worker for orphaned confirmations.
+async fn confirm_missing(
     confirmed: &dyn ConfirmedTrackPoints,
-    clock: &dyn FinishWalkClock,
-    sleep: &dyn FinishWalkSleep,
-    timeout_ms: u64,
+    confirm: &dyn ConfirmTrackPoint,
     walk_id: &str,
-    accepted: &[jiff::Timestamp],
-) -> WaitStatus {
-    let deadline = clock.now_ms() + timeout_ms;
-    let needed: std::collections::HashSet<String> =
-        accepted.iter().map(ToString::to_string).collect();
-    loop {
-        let confirmed_at = match confirmed.list_recorded_at(walk_id).await {
-            Ok(times) => times,
-            Err(()) => return WaitStatus::ServiceUnavailable,
-        };
-        let have: std::collections::HashSet<String> =
-            confirmed_at.iter().map(ToString::to_string).collect();
-        if needed.iter().all(|key| have.contains(key)) {
-            return WaitStatus::Confirmed;
-        }
-        if clock.now_ms() >= deadline {
-            return WaitStatus::ServiceUnavailable;
-        }
-        sleep.sleep(FINISH_CONFIRMATION_POLL_MS).await;
+    accepted: &[TrackPoint],
+) -> Result<(), ()> {
+    let confirmed_at = confirmed.list_recorded_at(walk_id).await?;
+    let have: std::collections::HashSet<_> = confirmed_at.iter().copied().collect();
+    let missing: Vec<&TrackPoint> = accepted
+        .iter()
+        .filter(|point| !have.contains(&point.recorded_at))
+        .collect();
+
+    for chunk in missing.chunks(CONFIRM_CONCURRENCY) {
+        futures::future::try_join_all(chunk.iter().map(|point| confirm.confirm(point))).await?;
     }
+    Ok(())
 }
 
 fn empty_body_hash() -> String {
@@ -146,10 +115,9 @@ mod tests {
         AcceptTrackPointError, FailWalkError, StartWalkError,
     };
     use crate::modules::walks::types::{
-        AcceptTrackPointInput, ConfirmedTrackPoint, RecordingWalk, StartWalkInput, TrackPoint,
-        WalkEvent, WalkParticipant,
+        AcceptTrackPointInput, ConfirmedTrackPoint, RecordingWalk, StartWalkInput, WalkEvent,
+        WalkParticipant,
     };
-    use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Mutex;
 
     fn sample_owner() -> Owner {
@@ -166,16 +134,26 @@ mod tests {
         CompletedWalk {
             walk_id: "walk-1".into(),
             owner_id: "owner-1".into(),
-            started_at: jiff::Timestamp::from_second(1_700_000_000).unwrap(),
-            completed_at: jiff::Timestamp::from_second(1_700_000_600).unwrap(),
-            duration_seconds: 600,
+            started_at: jiff::Timestamp::from_second(1).unwrap(),
+            completed_at: jiff::Timestamp::from_second(2).unwrap(),
+            duration_seconds: 1,
             distance_meters: 0,
             pace_seconds_per_meter: None,
             participants: vec![WalkParticipant {
                 walk_participant_id: "wp-1".into(),
                 dog_id: "dog-1".into(),
-                name: "Mugi".into(),
+                name: "Mint".into(),
             }],
+        }
+    }
+
+    fn sample_point(recorded_at: jiff::Timestamp) -> TrackPoint {
+        TrackPoint {
+            track_point_id: "tp-1".into(),
+            walk_id: "walk-1".into(),
+            recorded_at,
+            latitude: 35.0,
+            longitude: 139.0,
         }
     }
 
@@ -191,7 +169,7 @@ mod tests {
     }
 
     struct FakeWalks {
-        accepted: Mutex<Result<Vec<jiff::Timestamp>, ListAcceptedError>>,
+        accepted: Mutex<Result<Vec<TrackPoint>, ListAcceptedError>>,
         finish_result: Mutex<Result<CompletedWalk, FinishWalkError>>,
         finish_calls: Mutex<Vec<FinishWalkInput>>,
     }
@@ -234,11 +212,11 @@ mod tests {
         > {
             unreachable!()
         }
-        async fn list_accepted_recorded_at(
+        async fn list_accepted_track_points(
             &self,
             _: &str,
             _: &str,
-        ) -> Result<Vec<jiff::Timestamp>, ListAcceptedError> {
+        ) -> Result<Vec<TrackPoint>, ListAcceptedError> {
             self.accepted.lock().unwrap().clone()
         }
         async fn list_events(&self, _: &str) -> Vec<WalkEvent> {
@@ -246,229 +224,213 @@ mod tests {
         }
     }
 
-    struct FakeConfirmed {
-        recorded_at: Mutex<Result<Vec<jiff::Timestamp>, ()>>,
-        points: Mutex<Result<Vec<ConfirmedTrackPoint>, ()>>,
+    /// One store that both lists and reflects confirms — production Dynamo behavior.
+    struct FakeDynamo {
+        points: Mutex<Vec<TrackPoint>>,
+        list_fail: Mutex<bool>,
+        confirm_fail: Mutex<bool>,
+    }
+
+    impl FakeDynamo {
+        fn empty() -> Self {
+            Self {
+                points: Mutex::new(vec![]),
+                list_fail: Mutex::new(false),
+                confirm_fail: Mutex::new(false),
+            }
+        }
+
+        fn with_points(points: Vec<TrackPoint>) -> Self {
+            Self {
+                points: Mutex::new(points),
+                list_fail: Mutex::new(false),
+                confirm_fail: Mutex::new(false),
+            }
+        }
     }
 
     #[async_trait::async_trait]
-    impl ConfirmedTrackPoints for FakeConfirmed {
+    impl ConfirmedTrackPoints for FakeDynamo {
         async fn list_points(&self, _: &str) -> Result<Vec<ConfirmedTrackPoint>, ()> {
-            self.points.lock().unwrap().clone()
+            if *self.list_fail.lock().unwrap() {
+                return Err(());
+            }
+            Ok(self
+                .points
+                .lock()
+                .unwrap()
+                .iter()
+                .map(|point| ConfirmedTrackPoint {
+                    recorded_at: point.recorded_at,
+                    latitude: point.latitude,
+                    longitude: point.longitude,
+                })
+                .collect())
         }
-        async fn list_recorded_at(&self, _: &str) -> Result<Vec<jiff::Timestamp>, ()> {
-            self.recorded_at.lock().unwrap().clone()
+        async fn list_recorded_at(&self, walk_id: &str) -> Result<Vec<jiff::Timestamp>, ()> {
+            Ok(self
+                .list_points(walk_id)
+                .await?
+                .into_iter()
+                .map(|point| point.recorded_at)
+                .collect())
         }
     }
 
-    struct FakeClock {
-        now: AtomicU64,
-    }
-
-    impl FinishWalkClock for FakeClock {
-        fn now_ms(&self) -> u64 {
-            self.now.load(Ordering::SeqCst)
-        }
-    }
-
-    struct FakeSleep {
-        clock: AtomicU64,
-    }
-
-    impl FinishWalkSleep for FakeSleep {
-        fn sleep(
-            &self,
-            delay_ms: u64,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
-            Box::pin(async move {
-                self.clock.fetch_add(delay_ms, Ordering::SeqCst);
-            })
+    #[async_trait::async_trait]
+    impl ConfirmTrackPoint for FakeDynamo {
+        async fn confirm(&self, track_point: &TrackPoint) -> Result<(), ()> {
+            if *self.confirm_fail.lock().unwrap() {
+                return Err(());
+            }
+            let mut points = self.points.lock().unwrap();
+            if !points
+                .iter()
+                .any(|point| point.recorded_at == track_point.recorded_at)
+            {
+                points.push(track_point.clone());
+            }
+            Ok(())
         }
     }
 
     fn sut(
-        accepted: Result<Vec<jiff::Timestamp>, ListAcceptedError>,
+        accepted: Result<Vec<TrackPoint>, ListAcceptedError>,
         finish: Result<CompletedWalk, FinishWalkError>,
-    ) -> (FakeWalks, FakeConfirmed, FakeClock, FakeSleep) {
+    ) -> (FakeWalks, FakeDynamo) {
         (
             FakeWalks {
                 accepted: Mutex::new(accepted),
                 finish_result: Mutex::new(finish),
                 finish_calls: Mutex::new(vec![]),
             },
-            FakeConfirmed {
-                recorded_at: Mutex::new(Ok(vec![])),
-                points: Mutex::new(Ok(vec![])),
-            },
-            FakeClock {
-                now: AtomicU64::new(0),
-            },
-            FakeSleep {
-                clock: AtomicU64::new(0),
-            },
+            FakeDynamo::empty(),
         )
+    }
+
+    fn deps<'a>(walks: &'a FakeWalks, dynamo: &'a FakeDynamo) -> FinishWalkDeps<'a> {
+        FinishWalkDeps {
+            owners: &FakeOwners,
+            walks,
+            confirmed: dynamo,
+            confirm: dynamo,
+        }
     }
 
     #[tokio::test]
     async fn finishes_immediately_without_accepted_points() {
-        let (walks, confirmed, clock, sleep) = sut(Ok(vec![]), Ok(sample_completed()));
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 30_000,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
+        let (walks, dynamo) = sut(Ok(vec![]), Ok(sample_completed()));
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
         assert!(matches!(result, FinishWalkResult::Finished(_)));
         let calls = walks.finish_calls.lock().unwrap();
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].distance_meters, 0);
         assert_eq!(calls[0].body_hash, empty_body_hash());
+        assert!(dynamo.points.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
     async fn treats_not_recording_accepted_list_as_empty_then_finishes() {
-        let (walks, confirmed, clock, sleep) = sut(
+        let (walks, dynamo) = sut(
             Err(ListAcceptedError::NotRecording(WalkNotRecordingError)),
             Ok(sample_completed()),
         );
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 30_000,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
         assert!(matches!(result, FinishWalkResult::Finished(_)));
     }
 
     #[tokio::test]
     async fn maps_not_found_from_accepted_list() {
-        let (walks, confirmed, clock, sleep) = sut(
+        let (walks, dynamo) = sut(
             Err(ListAcceptedError::NotFound(WalkNotFoundError)),
             Ok(sample_completed()),
         );
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 30_000,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
         assert!(matches!(result, FinishWalkResult::NotFound));
     }
 
     #[tokio::test]
-    async fn waits_then_times_out_when_confirmation_missing() {
+    async fn finishes_when_points_already_confirmed_without_extra_puts() {
         let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
-        let (walks, confirmed, _clock, _sleep) =
-            sut(Ok(vec![recorded_at]), Ok(sample_completed()));
-        // FakeSleep advances FakeClock via shared Atomic — wire sleep to clock
-        let clock = FakeClock {
-            now: AtomicU64::new(0),
-        };
-        struct LinkedSleep<'a> {
-            clock: &'a FakeClock,
-        }
-        impl FinishWalkSleep for LinkedSleep<'_> {
-            fn sleep(
-                &self,
-                delay_ms: u64,
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
-                Box::pin(async move {
-                    self.clock.now.fetch_add(delay_ms, Ordering::SeqCst);
-                })
-            }
-        }
-        let sleep = LinkedSleep { clock: &clock };
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 400,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
+        let point = sample_point(recorded_at);
+        let (walks, _) = sut(Ok(vec![point.clone()]), Ok(sample_completed()));
+        let dynamo = FakeDynamo::with_points(vec![point]);
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
+        assert!(matches!(result, FinishWalkResult::Finished(_)));
+        assert_eq!(walks.finish_calls.lock().unwrap()[0].distance_meters, 0);
+        assert_eq!(dynamo.points.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn confirms_missing_accepted_points_then_finishes_using_accepted_distance() {
+        let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00.123Z".parse().unwrap();
+        let point = sample_point(recorded_at);
+        let (walks, dynamo) = sut(Ok(vec![point.clone()]), Ok(sample_completed()));
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
+        assert!(matches!(result, FinishWalkResult::Finished(_)));
+        assert_eq!(dynamo.points.lock().unwrap().as_slice(), &[point]);
+        assert_eq!(walks.finish_calls.lock().unwrap()[0].distance_meters, 0);
+    }
+
+    #[tokio::test]
+    async fn confirms_many_missing_points_and_computes_distance_from_accepted() {
+        let points: Vec<TrackPoint> = (0..250)
+            .map(|i| {
+                let recorded_at =
+                    jiff::Timestamp::from_millisecond(1_723_636_800_000 + i * 10_000).unwrap();
+                TrackPoint {
+                    track_point_id: format!("tp-{i}"),
+                    walk_id: "walk-1".into(),
+                    recorded_at,
+                    latitude: 35.0 + (i as f64) * 0.0001,
+                    longitude: 139.0 + (i as f64) * 0.0001,
+                }
+            })
+            .collect();
+        let expected_distance = path_distance_meters(
+            &points
+                .iter()
+                .map(|point| (point.latitude, point.longitude))
+                .collect::<Vec<_>>(),
+        );
+        let (walks, dynamo) = sut(Ok(points.clone()), Ok(sample_completed()));
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
+        assert!(matches!(result, FinishWalkResult::Finished(_)));
+        assert_eq!(dynamo.points.lock().unwrap().len(), 250);
+        assert_eq!(
+            walks.finish_calls.lock().unwrap()[0].distance_meters,
+            expected_distance
+        );
+        assert!(expected_distance > 0);
+    }
+
+    #[tokio::test]
+    async fn maps_confirm_failure_during_repair_to_service_unavailable() {
+        let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
+        let (walks, dynamo) = sut(Ok(vec![sample_point(recorded_at)]), Ok(sample_completed()));
+        *dynamo.confirm_fail.lock().unwrap() = true;
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
         assert!(matches!(result, FinishWalkResult::ServiceUnavailable));
         assert!(walks.finish_calls.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
-    async fn finishes_after_confirmation() {
+    async fn maps_list_confirmed_failure_to_service_unavailable() {
         let recorded_at: jiff::Timestamp = "2026-08-17T12:00:00Z".parse().unwrap();
-        let (walks, confirmed, clock, sleep) =
-            sut(Ok(vec![recorded_at]), Ok(sample_completed()));
-        *confirmed.recorded_at.lock().unwrap() = Ok(vec![recorded_at]);
-        *confirmed.points.lock().unwrap() = Ok(vec![ConfirmedTrackPoint {
-            recorded_at,
-            latitude: 35.0,
-            longitude: 139.0,
-        }]);
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 30_000,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
-        assert!(matches!(result, FinishWalkResult::Finished(_)));
-        assert_eq!(walks.finish_calls.lock().unwrap()[0].distance_meters, 0);
+        let (walks, dynamo) = sut(Ok(vec![sample_point(recorded_at)]), Ok(sample_completed()));
+        *dynamo.list_fail.lock().unwrap() = true;
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
+        assert!(matches!(result, FinishWalkResult::ServiceUnavailable));
+        assert!(walks.finish_calls.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
     async fn maps_finish_errors() {
-        let (walks, confirmed, clock, sleep) = sut(
+        let (walks, dynamo) = sut(
             Ok(vec![]),
             Err(FinishWalkError::IdempotencyConflict(IdempotencyConflictError)),
         );
-        let result = finish_walk(
-            FinishWalkDeps {
-                owners: &FakeOwners,
-                walks: &walks,
-                confirmed: &confirmed,
-                clock: &clock,
-                sleep: &sleep,
-                timeout_ms: 30_000,
-            },
-            "sub",
-            "walk-1",
-            "idem-1",
-        )
-        .await;
+        let result = finish_walk(deps(&walks, &dynamo), "sub", "walk-1", "idem-1").await;
         assert!(matches!(result, FinishWalkResult::IdempotencyConflict));
     }
 }

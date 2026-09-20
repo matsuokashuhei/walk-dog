@@ -14,9 +14,7 @@ pub use active_walk_commands::ActiveWalkCommands;
 pub use errors::{
     ActiveWalkExistsError, IdempotencyConflictError, WalkNotFoundError, WalkNotRecordingError,
 };
-pub use provider::{
-    ConfirmTrackPoint, ConfirmedTrackPoints, FinishWalkClock, FinishWalkSleep, TrackPointQueue,
-};
+pub use provider::{ConfirmTrackPoint, ConfirmedTrackPoints, TrackPointQueue};
 pub use repository::{
     AcceptTrackPointError, FailWalkError, FinishWalkError, ListAcceptedError, RecordEventError,
     StartWalkError, WalkRepository,

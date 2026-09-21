@@ -1,0 +1,7 @@
+{
+  "name": "walk-dog",
+  "user": "ubuntu",
+  "install": ".cursor/cloud/install.sh",
+  "start": ".cursor/cloud/start.sh",
+  "ports": [3000, 5432, 8000, 9324]
+}

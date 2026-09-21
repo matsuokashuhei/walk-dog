@@ -11,7 +11,9 @@ set -euo pipefail
 
 if ! sudo docker info >/dev/null 2>&1; then
   sudo rm -f /var/run/docker.pid
-  sudo bash -c 'nohup dockerd >/tmp/dockerd.log 2>&1 &'
+  # The current user does the redirect (this VM's confined root cannot write the
+  # /tmp log), while dockerd itself runs via sudo.
+  nohup sudo dockerd >/tmp/dockerd.log 2>&1 &
   for _ in $(seq 1 30); do
     sudo docker info >/dev/null 2>&1 && break
     sleep 1
